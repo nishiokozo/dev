@@ -6,7 +6,7 @@
 		<style>
 			h1 
 			{
-				font-size: 42px;
+				font-size: 24px;
 				color:#cccccc
 			}
 		</style>
@@ -28,7 +28,7 @@
 -->
 		</div>
 		<div align=center>
-			<h1>yukizone demo</h1>
+			<h1>yukizone dev</h1>
 		</div>
 		<div>
 			<h2>
