@@ -46,7 +46,7 @@ let line = function( sx,sy, ex,ey )
 function print( tx, ty, str )
 //-----------------------------------------------------------------------------
 {
-	g.font = "12px monospace";
+	g.font = "10px monospace";
 	g.fillStyle = "#000000";
 	g.fillText( str, tx, ty );
 }
@@ -56,6 +56,7 @@ let circle = function( x,y,r )
 //-----------------------------------------------------------------------------
 {
 	g.beginPath();
+//	g.lineWidth = 1;
 	g.arc(x, y, r, 0, Math.PI * 2, true);
 	g.closePath();
 	g.stroke();
@@ -68,14 +69,6 @@ function cls()
 	g.fillStyle = "#ffffff";
 	g.fillRect( 0, 0, html_canvas.width, html_canvas.height );
 }
-
-let g_tblUnit =[];
-
-const SPC_NONE		= 0;	// 攻撃しない
-const SPC_BREATH	= 1;	// ブレス攻撃
-const SPC_BITE		= 2;	// 噛みつき攻撃
-const SPC_PUNCH		= 3;	// パンチ
-const SPC_TWINCLE	= 4;	// 点滅
 
 class Effect
 {
@@ -146,7 +139,8 @@ class Effect
 };
 
 let g_effect = new Effect;
-class ActTwincle
+
+class ActTwincle	// 点滅アクション
 {
 	//-----------------------------------------------------------------------------
 	constructor()
@@ -173,7 +167,7 @@ class ActTwincle
 		}
 	}
 };
-class ActPunch
+class ActPunch	// パンチ攻撃アクション
 {
 	//-----------------------------------------------------------------------------
 	constructor()
@@ -221,7 +215,7 @@ class ActPunch
 	}
 
 };
-class ActBreath
+class ActBreath	// ブレス攻撃アクション
 {
 	//-----------------------------------------------------------------------------
 	constructor()
@@ -275,7 +269,7 @@ class ActBreath
 	}
 };
 
-class ActBite
+class ActBite	// 噛みつきアクション
 {
 	//-----------------------------------------------------------------------------
 	constructor()
@@ -318,7 +312,7 @@ class ActBite
 	//-----------------------------------------------------------------------------
 	bte_setBite()
 	//-----------------------------------------------------------------------------
-	{// 2	噛みつき
+	{// 2	噛付き
 		this.bte_lim		= 8;
 		this.bte_freq		= 4;
 		this.bte_dir		= rad(0);
@@ -331,6 +325,194 @@ class ActBite
 
 };
 
+class Unit
+{
+	//-----------------------------------------------------------------------------
+	constructor()
+	//-----------------------------------------------------------------------------
+	{
+		this.tblUnit =[];
+	}
+	
+	//-----------------------------------------------------------------------------
+	add( boss, gid, x, y, size, dir, tblThink, name )
+	//-----------------------------------------------------------------------------
+	{
+		this.tblUnit.push(
+			{
+				boss	: boss,
+				gid		: gid,	// グループID , 1:Player
+				x		: x,
+				y		: y,
+				size	: size,
+				dir		: dir,
+				tblThink : tblThink,
+				name	: name,
+				time			:0,
+				to_th	: 0,
+				think_type		:0,
+				think_lim		:0,
+
+				twincle : new ActTwincle,
+				punch : new ActPunch,
+				breath : new ActBreath,
+				bite	: new ActBite,
+			}
+		);
+	}
+
+	//-----------------------------------------------------------------------------
+	unit_update( u1 )
+	//-----------------------------------------------------------------------------
+	{
+		let ax	= u1.x;
+		let ay	= u1.y;
+		let act	= u1.tblThink[ u1.think_type ];
+		let	er = Math.cos(rad(u1.time*10))*1.2;
+		let dx = u1.size * Math.cos( u1.dir ) + ax;
+		let dy = u1.size * Math.sin( u1.dir ) + ay;
+		line( ax, ay, dx, dy );	// 本体方向表示
+		print( ax+u1.size, ay-u1.size, u1.name );
+		u1.time+=1;
+
+		if ( u1.twincle.twn_lim > 0 ) 	// 点滅表示
+		{
+			let pat = [0,0,0,1,1,1];
+			if ( pat[(u1.twincle.twn_time % pat.length )] == 1  )
+			{
+				circle( ax, ay, er+u1.size );	// 本体表示
+			}
+		}
+		else
+		{
+			if ( u1.boss )
+			{
+				circle( ax, ay, er+u1.size+2 );	// 外装表示
+			}
+			circle( ax, ay, er+u1.size );	// 本体表示
+		}
+
+		{
+			let num = act.act_no;
+			if ( num == ACT_TWINCLE	) 	u1.twincle.twn_setTwincle();
+			if ( num == ACT_PUNCH	) 	u1.punch.pnc_setPunch();
+			if ( num == ACT_BREATH	)	u1.breath.brt_setBreath();
+			if ( num == ACT_BITE	)	u1.bite.bte_setBite();
+		}
+
+
+		// update
+		u1.punch.pnc_update( ax, ay, u1.size, u1.dir );
+		u1.twincle.twn_update();
+		u1.bite.bte_update( ax, ay, dx, dy, er, u1.size, u1.dir, u1.name );
+		u1.breath.brt_updateBreath( ax, ay, dx, dy, er, u1.size, u1.dir, u1.name );
+
+		if ( u1.gid == 0 ) return;	// グループID=0 はNONE
+		if ( u1.gid == 1 ) return;	// グループID=1 はPlayer
+
+		{
+			// 狙いを決める
+			let tar_x = 0;
+			let tar_y = 0;
+			{
+				let cnt = 0;
+				for ( let u1 of g_unit.tblUnit )//g_tblUnit ) 
+				{
+					if ( u1.gid == 1 ) 
+					{
+						tar_x += u1.x;
+						tar_y += u1.y;
+						cnt++;
+					}
+				}
+
+				tar_x /= cnt;
+				tar_y /= cnt;
+			}
+
+			// 方向を決める
+			{
+				let x0	= tar_x;
+				let y0	= tar_y;
+				u1.to_th = Math.atan2( (y0-ay), (x0-ax) );
+			}
+			// 方向を変える
+			{
+				let s = u1.to_th - u1.dir;
+				if ( s < -Math.PI ) s += Math.PI*2;
+				if ( s >  Math.PI ) s -= Math.PI*2;
+
+				let r = 0;
+				if ( s > 0 ) r =  act.rot_spd;
+				if ( s < 0 ) r = -act.rot_spd;
+
+				u1.dir += r;
+			}
+		}
+
+		{	//MOVE
+			let th = u1.dir+act.mov_dir;
+			ax += Math.cos( th )*act.mov_spd;
+			ay += Math.sin( th )*act.mov_spd;
+
+			let isCol = function() //衝突判定
+			{
+				let flg = false; 
+				for ( let u2 of g_unit.tblUnit )//g_tblUnit ) 
+				{
+					if ( u2 == u1 )
+					{
+						continue;
+					}
+					let x1	= u2.x;
+					let y1	= u2.y;
+					let len	= u2.size + u1.size;
+					let far = Math.sqrt( (x1-ax)*(x1-ax) + (y1-ay)*(y1-ay) );			
+					if ( len+0 > far ) flg = true;
+				}
+				return flg
+			}
+			
+			if ( isCol() == false )
+			{
+				u1.x = ax;
+				u1.y = ay;
+			}
+		}
+
+		if ( u1.think_lim-- < 0 )	// 思考パターン抽選
+		{
+			let r = Math.random();
+			for ( let i = 0 ; i < u1.tblThink.length ; i++ )
+			{
+				let tnk = u1.tblThink[i];
+				if ( r < tnk.ratio ) 
+				{
+					u1.think_type = i;
+					{
+						u1.think_lim = Math.floor( rand(tnk.num)*tnk.quant )+1;
+					}
+					break;
+				}
+			}
+
+		}
+	}
+	
+	//-----------------------------------------------------------------------------
+	unit_updateUnit()
+	//-----------------------------------------------------------------------------
+	{
+		for ( let u1 of g_unit.tblUnit ) 
+		{
+			this.unit_update( u1 );
+		}
+	}
+	
+
+};
+
+let g_unit = new Unit;
 
 //let g_breath = new ActBreath;
 /*
@@ -349,172 +531,168 @@ const THINK_FORWARD			= 9;	// 前進
 const THINK_MAWARI_R		= 10;	// 回り込み右
 const THINK_MAWARI_L		= 11;	// 回り込み左
 const THINK_ATTACK_BREATH	= 12;	// ブレス攻撃
-const THINK_ATTACK_BITE		= 13;	// 噛みつき攻撃
+const THINK_ATTACK_BITE		= 13;	// 噛付き攻撃
 */
 
 
-/*
-let g_tblSpecial =
-[
-	{//0 undefined
-	},
 
-	{//1	ブレス
-		lim			: 80,
-		freq		: 2,
-		rot			: rad(2),
-		dir			: -rad(30),
-		br_r		: 32*0.1,		//u1.size/10,
-		br_add_r	: 32*0.005,	//u1.size/200,
-		br_spd		: 2,
-		br_lim		: 40,
-	},
-
-	{// 2	噛みつき
-		lim			: 8,
-		freq		: 4,
-		rot			: rad(0),
-		dir			: rad(0),
-		br_r		: 1.2,	//0.1,		//u1.size/10,
-		br_add_r	: 1.0,
-		br_spd		: 1,
-		br_lim		: 8,
-	},
-
-	{// 3	パンチ
-	},
-
-	{// 4	TWINCLE EFFECT
-	},
-
-];
-*/
-
-let g_cast_dummy =
+class Cast
 {
-	tblAction	:
-	[
-		{name:""			,act_no:0,mov_dir:rad(0)	,mov_spd:0.25	, rot_spd:rad(1)	,rate: 0, quant:  0, num:3 },
-		{name:"B"			,act_no:0,mov_dir:rad(180)	,mov_spd:0.25	, rot_spd:rad(0.2)	,rate:30, quant:120, num:3 },
-		{name:"F"			,act_no:0,mov_dir:rad(0)	,mov_spd:0.25	, rot_spd:rad(0.2)	,rate:10, quant:120, num:3 },
-		{name:"R"			,act_no:0,mov_dir:rad( 45)	,mov_spd:0.25	, rot_spd:rad(0.2)	,rate:10, quant:120, num:3 },
-		{name:"L"			,act_no:0,mov_dir:rad(-45)	,mov_spd:0.25	, rot_spd:rad(0.2)	,rate:10, quant:120, num:3 },
-		{name:"噛みつき"	,act_no:2,mov_dir:rad(0)	,mov_spd:0.25	, rot_spd:rad(0.2)	,rate:10, quant:0, num:3 },
-	]
-}
-let g_cast_dragon =
-{
-	tblAction	:
-	[
-		{name:""			,act_no:0,mov_dir:rad(0)	,mov_spd:0.25	, rot_spd:rad(1)	,rate: 0, quant:  0, num:3 },
-		{name:"B"			,act_no:0,mov_dir:rad(180)	,mov_spd:0.25	, rot_spd:rad(0.2)	,rate:20, quant: 72, num:3 },
-		{name:"R"			,act_no:0,mov_dir:rad( 60)	,mov_spd:0.25	, rot_spd:rad(0.2)	,rate:20, quant:120, num:3 },
-		{name:"L"			,act_no:0,mov_dir:rad(-60)	,mov_spd:0.25	, rot_spd:rad(0.2)	,rate:20, quant:120, num:3 },
-		{name:"ブレス"		,act_no:1,mov_dir:rad(0)	,mov_spd:0.25	, rot_spd:rad(0.6)	,rate:10, quant:0, num:3 },
-	]
-}
-let g_cast_wolf =
-{
-	tblAction	:
-	[
-		{name:""			,act_no:0,mov_dir:rad(   0)	,mov_spd:0.20	, rot_spd:rad(1)	,rate: 0, quant:  0, num:3 },
-		{name:"B"			,act_no:0,mov_dir:rad( 180)	,mov_spd:0.25	, rot_spd:rad(0.2)	,rate:30, quant: 72, num:3 },
-		{name:"F"			,act_no:0,mov_dir:rad(   0)	,mov_spd:0.75	, rot_spd:rad(0.2)	,rate:10, quant:120, num:3 },
-		{name:"R"			,act_no:0,mov_dir:rad(  80)	,mov_spd:0.34 	, rot_spd:rad(1.4)	,rate:10, quant:120, num:3 },
-		{name:"L"			,act_no:0,mov_dir:rad( -80)	,mov_spd:0.34 	, rot_spd:rad(1.4)	,rate:10, quant:120, num:3 },
-		{name:"噛みつき"	,act_no:2,mov_dir:rad(   0)	,mov_spd:0.75	, rot_spd:rad(0.2)	,rate:10, quant:0, num:3 },
-	]
-}
-let g_cast_mino =
-{
-	tblAction	:
-	[
-		{name:""			,act_no:0,mov_dir:rad(   0)	,mov_spd:0.20	, rot_spd:rad(1)	,rate: 0, quant:  0, num:3 },
-		{name:"B"			,act_no:0,mov_dir:rad( 180)	,mov_spd:0.25	, rot_spd:rad(0.2)	,rate:30, quant: 72, num:3 },
-		{name:"F"			,act_no:0,mov_dir:rad(   0)	,mov_spd:0.40	, rot_spd:rad(0.2)	,rate:10, quant:120, num:3 },
-		{name:"R"			,act_no:0,mov_dir:rad(  45)	,mov_spd:0.40 	, rot_spd:rad(0.2)	,rate:10, quant:120, num:3 },
-		{name:"L"			,act_no:0,mov_dir:rad( -45)	,mov_spd:0.40 	, rot_spd:rad(0.2)	,rate:10, quant:120, num:3 },
-		{name:"パンチ"		,act_no:3,mov_dir:rad(   0)	,mov_spd:0.75	, rot_spd:rad(0.6)	,rate:30, quant:0, num:3 },
-	]
-}
-let g_cast_ghost =
-{
-	tblAction	:
-	[
-		{name:""			,act_no:0,mov_dir:rad(   0)	,mov_spd:0		, rot_spd:rad(1)	,rate: 0, quant:  0, num:3 },
-		{name:"FR"			,act_no:0,mov_dir:rad(  60)	,mov_spd:0.35	, rot_spd:rad(0.3)	,rate:12, quant: 96, num:3 },
-		{name:"FL"			,act_no:0,mov_dir:rad( -60)	,mov_spd:0.35	, rot_spd:rad(0.3)	,rate:12, quant: 96, num:3 },
-		{name:"BR"			,act_no:0,mov_dir:rad( 120)	,mov_spd:0.30 	, rot_spd:rad(0.3)	,rate:10, quant: 96, num:3 },
-		{name:"BL"			,act_no:0,mov_dir:rad(-120)	,mov_spd:0.30 	, rot_spd:rad(0.3)	,rate:10, quant: 96, num:3 },
-		{name:"TWINCLE"		,act_no:4,mov_dir:rad(   0)	,mov_spd:1.30 	, rot_spd:rad(0.3)	,rate:20, quant: 0, num:3 },
-	]
-}
-let g_cast_zombie =
-{
-	tblAction	:
-	[
-		{name:""			,act_no:0,mov_dir:rad(   0)	,mov_spd:0		, rot_spd:rad(1)	,rate: 0, quant:  0, num:3 },
-		{name:"探す"		,act_no:0,mov_dir:rad(   0)	,mov_spd:0.1 	, rot_spd:rad(1.0)	,rate:10, quant: 48, num:3 },
-		{name:"F"			,act_no:0,mov_dir:rad(   0)	,mov_spd:0.25 	, rot_spd:rad(0.1)	,rate:10, quant: 72, num:3 },
-		{name:"FR"			,act_no:0,mov_dir:rad(  30)	,mov_spd:0.25	, rot_spd:rad(0.1)	,rate:10, quant: 72, num:3 },
-		{name:"FL"			,act_no:0,mov_dir:rad( -30)	,mov_spd:0.25	, rot_spd:rad(0.1)	,rate:10, quant: 72, num:3 },
-	]
-}
-let g_cast_swordman =
-{
-	tblAction	:
-	[
-		{name:""			,act_no:0,mov_dir:rad(   0)	,mov_spd:0		, rot_spd:rad(1)	,rate: 0, quant:  0, num:3 },
-		{name:"F"			,act_no:0,mov_dir:rad(   0)	,mov_spd:0.2 	, rot_spd:rad(0.3)	,rate:10, quant: 72, num:3 },
-		{name:"FR"			,act_no:0,mov_dir:rad(  45)	,mov_spd:0.4	, rot_spd:rad(0.6)	,rate:10, quant: 72, num:3 },
-		{name:"FR"			,act_no:0,mov_dir:rad(  90)	,mov_spd:0.4	, rot_spd:rad(0.6)	,rate:20, quant: 72, num:3 },
-		{name:"BL"			,act_no:0,mov_dir:rad(-140)	,mov_spd:0.3	, rot_spd:rad(0.1)	,rate:20, quant: 96, num:3 },
-		{name:"攻撃"		,act_no:0,mov_dir:rad(   0)	,mov_spd:2.30 	, rot_spd:rad(0.3)	,rate:20, quant: 20, num:3 },
-	]
-}
-const GID_NONE		= 0;	// NONE
-const GID_PLAYER1	= 1;	// Player
-const GID_PLAYER2	= 2;	// Player
-const GID_PLAYER3	= 3;	// Player
-const GID_DRAGON	= 4;	// ドラゴン
-const GID_WOLF		= 5;	// ウルフ
-const GID_MINO		= 6;	// ミノタウロス
-const GID_GHOST		= 7;	// ゴースト
-const GID_ZOMBIE	= 8;	// ゾンビ
-const GID_SWORDMAN	= 9;	// ソードマン
-
-let g_tblGid =
-[
-	{name:"NONE"		,size:  2,	cast:g_cast_dummy },
-	{name:"こーぞ"		,size: 16,	cast:g_cast_dummy },
-	{name:"ティナ"		,size: 16,	cast:g_cast_dummy },
-	{name:"ユイ"		,size: 16,	cast:g_cast_dummy },
-	{name:"ドラゴン"	,size: 52,	cast:g_cast_dragon },
-	{name:"ウルフ"		,size: 10,	cast:g_cast_wolf },
-	{name:"ミノタウロス",size: 30,	cast:g_cast_mino },
-	{name:"ゴースト"	,size: 14,	cast:g_cast_ghost },
-	{name:"ゾンビ"		,size: 12,	cast:g_cast_zombie },
-	{name:"ソードマン"	,size: 16,	cast:g_cast_swordman, },
-];
-
-function unit_makeThinkRatio( tblAction )
-{// rate（割合）からratio（比率）を作成
-	let amt = 0;
-	for ( let i = 0 ; i < tblAction.length ; i++ )
+	constructor( jsonCast )
 	{
-		amt += tblAction[i].rate;
-		tblAction[i].ratio = amt;
-	}
-	for ( let i = 0 ; i < tblAction.length ; i++ )
-	{
-		tblAction[i].ratio /= amt;
-	}
-}
-for ( let i = 0 ; i < g_tblGid.length ; i++ )
-{
-	unit_makeThinkRatio( g_tblGid[i].cast.tblAction );
-}
+		this.tbl = jsonCast ;
 
+		let makeratio = function( tblThink )
+		{// rate（割合）からratio（比率）を作成
+			let amt = 0;
+			for ( let t of tblThink )
+			{
+				amt += t.rate;
+				t.ratio = amt;
+			}
+			for ( let t of tblThink )
+			{
+				t.ratio /= amt;
+			}
+		}
+		for ( let t of this.tbl )
+		{
+			makeratio( t.tblThink );
+		}
+
+	}
+};
+
+const ACT_NONE		= 0;	// 攻撃しない
+const ACT_BREATH	= 1;	// ブレス攻撃
+const ACT_BITE		= 2;	// 噛付き攻撃
+const ACT_PUNCH		= 3;	// パンチ
+const ACT_TWINCLE	= 4;	// 点滅
+
+
+const CAST_NONE		= 0;	// NONE
+const CAST_PLAYER1	= 1;	// Player
+const CAST_PLAYER2	= 2;	// Player
+const CAST_PLAYER3	= 3;	// Player
+const CAST_DRAGON	= 4;	// ドラゴン
+const CAST_WOLF		= 5;	// ウルフ
+const CAST_MINO		= 6;	// ミノタウロス
+const CAST_GHOST	= 7;	// ゴースト
+const CAST_ZOMBIE	= 8;	// ゾンビ
+const CAST_SWORDMAN	= 9;	// ソードマン
+let g_json_cast = 
+[
+	{
+		name		:"NONE",
+		size		:  2,	
+		tblThink	:
+		[
+			{name:""		,act_no:0,mov_dir:rad(0)	,mov_spd:0.25	, rot_spd:rad(1)	,rate: 0, quant:  0, num:3 },
+		]
+	},
+	{
+		name		:"こーぞ",
+		size		:  12,	
+		tblThink	:
+		[
+			{name:""		,act_no:0,mov_dir:rad(0)	,mov_spd:0.25	, rot_spd:rad(1)	,rate: 0, quant:  0, num:3 },
+		]
+	},
+	{
+		name		:"ティナ",
+		size		:  11,	
+		tblThink	:
+		[
+			{name:""		,act_no:0,mov_dir:rad(0)	,mov_spd:0.25	, rot_spd:rad(1)	,rate: 0, quant:  0, num:3 },
+		]
+	},
+	{
+		name		:"ユイ",
+		size		:  11,	
+		tblThink	:
+		[
+			{name:""		,act_no:0,mov_dir:rad(0)	,mov_spd:0.25	, rot_spd:rad(1)	,rate: 0, quant:  0, num:3 },
+		]
+	},
+	{
+		name		:"ドラゴン"	,
+		size		: 52,	
+		tblThink	:
+		[
+			{name:""		,act_no:0,mov_dir:rad(0)	,mov_spd:0.25	, rot_spd:rad(1)	,rate: 0, quant:  0, num:3 },
+			{name:"B"		,act_no:0,mov_dir:rad(180)	,mov_spd:0.25	, rot_spd:rad(0.2)	,rate:20, quant: 72, num:3 },
+			{name:"R"		,act_no:0,mov_dir:rad( 60)	,mov_spd:0.25	, rot_spd:rad(0.2)	,rate:20, quant:120, num:3 },
+			{name:"L"		,act_no:0,mov_dir:rad(-60)	,mov_spd:0.25	, rot_spd:rad(0.2)	,rate:20, quant:120, num:3 },
+			{name:"ブレス"	,act_no:1,mov_dir:rad(0)	,mov_spd:0.25	, rot_spd:rad(0.6)	,rate:10, quant:0, num:3 },
+		]
+	},
+	{
+		name		:"ウルフ"		,
+		size		: 10,	
+		tblThink	:
+		[
+			{name:""		,act_no:0,mov_dir:rad(   0)	,mov_spd:0.20	, rot_spd:rad(1)	,rate: 0, quant:  0, num:3 },
+			{name:"B"		,act_no:0,mov_dir:rad( 180)	,mov_spd:0.25	, rot_spd:rad(0.2)	,rate:30, quant: 72, num:3 },
+			{name:"F"		,act_no:0,mov_dir:rad(   0)	,mov_spd:0.75	, rot_spd:rad(0.2)	,rate:10, quant:120, num:3 },
+			{name:"R"		,act_no:0,mov_dir:rad(  80)	,mov_spd:0.34 	, rot_spd:rad(1.4)	,rate:10, quant:120, num:3 },
+			{name:"L"		,act_no:0,mov_dir:rad( -80)	,mov_spd:0.34 	, rot_spd:rad(1.4)	,rate:10, quant:120, num:3 },
+			{name:"噛付き"	,act_no:2,mov_dir:rad(   0)	,mov_spd:0.75	, rot_spd:rad(0.2)	,rate:10, quant:0, num:3 },
+		]
+	},
+	{
+		name		:"ミノタウロス",
+		size		: 30,	
+		tblThink	:
+		[
+			{name:""		,act_no:0,mov_dir:rad(   0)	,mov_spd:0.20	, rot_spd:rad(1)	,rate: 0, quant:  0, num:3 },
+			{name:"B"		,act_no:0,mov_dir:rad( 180)	,mov_spd:0.25	, rot_spd:rad(0.2)	,rate:30, quant: 72, num:3 },
+			{name:"F"		,act_no:0,mov_dir:rad(   0)	,mov_spd:0.40	, rot_spd:rad(0.2)	,rate:10, quant:120, num:3 },
+			{name:"R"		,act_no:0,mov_dir:rad(  45)	,mov_spd:0.40 	, rot_spd:rad(0.2)	,rate:10, quant:120, num:3 },
+			{name:"L"		,act_no:0,mov_dir:rad( -45)	,mov_spd:0.40 	, rot_spd:rad(0.2)	,rate:10, quant:120, num:3 },
+			{name:"パンチ"	,act_no:3,mov_dir:rad(   0)	,mov_spd:0.75	, rot_spd:rad(0.6)	,rate:30, quant:0, num:3 },
+		]
+	},
+	{
+		name		:"ゴースト"	,
+		size		: 14,	
+		tblThink	:
+		[
+			{name:""		,act_no:0,mov_dir:rad(   0)	,mov_spd:0		, rot_spd:rad(1)	,rate: 0, quant:  0, num:3 },
+			{name:"FR"		,act_no:0,mov_dir:rad(  60)	,mov_spd:0.35	, rot_spd:rad(0.3)	,rate:12, quant: 96, num:3 },
+			{name:"FL"		,act_no:0,mov_dir:rad( -60)	,mov_spd:0.35	, rot_spd:rad(0.3)	,rate:12, quant: 96, num:3 },
+			{name:"BR"		,act_no:0,mov_dir:rad( 120)	,mov_spd:0.30 	, rot_spd:rad(0.3)	,rate:10, quant: 96, num:3 },
+			{name:"BL"		,act_no:0,mov_dir:rad(-120)	,mov_spd:0.30 	, rot_spd:rad(0.3)	,rate:10, quant: 96, num:3 },
+			{name:"TWINCLE"	,act_no:4,mov_dir:rad(   0)	,mov_spd:1.30 	, rot_spd:rad(0.3)	,rate:20, quant: 0, num:3 },
+		]
+	},
+	{
+		name		:"ゾンビ"		,
+		size		: 12,	
+		tblThink	:
+		[
+			{name:""		,act_no:0,mov_dir:rad(   0)	,mov_spd:0		, rot_spd:rad(1)	,rate: 0, quant:  0, num:3 },
+			{name:"探す"	,act_no:0,mov_dir:rad(   0)	,mov_spd:0.1 	, rot_spd:rad(1.0)	,rate:10, quant: 48, num:3 },
+			{name:"F"		,act_no:0,mov_dir:rad(   0)	,mov_spd:0.25 	, rot_spd:rad(0.1)	,rate:10, quant: 72, num:3 },
+			{name:"FR"		,act_no:0,mov_dir:rad(  30)	,mov_spd:0.25	, rot_spd:rad(0.1)	,rate:10, quant: 72, num:3 },
+			{name:"FL"		,act_no:0,mov_dir:rad( -30)	,mov_spd:0.25	, rot_spd:rad(0.1)	,rate:10, quant: 72, num:3 },
+		]
+	},
+	{
+		name		:"ソードマン"	,
+		size		: 16,	
+		tblThink	:
+		[
+			{name:""		,act_no:0,mov_dir:rad(   0)	,mov_spd:0		, rot_spd:rad(1)	,rate: 0, quant:  0, num:3 },
+			{name:"F"		,act_no:0,mov_dir:rad(   0)	,mov_spd:0.2 	, rot_spd:rad(0.3)	,rate:10, quant: 72, num:3 },
+			{name:"FR"		,act_no:0,mov_dir:rad(  45)	,mov_spd:0.4	, rot_spd:rad(0.6)	,rate:10, quant: 72, num:3 },
+			{name:"FR"		,act_no:0,mov_dir:rad(  90)	,mov_spd:0.4	, rot_spd:rad(0.6)	,rate:20, quant: 72, num:3 },
+			{name:"BL"		,act_no:0,mov_dir:rad(-140)	,mov_spd:0.3	, rot_spd:rad(0.1)	,rate:20, quant: 96, num:3 },
+			{name:"攻撃"	,act_no:0,mov_dir:rad(   0)	,mov_spd:2.30 	, rot_spd:rad(0.3)	,rate:20, quant: 20, num:3 },
+		]
+	}
+];
+
+let g_tblCast = new Cast( g_json_cast );
 
 //-----------------------------------------------------------------------------
 function rand( n ) // n=3以上が正規分布
@@ -526,12 +704,12 @@ function rand( n ) // n=3以上が正規分布
 }
 
 //-----------------------------------------------------------------------------
-unit_update = function( u1 )
+uxxnit_update = function( u1 )
 //-----------------------------------------------------------------------------
 {
 	let ax	= u1.x;
 	let ay	= u1.y;
-	let act	= u1.cast.tblAction[ u1.think_type ];
+	let act	= u1.tblThink[ u1.think_type ];
 	let	er = Math.cos(rad(u1.time*10))*1.2;
 	let dx = u1.size * Math.cos( u1.dir ) + ax;
 	let dy = u1.size * Math.sin( u1.dir ) + ay;
@@ -549,15 +727,19 @@ unit_update = function( u1 )
 	}
 	else
 	{
+		if ( u1.boss )
+		{
+			circle( ax, ay, er+u1.size+2 );	// 外装表示
+		}
 		circle( ax, ay, er+u1.size );	// 本体表示
 	}
 
 	{
 		let num = act.act_no;
-		if ( num == SPC_TWINCLE	) 	u1.twincle.twn_setTwincle();
-		if ( num == SPC_PUNCH	) 	u1.punch.pnc_setPunch();
-		if ( num == SPC_BREATH	)	u1.breath.brt_setBreath();
-		if ( num == SPC_BITE	)	u1.bite.bte_setBite();
+		if ( num == ACT_TWINCLE	) 	u1.twincle.twn_setTwincle();
+		if ( num == ACT_PUNCH	) 	u1.punch.pnc_setPunch();
+		if ( num == ACT_BREATH	)	u1.breath.brt_setBreath();
+		if ( num == ACT_BITE	)	u1.bite.bte_setBite();
 	}
 
 
@@ -576,7 +758,7 @@ unit_update = function( u1 )
 		let tar_y = 0;
 		{
 			let cnt = 0;
-			for ( let u1 of g_tblUnit ) 
+			for ( let u1 of g_unit.tblUnit )//g_tblUnit ) 
 			{
 				if ( u1.gid == 1 ) 
 				{
@@ -618,7 +800,7 @@ unit_update = function( u1 )
 		let isCol = function() //衝突判定
 		{
 			let flg = false; 
-			for ( let u2 of g_tblUnit ) 
+			for ( let u2 of g_unit.tblUnit )//g_tblUnit ) 
 			{
 				if ( u2 == u1 )
 				{
@@ -643,9 +825,9 @@ unit_update = function( u1 )
 	if ( u1.think_lim-- < 0 )	// 思考パターン抽選
 	{
 		let r = Math.random();
-		for ( let i = 0 ; i < u1.cast.tblAction.length ; i++ )
+		for ( let i = 0 ; i < u1.tblThink.length ; i++ )
 		{
-			let tnk = u1.cast.tblAction[i];
+			let tnk = u1.tblThink[i];
 			if ( r < tnk.ratio ) 
 			{
 				u1.think_type = i;
@@ -687,11 +869,8 @@ function update()
 	g_effect.updateEffect();
 
 	// ユニット更新
-	for ( let u1 of g_tblUnit ) 
-	{
-		unit_update( u1 );
-	}
-	
+	g_unit.unit_updateUnit();
+
 	requestAnimationFrame( update );
 
 }
@@ -746,9 +925,9 @@ window.onkeydown = function( ev )
 	let	c = ev.keyCode;
 
 
-	let u1 	= g_tblUnit[0];
+	let u1 	= g_unit.tblUnit[0];
 	let cntPlayer =0;
-	for ( let u1 of g_tblUnit ) 
+	for ( let u1 of g_unit.tblUnit ) 
 	{
 		if ( u1.gid == 1 )	// グループID=1 はPlayer
 		{
@@ -770,7 +949,7 @@ window.onkeydown = function( ev )
 				}
 			}
 
-			if ( c == KEY_I )	//噛みつき
+			if ( c == KEY_I )	//噛付き
 			{
 				u1.bite.bte_setBite();
 			}
@@ -778,11 +957,11 @@ window.onkeydown = function( ev )
 			{
 				u1.breath.brt_setBreath();
 			}
-			if ( c == KEY_P )	//SPC_PUNCH
+			if ( c == KEY_P )	//パンチ
 			{
 				u1.punch.pnc_setPunch();
 			}
-			if ( c == KEY_U )	//SPC_TWINCLE
+			if ( c == KEY_U )	//点滅
 			{
 				u1.twincle.twn_setTwincle();
 			}
@@ -820,7 +999,7 @@ window.onkeydown = function( ev )
 			[0,4,0,0,0,4,0],
 			[0,0,0,9,0,0,0],
 			[0,9,9,1,9,9,0],
-			[9,0,9,9,9,0,9],
+			[9,1,9,9,9,0,9],
 		];
 
 
@@ -878,27 +1057,8 @@ window.onkeydown = function( ev )
 					{
 					case 1: // プレイヤー
 						{
-							let gid = g_tblGid[ GID_PLAYER1+cntPlayer ];
-							g_tblUnit.push(
-								{
-									gid		: 1,	// グループID , 1:Player
-									x		: px,
-									y		: py,
-									to_th	: 0,
-									size	: gid.size,
-									dir		: rad(-90),
-									cast	: gid.cast,
-									name	: gid.name,
-									time			:0,
-									think_type		:0,
-									think_lim		:0,
-
-									twincle : new ActTwincle,
-									punch : new ActPunch,
-									breath : new ActBreath,
-									bite	: new ActBite,
-								}
-							);
+							let cast = g_tblCast.tbl[ CAST_PLAYER1+cntPlayer ];
+							g_unit.add( 0, 1, px, py, cast.size, rad(-90), cast.tblThink, cast.name );
 							cntPlayer++;
 						}
 						break;
@@ -906,90 +1066,31 @@ window.onkeydown = function( ev )
 					case 2: // 雑魚
 						{
 //break;
-//							let gid = g_tblGid[ GID_WOLF ];
-							let gid = g_tblGid[ GID_GHOST ];
-//							let gid = g_tblGid[ GID_ZOMBIE ];
-//							let gid = g_tblGid[ GID_SWORDMAN ];
-							g_tblUnit.push(
-								{
-									gid		: 2,	// グループID , 1:Player
-									x		: px,
-									y		: py,
-									to_th	: 0,
-									size	: gid.size,
-									dir		: rad(90),
-									cast	: gid.cast,
-									name	: gid.name,
-									time			:0,
-									think_type		:0,
-									think_lim		:0,
-									
-									twincle : new ActTwincle,
-									punch : new ActPunch,
-									breath : new ActBreath,
-									bite	: new ActBite,
-								}
-							);
+//							let cast = g_tblCast.tbl[ CAST_WOLF ];
+							let cast = g_tblCast.tbl[ CAST_GHOST ];
+//							let cast = g_tblCast.tbl[ CAST_ZOMBIE ];
+//							let cast = g_tblCast.tbl[ CAST_SWORDMAN ];
+							g_unit.add( 0, 2, px, py, cast.size, rad(90), cast.tblThink, cast.name );
 						}
 						break;
 
 					case 4: // 中ボス
 //break;
 						{
-//							let gid = g_tblGid[ GID_DRAGON ];
-							let gid = g_tblGid[ GID_MINO ];
-							g_tblUnit.push(
-								{
-									gid		: 2,	// グループID , 1:Player
-									x		: px,
-									y		: py,
-									to_th	: 0,
-									size	: gid.size,
-									dir		: rad(90),
-									cast	: gid.cast,
-									name	: gid.name,
-									time			:0,
-									think_type		:0,
-									think_lim		:0,
-									
-									twincle : new ActTwincle,
-									punch : new ActPunch,
-									breath : new ActBreath,
-									bite	: new ActBite,
-								}
-							);
-
+//							let cast = g_tblCast.tbl[ CAST_DRAGON ];
+							let cast = g_tblCast.tbl[ CAST_MINO ];
+							g_unit.add( 0, 2, px, py, cast.size, rad(90), cast.tblThink, cast.name );
 						}
 						break;
 
 					case 3: // ボス
 //break;
 						{
-//							let gid = g_tblGid[ GID_GHOST ];
-//							let gid = g_tblGid[ GID_SWORDMAN ];
-							let gid = g_tblGid[ GID_DRAGON ];
-//							let gid = g_tblGid[ GID_MINO ];
-//							let gid = g_tblGid[ GID_MINO ];
-							g_tblUnit.push(
-								{
-									gid		: 2,	// グループID , 1:Player
-									x		: px,
-									y		: py,
-									to_th	: 0,
-									size	: gid.size,
-									dir		: rad(90),
-									cast	: gid.cast,
-									name	: gid.name,
-									time			:0,
-									think_type		:0,
-									think_lim		:0,
-									
-									twincle : new ActTwincle,
-									punch : new ActPunch,
-									breath : new ActBreath,
-									bite	: new ActBite,
-								}
-							);
+//							let cast = g_tblCast.tbl[ CAST_GHOST ];
+//							let cast = g_tblCast.tbl[ CAST_SWORDMAN ];
+							let cast = g_tblCast.tbl[ CAST_DRAGON ];
+//							let cast = g_tblCast.tbl[ CAST_MINO ];
+							g_unit.add( 1, 2, px, py, cast.size, rad(90), cast.tblThink, cast.name );
 						}
 						break;
 
