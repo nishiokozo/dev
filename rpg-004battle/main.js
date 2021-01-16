@@ -1,9 +1,15 @@
 let g=html_canvas.getContext('2d');
 //-----------------------------------------------------------------------------
-function rad( deg )
+function rad( v )
 //-----------------------------------------------------------------------------
 {
-	return deg/180*Math.PI;
+	return v/180*Math.PI;
+}
+//-----------------------------------------------------------------------------
+function deg( v )
+//-----------------------------------------------------------------------------
+{
+	return v*180/Math.PI;
 }
 //-----------------------------------------------------------------------------
 let box = function( sx,sy, ex,ey )
@@ -100,25 +106,26 @@ class Effect
 		{
 			this.tblEffect[i] = {lim:0};
 		}
+		this.idx = 0;
 	}
 	//-----------------------------------------------------------------------------
-	effect_gen( _x, _y, _r, _dir, _spd,_lim, _add_r )
+	effect_gen( _x, _y, _r, _dir, _spd,_lim, _add_r, type = 0 )
 	//-----------------------------------------------------------------------------
 	{
-		for ( let tar of this.tblEffect )
+		let e = this.tblEffect[ this.idx ];
 		{
-			if ( tar.lim == 0 )
-			{
-				tar.x		= _x;
-				tar.y		= _y;
-				tar.r		= _r;
-				tar.add_r	= _add_r;
-				tar.dir		= _dir;
-				tar.spd		= _spd;
-				tar.lim		= _lim;
-				break;
-			}
+			e.type		= type;
+			e.x			= _x;
+			e.y			= _y;
+			e.r			= _r;
+			e.add_r		= _add_r;
+			e.dir		= _dir;
+			e.spd		= _spd;
+			e.lim		= _lim;
 		}
+
+		this.idx++;
+		if ( this.idx >= this.tblEffect.length ) this.idx = 0;
 	}
 	//-----------------------------------------------------------------------------
 	effect_update()
@@ -134,7 +141,17 @@ class Effect
 				e.y += Math.sin( th )*e.spd;
 				e.r += e.add_r;
 		
-				circle( e.x, e.y, e.r );
+				if ( e.type == 0 )
+				{
+					circle( e.x, e.y, e.r );
+				}
+				else
+				{
+					let ox = e.x +Math.cos( th )*e.spd*6;
+					let oy = e.y +Math.sin( th )*e.spd*6;
+					line( e.x, e.y, ox, oy );
+					circle( e.x, e.y, e.r );
+				}
 			}
 		}
 	}
@@ -317,7 +334,7 @@ class ActVolt
 		this.lim		= lim;
 	}
 	//-----------------------------------------------------------------------------
-	update( u1_x, u1_y, u1_size, u1_dir )
+	main_update( u1_x, u1_y, u1_size, u1_dir )
 	//-----------------------------------------------------------------------------
 	{
 		if ( this.lim > 0 )	// 攻撃
@@ -343,6 +360,32 @@ class ActDying
 	}
 	//-----------------------------------------------------------------------------
 	dying_update( u1_x, u1_y, u1_size, u1_dir )
+	//-----------------------------------------------------------------------------
+	{
+		if ( this.lim > 0 )	// 攻撃
+		{
+			this.lim--;
+			this.time++;
+		}
+	}
+};
+class ActKiai
+{
+	//-----------------------------------------------------------------------------
+	constructor()
+	//-----------------------------------------------------------------------------
+	{
+		this.lim		= 0;		//攻撃リミット
+	}
+	//-----------------------------------------------------------------------------
+	kiai_set()
+	//-----------------------------------------------------------------------------
+	{
+		this.lim		= 32;
+		this.time		= 0;
+	}
+	//-----------------------------------------------------------------------------
+	kiai_update( u1_x, u1_y, u1_size, u1_dir )
 	//-----------------------------------------------------------------------------
 	{
 		if ( this.lim > 0 )	// 攻撃
@@ -481,14 +524,14 @@ class ActPunch	// パンチ攻撃アクション
 		this.lim	= 0;	
 	}
 	//-----------------------------------------------------------------------------
-	pnc_set()  //) = function(  u1 )
+	punch_set()  //) = function(  u1 )
 	//-----------------------------------------------------------------------------
 	{
-		this.pnc_time		= 0;
-		this.lim		= 32;
-		this.pnc_dir		= rad(60);
-		this.pnc_add_r	= rad(+8);
-		this.pnc_acc_r	= rad(-0.9);
+		this.time		= 0;
+		this.lim		= 32*2;
+		this.dir		= rad(60);
+		this.add_r	= rad(+8);
+		this.acc_r	= rad(-0.9);
 	}
 	
 	//-----------------------------------------------------------------------------
@@ -498,17 +541,38 @@ class ActPunch	// パンチ攻撃アクション
 		if ( this.lim > 0 )
 		{
 			this.lim--;
+			let sz = unit_size;
+			let br = unit_size/2;
 
-			let th	= unit_dir+this.pnc_dir;
-			let r	= unit_size*1.3;
-			let	bx	= r*Math.cos(th)+ax;
-			let	by	= r*Math.sin(th)+ay;
+			let r	= (br+unit_size);
+			{
+				let th	= unit_dir+this.dir;
+				let	bx	= r*Math.cos(th)+ax;
+				let	by	= r*Math.sin(th)+ay;
 
-			this.pnc_dir += this.pnc_add_r;	
-			this.pnc_add_r += this.pnc_acc_r;
-			this.pnc_time++;
 
-			circle( bx, by, unit_size/4 ); // パンチ表示
+				circle( bx, by, br ); // パンチ表示
+			}
+			{
+				let th	= unit_dir-this.dir;
+//				let r	= unit_size*1.3;
+				let	bx	= r*Math.cos(th)+ax;
+				let	by	= r*Math.sin(th)+ay;
+
+
+				circle( bx, by, br ); // パンチ表示
+			}
+
+				this.dir += this.add_r;	
+				this.add_r += this.acc_r;
+				let a = rad(18);
+				if ( this.dir < a ) 
+				{
+					this.add_r	= -this.add_r/2;
+						this.dir = a;
+				}
+//console.log( deg( this.dir ) );
+				this.time++;
 		}
 	}
 
@@ -613,15 +677,15 @@ class ActBite	// 噛みつきアクション
 		this.lim	= 0;
 	}
 	//-----------------------------------------------------------------------------
-	bte_set()
+	bite_set()
 	//-----------------------------------------------------------------------------
 	{// 2	噛付き
 		this.lim	= 8;
-		this.bte_freq	= 4;
-		this.bte_r		= 1.2;
-		this.bte_spd	= 1;
-		this.bte_br_lim	= 8;
-		this.bte_add_r	= 1.0;
+		this.freq	= 4;
+		this.r		= 1.2;
+		this.spd	= 1;
+		this.br_lim	= 8;
+		this.add_r	= 1.0;
 	}
 	//-----------------------------------------------------------------------------
 	bite_update( dx, dy, unit_size, unit_dir )
@@ -630,16 +694,108 @@ class ActBite	// 噛みつきアクション
 		if ( this.lim > 0 )	// 攻撃
 		{
 			this.lim--;
-			if ( (this.lim % this.bte_freq ) == 0 )
+			if ( (this.lim % this.freq ) == 0 )
 			{
 				g_effect.effect_gen( 
 					 dx
 					,dy
-					, this.bte_r
+					, this.r
 					, unit_dir
-					, this.bte_spd
-					, this.bte_br_lim
-					, this.bte_add_r
+					, this.spd
+					, this.br_lim
+					, this.add_r
+				);
+			}
+		}
+	}
+};
+class ActLaser	// レーザー
+{
+	//-----------------------------------------------------------------------------
+	constructor()
+	//-----------------------------------------------------------------------------
+	{
+		this.lim		= 0;		//攻撃リミット
+	}
+	//-----------------------------------------------------------------------------
+	laser_set( num = 1, interval = 1 )
+	//-----------------------------------------------------------------------------
+	{
+		this.lim	= num*interval;
+		this.time	= 0;
+		this.freq	= interval;
+	}
+	//-----------------------------------------------------------------------------
+	laser_update( u1_x, u1_y, u1_size, u1_dir )
+	//-----------------------------------------------------------------------------
+	{
+		if ( this.lim > 0 )	// 攻撃
+		{
+			this.lim--;
+			this.time++;
+
+			if ( (this.lim % this.freq) == 0 )
+			{
+				g_effect.effect_gen( 
+					  u1_x
+					, u1_y
+					, 2
+					, u1_dir
+					, 3	// speed
+					, 50	// lim
+					, 0	// rate scale
+					,1
+				);
+			}
+		}
+	}
+};
+class ActLong	// ロング攻撃
+{
+	//-----------------------------------------------------------------------------
+	constructor()
+	//-----------------------------------------------------------------------------
+	{
+		this.lim	= 0;
+	}
+	//-----------------------------------------------------------------------------
+	long_set( size = 1.2 )
+	//-----------------------------------------------------------------------------
+	{
+		this.lim	= 16;
+		this.time	= 0;
+		this.r		= size;
+		this.spd	= size*1.25;
+		this.br_lim	= 8;
+		this.add_r	= size;
+	}
+	//-----------------------------------------------------------------------------
+	long_update( dx, dy, unit_size, unit_dir )
+	//-----------------------------------------------------------------------------
+	{
+		if ( this.lim > 0 )	// 攻撃
+		{
+			this.lim--;
+			this.time++;
+			if ( this.time == 1 )
+			{
+				g_effect.effect_gen( 
+					 dx
+					,dy
+					, this.r
+					, unit_dir
+					, this.spd
+					, this.br_lim
+					, this.add_r
+				);
+				g_effect.effect_gen( 
+					 dx
+					,dy
+					, this.r
+					, unit_dir
+					, this.spd/2
+					, this.br_lim*2
+					, this.add_r/2
 				);
 			}
 		}
@@ -707,18 +863,18 @@ const ACT_VOLT		=20;	// 電撃	ダメージ＆一定時間動けなくなる。�
 const ACT_DYING		=21;	// 瀕死	激しく大小に脈打つ
 const ACT_QUICK		=22;	// 瞬間移動	すっと小さくなって消え、直線の移動先に今度は大きくなって現れる
 const ACT_SHOT		= 6;	// 投げる	岩を投げるようなイメージ
-
 const ACT_VALKAN	= 7;	// 散弾	ドラゴンが大量の酸の唾を吐くようなイメージ
-const ACT_GEN		= 8;	// 生成	召喚士がモンスターを生成する
+const ACT_SUMMON	= 8;	// 生成	召喚士がモンスターを生成する
+const ACT_LASER	= 9;	// 攻撃	通常攻撃
+const ACT_LONG		=10;	// 剣戟	長い手を伸ばして攻撃
+const ACT_KIAI		=11;	// 気合	噛付いて投げ飛ばす
 
-const ACT_ALPHA		= 0;	// 半透明	薄くなって移動。薄い間は攻撃できないが、ダメージも食らわない
-const ACT_WARP		= 0;	// ワープ	フェードアウトし、別のところからフェードインして現れる
-const ACT_PUSH		= 0;	// 押す	弾き飛ばすけ
-const ACT_JUMP		= 0;	// ジャンプ	踏付け
-const ACT_LONG		= 0;	// 触手	長い手を伸ばして攻撃
-const ACT_GUID		= 0;	// 誘導	誘導属性がある。追尾モンスター生成でも良いかも
-const ACT_BIGBITE	= 0;	// 噛付いて投げ飛ばす
-const ACT_RUN		= 0;	// 遁走	ボスが倒されたり
+const ACT_ALPHA		= 12;	// 半透明	薄くなって移動。薄い間は攻撃できないが、ダメージも食らわない
+const ACT_WARP		= 13;	// ワープ	フェードアウトし、別のところからフェードインして現れる
+const ACT_PUSH		= 14;	// 押す	弾き飛ばすけ
+const ACT_JUMP		= 15;	// ジャンプ	踏付け
+const ACT_GUID		= 16;	// 誘導	誘導属性がある。追尾モンスター生成でも良いかも
+const ACT_RUN		= 17;	// 遁走	ボスが倒されたり
 
 class Unit
 {
@@ -756,19 +912,21 @@ class Unit
 				breath	: new ActBreath,
 				valkan	: new ActValkan,
 				bite	: new ActBite,
+				laser	: new ActLaser,
+				long	: new ActLong,
 				volt	: new ActVolt,
 				dying	: new ActDying,
+				kiai	: new ActKiai,
 				quick	: new ActQuick,
 				shot	: new ActShot,
+				summon	: new ActSummon,
+
 
 				alpha	: new ActTst,
 				warp	: new ActTst,
 				push	: new ActTst,
 				jump	: new ActTst,
-				long	: new ActTst,
 				guid	: new ActTst,
-				bigbite	: new ActTst,
-				summon		: new ActSummon,
 				run		: new ActTst,
 
 			}
@@ -828,34 +986,6 @@ class Unit
 			}
 		}
 		{
-			if ( u1.breath.lim > 0 )
-			{
-				print( u1.x+u1.size+8, u1.y-u1.size+16, "くらえ！焦熱のブレス" );
-			}
-			if ( u1.volt.lim > 0 )
-			{
-				print( u1.x+u1.size+8, u1.y-u1.size+16, "電撃アターック！" );
-			}
-			if ( u1.dying.lim > 0 )
-			{
-				print( u1.x+u1.size+8, u1.y-u1.size+16, "瀕死ぴえん" );
-			}
-			if ( u1.twincle.lim > 0 )
-			{
-				print( u1.x+u1.size+8, u1.y-u1.size+16, "見えないよ～ん" );
-			}
-			if ( u1.punch.lim > 0 )
-			{
-				print( u1.x+u1.size+8, u1.y-u1.size+16, "パンチ～" );
-			}
-			if ( u1.bite.lim > 0 )
-			{
-				print( u1.x+u1.size+8, u1.y-u1.size+16, "咬み咬み" );
-			}
-			if ( u1.quick.lim > 0 )
-			{
-				print( u1.x+u1.size+8, u1.y-u1.size+16, "フフッ" );
-			}
 		}
 
 		let ux = u1.x;
@@ -863,8 +993,45 @@ class Unit
 
 		u1.time+=1;
 
+		if ( u1.breath.lim > 0 )
+		{
+			print( u1.x+u1.size+8, u1.y-u1.size+16, "くらえ！焦熱のブレス" );
+			circle( u1.x, u1.y, er+u1.size );	// 本体表示
+		}
+		else
+		if ( u1.punch.lim > 0 )
+		{
+			print( u1.x+u1.size+8, u1.y-u1.size+16, "パンチ～" );
+			circle( u1.x, u1.y, er+u1.size );	// 本体表示
+		}
+		else
+		if ( u1.bite.lim > 0 )
+		{
+			print( u1.x+u1.size+8, u1.y-u1.size+16, "咬み咬み" );
+			circle( u1.x, u1.y, er+u1.size );	// 本体表示
+		}
+		else
+		if ( u1.laser.lim > 0 )
+		{
+			print( u1.x+u1.size+8, u1.y-u1.size+16, "攻撃" );
+			
+			let r = u1.laser.time*4;
+			let tx = dx + r * Math.cos( u1.dir );
+			let ty = dy + r * Math.sin( u1.dir );
+
+			line( dx, dy, tx, ty );
+			circle( u1.x, u1.y, er+u1.size );	// 本体表示
+		}
+		else
+		if ( u1.long.lim > 0 )
+		{
+			print( u1.x+u1.size+8, u1.y-u1.size+16, "ロング攻撃" );
+			circle( u1.x, u1.y, er+u1.size );	// 本体表示
+		}
+		else
 		if ( u1.quick.lim > 0 ) 					// 高速移動
 		{
+			print( u1.x+u1.size+8, u1.y-u1.size+16, "フフッ" );
 			ux += u1.quick.ax;	
 			uy += u1.quick.ay;	
 			circle( u1.x, u1.y, er+u1.size );	// 本体表示
@@ -872,6 +1039,7 @@ class Unit
 		else
 		if ( u1.summon.lim > 0 ) 					// 電撃
 		{
+			print( u1.x+u1.size+8, u1.y-u1.size+16, "召喚～" );
 
 			if(0)
 			{
@@ -926,6 +1094,7 @@ class Unit
 		else
 		if ( u1.volt.lim > 0 ) 					// 電撃
 		{
+			print( u1.x+u1.size+8, u1.y-u1.size+16, "電撃アターック！" );
 			{
 				let th = 0;
 				let x0 = 0;
@@ -958,6 +1127,7 @@ class Unit
 		else
 		if ( u1.dying.lim > 0 ) 					// 瀕死
 		{
+			print( u1.x+u1.size+8, u1.y-u1.size+16, "瀕死ぴえん" );
 			for ( let i = 0 ; i < u1.dying.lim/2 ; i++ )
 			{
 				const sz = u1.dying.lim*u1.size/32;
@@ -967,8 +1137,70 @@ class Unit
 			}
 		}
 		else
+		if ( u1.kiai.lim > 0 ) 					// 気合
+		{
+			print( u1.x+u1.size+8, u1.y-u1.size+16, "フンッ！" );
+			if ( u1.kiai.time == 1 )
+			{
+				let th = 0;
+				let x0 = 0;
+				let y0 = 0;
+				let x2 = 0;
+				let y2 = 0;
+				let st = rad(30);
+				while( th <= Math.PI*2 )
+				{
+					let t = u1.kiai.time
+					let r = u1.size+t;
+					let sz = rad(6*t);
+					let x1 = r*Math.cos(th) + u1.x;
+					let y1 = r*Math.sin(th) + u1.y;
+					th += st;
+					g_effect.effect_gen( 
+						 x1
+						,y1
+						, 5
+						, th//u1.dir
+						, 1
+						, 20
+						,-0.2
+					);
+				}
+				line( x0,y0,x2,y2);
+			}
+			if ( u1.kiai.time == 10 )
+			{
+				let th = 0;
+				let x0 = 0;
+				let y0 = 0;
+				let x2 = 0;
+				let y2 = 0;
+				let st = rad(30);
+				while( th <= Math.PI*2 )
+				{
+					let t = u1.kiai.time
+					let r = u1.size+t;
+					let sz = rad(6*t);
+					let x1 = r*Math.cos(th) + u1.x;
+					let y1 = r*Math.sin(th) + u1.y;
+					th += st;
+					g_effect.effect_gen( 
+						 x1
+						,y1
+						, 5
+						, th//u1.dir
+						, 0.1
+						, 20
+						,-0.2
+					);
+				}
+				line( x0,y0,x2,y2);
+			}				circle( u1.x, u1.y, er+u1.size );	// 本体表示
+		}
+		else
 		if ( u1.twincle.lim > 0 )
 		{
+			print( u1.x+u1.size+8, u1.y-u1.size+16, "見えないよ～ん" );
 			{
 				let th = 0;
 				let x0 = 0;
@@ -997,18 +1229,21 @@ class Unit
 		}
 		
 		////////////////
-		// update
+		// main_update
 		////////////////
 
 		u1.sword.swd_update( u1.x, u1.y, u1.size, u1.dir );
 		u1.punch.punch_update( u1.x, u1.y, u1.size, u1.dir );
 		u1.twincle.twn_update();
 		u1.bite.bite_update( dx, dy, u1.size, u1.dir );
+		u1.laser.laser_update( dx, dy, u1.size, u1.dir );
+		u1.long.long_update( dx, dy, u1.size, u1.dir );
 		u1.breath.breath_update( dx, dy, u1.size, u1.dir );
 		u1.valkan.valkan_update( dx, dy, u1.size, u1.dir );
 
-		u1.volt.update( u1.x, u1.y, u1.size, u1.dir );	
+		u1.volt.main_update( u1.x, u1.y, u1.size, u1.dir );	
 		u1.dying.dying_update( u1.x, u1.y, u1.size, u1.dir );
+		u1.kiai.kiai_update( u1.x, u1.y, u1.size, u1.dir );
 		u1.quick.quick_update( u1.x, u1.y, u1.size, u1.dir );	
 
 		u1.shot.shot_update( dx, dy, u1.size, u1.dir );	
@@ -1017,9 +1252,7 @@ class Unit
 		u1.warp.tst_update( u1.x, u1.y, u1.size, u1.dir );	
 		u1.push.tst_update( u1.x, u1.y, u1.size, u1.dir );	
 		u1.jump.tst_update( u1.x, u1.y, u1.size, u1.dir );	
-		u1.long.tst_update( u1.x, u1.y, u1.size, u1.dir );	
 		u1.guid.tst_update( u1.x, u1.y, u1.size, u1.dir );	
-		u1.bigbite.tst_update( u1.x, u1.y, u1.size, u1.dir );	
 		u1.run.tst_update( u1.x, u1.y, u1.size, u1.dir );	
 
 		if ( u1.gid == 0 ) return;	// グループID=0 はNONE
@@ -1061,14 +1294,17 @@ class Unit
 				{	// アクション発動
 					let num = act.act_no;
 					if ( num == ACT_TWINCLE	) 	u1.twincle.twn_set( 60 );
-					if ( num == ACT_PUNCH	) 	u1.punch.pnc_set();
+					if ( num == ACT_PUNCH	) 	u1.punch.punch_set();
 					if ( num == ACT_BREATH	)	u1.breath.breath_set();
 					if ( num == ACT_VALKAN	)	u1.valkan.valkan_set();
-					if ( num == ACT_BITE	)	u1.bite.bte_set();
+					if ( num == ACT_BITE	)	u1.bite.bite_set();
+					if ( num == ACT_LASER	)	u1.laser.laser_set();
+					if ( num == ACT_LONG	)	u1.long.long_set( u1.size/8 );
 					if ( num == ACT_SWORD	)	u1.sword.swd_set( 1 );
 
 					if ( num == ACT_VOLT	)	u1.volt.set( 32 );	// 電撃	ダメージ＆一定時間動けなくなる。また近くに連鎖する
 					if ( num == ACT_DYING	)	u1.dying.dying_set();
+					if ( num == ACT_KIAI	)	u1.kiai.kiai_set();	// 気合	噛付いて投げ飛ばす
 					if ( num == ACT_QUICK	)	
 					{
 						if ( u1.quick.lim == 0 )
@@ -1101,14 +1337,12 @@ class Unit
 					}
 
 					if ( num == ACT_SHOT	)	u1.shot.shot_set(2,6);	// 投げる	岩を投げるようなイメージ
-					if ( num == ACT_GEN		)	u1.summon.summon_set(CAST_WOLF, u1.x, u1.y, u1.dir, u1.size );	// 召喚
+					if ( num == ACT_SUMMON		)	u1.summon.summon_set(CAST_WOLF, u1.x, u1.y, u1.dir, u1.size );	// 召喚
 					if ( num == ACT_ALPHA	)	u1.alpha.tst_set();	// 半透明	薄くなって移動。薄い間は攻撃できないが、ダメージも食らわない
 					if ( num == ACT_WARP	)	u1.warp.tst_set();	// ワープ	フェードアウトし、別のところからフェードインして現れる
 					if ( num == ACT_PUSH	)	u1.push.tst_set();	// 押す	弾き飛ばすけ
 					if ( num == ACT_JUMP	)	u1.jump.tst_set();	// ジャンプ	踏付け
-					if ( num == ACT_LONG	)	u1.long.tst_set();	// 触手	長い手を伸ばして攻撃
 					if ( num == ACT_GUID	)	u1.guid.tst_set();	// 誘導	誘導属性がある。追尾モンスター生成でも良いかも
-					if ( num == ACT_BIGBITE	)	u1.bigbite.tst_set();	// 噛付いて投げ飛ばす
 					if ( num == ACT_RUN		)	u1.run.tst_set();	// 遁走	ボスが倒されたり
 				}
 
@@ -1213,10 +1447,10 @@ const CAST_TSTMAN	= 10;	// 人型	テストマン
 const CAST_NINJA	= 11;	// 人型	忍者			クイックな動きと手裏剣
 const CAST_WIBARN	= 12;	// 飛竜	ワイバーン		酸の唾を吐く
 const CAST_SUMMON	= 13;	// 人型	召喚士	召喚
+const CAST_ORC		= 14;	// 人型	オーク
 
 const CAST_BIGMAN	= 0;	// 人型	巨人
 const CAST_TOROL	= 0;	// 人型	トロール
-const CAST_ORC		= 0;	// 人型	オーク
 const CAST_GOBLIN	= 0;	// 人型	ゴブリン	
 const CAST_CYCROPS	= 0;	// 人型	サイクロプス	目からレーザー
 
@@ -1232,7 +1466,7 @@ let g_json_cast =
 	},
 	{
 		name		:"こーぞ",
-		size		:  13+12,	
+		size		:  13,	
 		tblThink	:
 		[
 			{name:""		,act_no:0			,mov_dir:rad(0)	,mov_spd:0.25	, rot_spd:rad(1)	,rate: 0, quant:  0, num:3 },
@@ -1359,9 +1593,9 @@ let g_json_cast =
 			{name:"長距離"	,act_no:ACT_LONG	,mov_dir:rad(   0)	,mov_spd:0.1 	, rot_spd:rad(0.3)	,rate:20, quant: 20, num:3 },
 			{name:"追尾"	,act_no:ACT_GUID	,mov_dir:rad(   0)	,mov_spd:0.1 	, rot_spd:rad(0.3)	,rate:20, quant: 20, num:3 },
 			{name:"電撃"	,act_no:ACT_VOLT	,mov_dir:rad(   0)	,mov_spd:0.1 	, rot_spd:rad(0.3)	,rate:20, quant: 20, num:3 },
-			{name:"嚙み投げ",act_no:ACT_BIGBITE	,mov_dir:rad(   0)	,mov_spd:0.1 	, rot_spd:rad(0.3)	,rate:20, quant: 20, num:3 },
+			{name:"気合"	,act_no:ACT_KIAI	,mov_dir:rad(   0)	,mov_spd:0.1 	, rot_spd:rad(0.3)	,rate:20, quant: 20, num:3 },
 			{name:"散弾"	,act_no:ACT_VALKAN	,mov_dir:rad(   0)	,mov_spd:0.1 	, rot_spd:rad(0.3)	,rate:20, quant: 20, num:3 },
-			{name:"生成"	,act_no:ACT_GEN		,mov_dir:rad(   0)	,mov_spd:0.1 	, rot_spd:rad(0.3)	,rate:20, quant: 20, num:3 },
+			{name:"生成"	,act_no:ACT_SUMMON		,mov_dir:rad(   0)	,mov_spd:0.1 	, rot_spd:rad(0.3)	,rate:20, quant: 20, num:3 },
 			{name:"遁走"	,act_no:ACT_RUN		,mov_dir:rad(   0)	,mov_spd:0.1 	, rot_spd:rad(0.3)	,rate:20, quant: 20, num:3 },
 		]
 	},
@@ -1387,10 +1621,10 @@ let g_json_cast =
 		tblThink	:
 		[
 			{name:""		,act_no:0			,mov_dir:rad(  0)	,mov_spd:0.25	, rot_spd:rad(1.0)	,rate: 0, quant:  0, num:3 },
-			{name:"B"		,act_no:0			,mov_dir:rad(180)	,mov_spd:0.25	, rot_spd:rad(0.2)	,rate:20, quant: 72, num:3 },
-			{name:"R"		,act_no:0			,mov_dir:rad( 60)	,mov_spd:0.25	, rot_spd:rad(0.2)	,rate:20, quant:120, num:3 },
-			{name:"L"		,act_no:0			,mov_dir:rad(-60)	,mov_spd:0.25	, rot_spd:rad(0.2)	,rate:20, quant:120, num:3 },
-			{name:"バルカン",act_no:ACT_VALKAN	,mov_dir:rad(  0)	,mov_spd:0.25	, rot_spd:rad(0.6)	,rate:210, quant:0, num:3 },
+			{name:"R"		,act_no:0			,mov_dir:rad( 90)	,mov_spd:0.75	, rot_spd:rad(0.2)	,rate:20, quant: 72, num:3 },
+			{name:"R"		,act_no:0			,mov_dir:rad( 60)	,mov_spd:0.75	, rot_spd:rad(0.2)	,rate:20, quant:120, num:3 },
+			{name:"L"		,act_no:0			,mov_dir:rad(45)	,mov_spd:0.75	, rot_spd:rad(0.2)	,rate:20, quant:120, num:3 },
+			{name:"バルカン",act_no:ACT_VALKAN	,mov_dir:rad(  0)	,mov_spd:0.25	, rot_spd:rad(0.6)	,rate:10, quant:0, num:3 },
 		]
 	},
 	{
@@ -1404,7 +1638,20 @@ let g_json_cast =
 			{name:"R"		,act_no:0			,mov_dir:rad( 60)	,mov_spd:1.0	, rot_spd:rad(0.8)	,rate:20, quant:36, num:3 },
 			{name:"L"		,act_no:0			,mov_dir:rad( 160)	,mov_spd:0.5	, rot_spd:rad(0.8)	,rate:20, quant:8, num:3 },
 //			{name:"瞬足"	,act_no:ACT_QUICK	,mov_dir:rad(   0)	,mov_spd:0.1 	, rot_spd:rad(28.0)	,rate:4, quant: 30, num:3 },
-			{name:"召喚"	,act_no:ACT_GEN		,mov_dir:rad(  0)	,mov_spd:0.25	, rot_spd:rad(0.3)	,rate:4, quant:0, num:3 },
+			{name:"召喚"	,act_no:ACT_SUMMON	,mov_dir:rad(  0)	,mov_spd:0.25	, rot_spd:rad(0.3)	,rate:4, quant:0, num:3 },
+		]
+	},
+	{
+		name		:"オーク"	,
+		size		: 14,	
+		tblThink	:
+		[
+			{name:""		,act_no:0			,mov_dir:rad(   0)	,mov_spd:0		, rot_spd:rad(1)	,rate: 0, quant:  0, num:3 },
+			{name:"F"		,act_no:0			,mov_dir:rad(   0)	,mov_spd:0.2 	, rot_spd:rad(0.3)	,rate:10, quant: 72, num:3 },
+			{name:"FR"		,act_no:0			,mov_dir:rad(  45)	,mov_spd:0.4	, rot_spd:rad(0.6)	,rate:10, quant: 72, num:3 },
+			{name:"FR"		,act_no:0			,mov_dir:rad(  90)	,mov_spd:0.4	, rot_spd:rad(0.6)	,rate:20, quant: 72, num:3 },
+			{name:"BL"		,act_no:0			,mov_dir:rad(-140)	,mov_spd:0.3	, rot_spd:rad(0.1)	,rate:20, quant: 96, num:3 },
+			{name:"攻撃"	,act_no:ACT_LONG	,mov_dir:rad(   0)	,mov_spd:2.30 	, rot_spd:rad(0.3)	,rate:20, quant: 0, num:3 },
 		]
 	},
 ];
@@ -1413,7 +1660,7 @@ let g_tblCast = new Cast( g_json_cast );
 
 
 //-----------------------------------------------------------------------------
-function update()
+function main_update()
 //-----------------------------------------------------------------------------
 {
 	cls();
@@ -1434,13 +1681,50 @@ function update()
 		}
 	}
 
+	// 月と太陽
+	{
+		function draw_sun( px, py, r0, r1, r2 ) 
+		{ // 太陽
+			circle( px, py, r0 );
+			for ( let th = 0 ; th < Math.PI*2 ; th += rad(30) )
+			{
+				let x1 = r1*Math.cos(th) + px;
+				let y1 = r1*Math.sin(th) + py;
+				let x2 = r2*Math.cos(th) + px;
+				let y2 = r2*Math.sin(th) + py;
+				line( x1, y1, x2, y2 );
+			}
+		}
+		draw_sun( 60, 20, 7, 11, 15 );
+
+		function draw_moon( px, py, r0 ) 
+		{ // 月 29.5日周期で満ち欠け
+			for ( let i = 0 ; i < r0 ; i+=0.5 )
+			{
+				circle( px, py, i );
+			}
+		}
+		draw_moon( 30, 20, 8 );
+	}
+
+	if(0)
+	{ // クリッピング
+		circle( html_canvas.width/2, html_canvas.height/2, 191 );
+	    g.clip();
+	}
+
+
+
+
 	// エフェクト更新
 	g_effect.effect_update();
 
 	// ユニット更新
 	g_unit.unit_updateUnit();
 
-	requestAnimationFrame( update );
+    
+
+	requestAnimationFrame( main_update );
 
 }
 
@@ -1517,6 +1801,19 @@ window.onkeydown = function( ev )
 					u1.y += Math.sin( dir )*spd;
 				}
 			}
+
+			if ( c == KEY_H )	//
+			{
+				u1.kiai.kiai_set();	
+			}
+			if ( c == KEY_J )	//
+			{
+				u1.long.long_set( u1.size/8 );
+			}
+			if ( c == KEY_K )	//
+			{
+				u1.laser.laser_set();
+			}
 			if ( c == KEY_L )	//
 			{
 				u1.summon.summon_set(CAST_WOLF, u1.x, u1.y, u1.dir, u1.size );
@@ -1547,7 +1844,7 @@ window.onkeydown = function( ev )
 			}
 			if ( c == KEY_I )	//噛付き
 			{
-				u1.bite.bte_set();
+				u1.bite.bite_set();
 			}
 			if ( c == KEY_O )	// ブレス
 			{
@@ -1555,7 +1852,7 @@ window.onkeydown = function( ev )
 			}
 			if ( c == KEY_P )	//パンチ
 			{
-				u1.punch.pnc_set();
+				u1.punch.punch_set();
 			}
 			if ( c == KEY_U )	//点滅
 			{
@@ -1589,13 +1886,13 @@ window.onkeydown = function( ev )
 	{//ユニット配置
 
 		let tbl=[
-			[0,0,0,9,0,0,0],
-			[0,0,9,3,9,0,0],
+			[9,9,0,9,0,9,9],
+			[9,0,9,3,9,0,9],
 			[0,0,0,9,0,0,0],
 			[0,4,0,0,0,4,0],
 			[0,0,0,9,0,0,0],
-			[0,9,9,1,9,9,0],
-			[9,0,9,9,9,0,9],
+			[9,0,9,1,9,0,9],
+			[9,9,9,9,9,9,9],
 		];
 
 
@@ -1661,12 +1958,13 @@ window.onkeydown = function( ev )
 
 					case 2: // 雑魚
 						{
-break;
+//break;
 //							let cast = g_tblCast.tbl[ CAST_WOLF ];
 //							let cast = g_tblCast.tbl[ CAST_GHOST ];
 //							let cast = g_tblCast.tbl[ CAST_ZOMBIE ];
 //							let cast = g_tblCast.tbl[ CAST_SWORDMAN ];
-							let cast = g_tblCast.tbl[ CAST_NINJA ];
+//							let cast = g_tblCast.tbl[ CAST_NINJA ];
+							let cast = g_tblCast.tbl[ CAST_ORC ];
 							g_unit.unit_create( 0, 2, px, py, cast.size, rad(90), cast.tblThink, cast.name, cast.talk );
 						}
 						break;
@@ -1688,12 +1986,12 @@ break;
 //							let cast = g_tblCast.tbl[ CAST_GHOST ];
 //							let cast = g_tblCast.tbl[ CAST_SWORDMAN ];
 //							let cast = g_tblCast.tbl[ CAST_DRAGON ];
-//							let cast = g_tblCast.tbl[ CAST_MINO ];
+							let cast = g_tblCast.tbl[ CAST_MINO ];
 //							let cast = g_tblCast.tbl[ CAST_SWORDMAN ];
 //							let cast = g_tblCast.tbl[ CAST_TSTMAN ];
 //							let cast = g_tblCast.tbl[ CAST_NINJA ];
 //							let cast = g_tblCast.tbl[ CAST_WIBARN ];
-							let cast = g_tblCast.tbl[ CAST_SUMMON ];
+//							let cast = g_tblCast.tbl[ CAST_SUMMON ];
 							g_unit.unit_create( 1, 2, px, py, cast.size, rad(90), cast.tblThink, cast.name, cast.talk );
 						}
 						break;
@@ -1705,5 +2003,5 @@ break;
 		}
 	}
 
-requestAnimationFrame( update );
+requestAnimationFrame( main_update );
 
