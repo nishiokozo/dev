@@ -169,6 +169,52 @@ class ActTst
 	}
 };
 
+class ActSummon
+{
+	//-----------------------------------------------------------------------------
+	constructor()
+	//-----------------------------------------------------------------------------
+	{
+		this.lim		= 0;		//攻撃リミット
+	}
+	//-----------------------------------------------------------------------------
+	summon_set( cast_no, u1_x, u1_y, u1_dir, u1_size  )
+	//-----------------------------------------------------------------------------
+	{
+		this.lim	= 60;
+		this.time	= 0;
+		this.cast	= g_tblCast.tbl[ cast_no ];
+
+		let	dx = (u1_size*0.8) * Math.cos( u1_dir ) + u1_x;
+		let	dy = (u1_size*0.8) * Math.sin( u1_dir ) + u1_y;
+
+		this.r0 = u1_size*0.2;
+		this.r1 = this.cast.size;
+		this.x0 = dx;
+		this.y0 = dy;
+		this.x1 = dx + Math.cos( u1_dir ) * (u1_size + this.cast.size);
+		this.y1 = dy + Math.sin( u1_dir ) * (u1_size + this.cast.size);
+//		let t = this.time / ( this.time + this.lim );
+
+	}
+	//-----------------------------------------------------------------------------
+	summon_update( u1_x, u1_y, u1_size, u1_dir )
+	//-----------------------------------------------------------------------------
+	{
+		if ( this.lim > 0 )	// 攻撃
+		{
+			this.lim--;
+			this.time++;
+
+			if ( this.lim == 0 )
+			{
+				let px = this.x1;
+				let py = this.y1;
+				g_unit.unit_create( 0, 2, px, py, this.cast.size, u1_dir, this.cast.tblThink, this.cast.name, this.cast.talk );
+			}
+		}
+	}
+};
 class ActShot
 {
 	//-----------------------------------------------------------------------------
@@ -475,43 +521,6 @@ class ActBreath	// ブレス攻撃アクション
 	{
 		this.lim	= 0;
 	}
-/*
-	//-----------------------------------------------------------------------------
-	breath_set()
-	//-----------------------------------------------------------------------------
-	{
-		this.lim	= 80;
-		this.brt_freq	= 2;
-		this.brt_dir	= rad(-30);
-		this.brt_rot	= rad(2);
-		this.brt_r		= 3.2;
-		this.brt_spd	= 2;
-		this.brt_br_lim	= 40;
-		this.brt_add_r	= 32*0.005;
-	}
-	//-----------------------------------------------------------------------------
-	breath_update( dx, dy, unit_size, unit_dir )
-	//-----------------------------------------------------------------------------
-	{
-		if ( this.lim > 0 )	// 攻撃
-		{
-			this.lim--;
-			if ( (this.lim % this.brt_freq ) == 0 )
-			{
-				this.brt_dir += this.brt_rot;
-				g_effect.effect_gen( 
-					  dx
-					, dy
-					, this.brt_r
-					, this.brt_dir + unit_dir
-					, this.brt_spd
-					, this.brt_br_lim
-					, this.brt_add_r
-				);
-			}
-		}
-	}
-*/
 	//-----------------------------------------------------------------------------
 	breath_set()
 	//-----------------------------------------------------------------------------
@@ -536,8 +545,6 @@ class ActBreath	// ブレス攻撃アクション
 			this.time++
 			if ( (this.time % this.freq ) == 0 )
 			{
-//				this.dir += this.rot;
-//				this.dir = rad(30)-Math.cos( rad(this.time*1) );
 				g_effect.effect_gen( 
 					  dx
 					, dy
@@ -566,12 +573,6 @@ class ActValkan	// バルカン砲え
 		this.lim	= 40;
 		this.time	= 0;
 		this.freq	= 2;
-//		this.dir	= rad(-0);
-//		this.rot	= rad(2);
-//		this.r		= 5.2;
-//		this.spd	= 2;
-//		this.br_lim	= 60/2;
-//		this.add_r	= -0.08;//32*0.005;
 	}
 	//-----------------------------------------------------------------------------
 	valkan_update( dx, dy, unit_size, unit_dir )
@@ -708,6 +709,7 @@ const ACT_QUICK		=22;	// 瞬間移動	すっと小さくなって消え、直線
 const ACT_SHOT		= 6;	// 投げる	岩を投げるようなイメージ
 
 const ACT_VALKAN	= 7;	// 散弾	ドラゴンが大量の酸の唾を吐くようなイメージ
+const ACT_GEN		= 8;	// 生成	召喚士がモンスターを生成する
 
 const ACT_ALPHA		= 0;	// 半透明	薄くなって移動。薄い間は攻撃できないが、ダメージも食らわない
 const ACT_WARP		= 0;	// ワープ	フェードアウトし、別のところからフェードインして現れる
@@ -716,7 +718,6 @@ const ACT_JUMP		= 0;	// ジャンプ	踏付け
 const ACT_LONG		= 0;	// 触手	長い手を伸ばして攻撃
 const ACT_GUID		= 0;	// 誘導	誘導属性がある。追尾モンスター生成でも良いかも
 const ACT_BIGBITE	= 0;	// 噛付いて投げ飛ばす
-const ACT_GEN		= 0;	// 生成	召喚士がモンスターを生成する
 const ACT_RUN		= 0;	// 遁走	ボスが倒されたり
 
 class Unit
@@ -767,7 +768,7 @@ class Unit
 				long	: new ActTst,
 				guid	: new ActTst,
 				bigbite	: new ActTst,
-				gen		: new ActTst,
+				summon		: new ActSummon,
 				run		: new ActTst,
 
 			}
@@ -779,19 +780,6 @@ class Unit
 	unit_update( u1 )
 	//-----------------------------------------------------------------------------
 	{
-/*
-		if ( u1.prev_x != u1.x || u1.prev_y != u1.y )
-		{
-			u1.prev_x = u1.x;
-			u1.prev_y = u1.y;
-		}
-*/
-		if ( u1.quick.lim>0)
-		{
-		//	circle( u1.quick.tx, u1.quick.ty,u1.quick.size/2);
-		//	print(u1.quick.tx, u1.quick.ty, "☆"+u1.name);
-		}
-
 		////////////////
 		// 表示
 		////////////////
@@ -882,6 +870,60 @@ class Unit
 			circle( u1.x, u1.y, er+u1.size );	// 本体表示
 		}
 		else
+		if ( u1.summon.lim > 0 ) 					// 電撃
+		{
+
+			if(0)
+			{
+				let th = 0;
+				let x0 = 0;
+				let y0 = 0;
+				let x2 = 0;
+				let y2 = 0;
+				let sz = u1.summon.lim/8;
+				let st = rad(8);
+				while( th < Math.PI*2 )
+				{
+					let r = u1.size+rand(1)*sz;
+					let x1 = r*Math.cos(th) + u1.x;
+					let y1 = r*Math.sin(th) + u1.y;
+					if ( x2 == 0 ) 
+					{
+						x0 = x1;
+						y0 = y1;
+					}
+					else
+					{
+						line( x1,y1,x2,y2);
+					}
+					x2 = x1;
+					y2 = y1;
+					th += st;
+				}
+				line( x0,y0,x2,y2);
+			}
+			else
+			{
+				for ( let i = 0 ; i < u1.summon.lim/8 ; i++ )
+				{
+					const sz = u1.summon.lim*u1.size/32/2;
+					let x = rand(3)*sz-sz/2;
+					let y = rand(3)*sz-sz/2;
+					circle( u1.x+x, u1.y+y, er+u1.size );	// 本体表示
+				}
+			}
+
+			let s = u1.summon;
+			let t = s.time / ( s.time + s.lim );
+			let x = (s.x1-s.x0)*t + s.x0;
+			let y = (s.y1-s.y0)*t + s.y0;
+			let r = (s.r1-s.r0)*t + s.r0;
+
+				circle( x, y, r );	// 本体表示
+
+//				circle( u1.x, u1.y, er+u1.size );	// 本体表示
+		}
+		else
 		if ( u1.volt.lim > 0 ) 					// 電撃
 		{
 			{
@@ -970,6 +1012,7 @@ class Unit
 		u1.quick.quick_update( u1.x, u1.y, u1.size, u1.dir );	
 
 		u1.shot.shot_update( dx, dy, u1.size, u1.dir );	
+		u1.summon.summon_update( dx, dy, u1.size, u1.dir );	
 		u1.alpha.tst_update( u1.x, u1.y, u1.size, u1.dir );	
 		u1.warp.tst_update( u1.x, u1.y, u1.size, u1.dir );	
 		u1.push.tst_update( u1.x, u1.y, u1.size, u1.dir );	
@@ -977,7 +1020,6 @@ class Unit
 		u1.long.tst_update( u1.x, u1.y, u1.size, u1.dir );	
 		u1.guid.tst_update( u1.x, u1.y, u1.size, u1.dir );	
 		u1.bigbite.tst_update( u1.x, u1.y, u1.size, u1.dir );	
-		u1.gen.tst_update( u1.x, u1.y, u1.size, u1.dir );	
 		u1.run.tst_update( u1.x, u1.y, u1.size, u1.dir );	
 
 		if ( u1.gid == 0 ) return;	// グループID=0 はNONE
@@ -1059,6 +1101,7 @@ class Unit
 					}
 
 					if ( num == ACT_SHOT	)	u1.shot.shot_set(2,6);	// 投げる	岩を投げるようなイメージ
+					if ( num == ACT_GEN		)	u1.summon.summon_set(CAST_WOLF, u1.x, u1.y, u1.dir, u1.size );	// 召喚
 					if ( num == ACT_ALPHA	)	u1.alpha.tst_set();	// 半透明	薄くなって移動。薄い間は攻撃できないが、ダメージも食らわない
 					if ( num == ACT_WARP	)	u1.warp.tst_set();	// ワープ	フェードアウトし、別のところからフェードインして現れる
 					if ( num == ACT_PUSH	)	u1.push.tst_set();	// 押す	弾き飛ばすけ
@@ -1066,7 +1109,6 @@ class Unit
 					if ( num == ACT_LONG	)	u1.long.tst_set();	// 触手	長い手を伸ばして攻撃
 					if ( num == ACT_GUID	)	u1.guid.tst_set();	// 誘導	誘導属性がある。追尾モンスター生成でも良いかも
 					if ( num == ACT_BIGBITE	)	u1.bigbite.tst_set();	// 噛付いて投げ飛ばす
-					if ( num == ACT_GEN		)	u1.gen.tst_set();	// 生成	召喚士がモンスターを生成する
 					if ( num == ACT_RUN		)	u1.run.tst_set();	// 遁走	ボスが倒されたり
 				}
 
@@ -1117,10 +1159,6 @@ class Unit
 						u1.x = ux;
 						u1.y = uy;
 					}
-//					else
-//					{
-//						if ( u1.quick.lim > 0 ) u1.quick.lim = 0;
-//					}
 					
 				}
 			}
@@ -1174,6 +1212,7 @@ const CAST_SWORDMAN	= 9;	// 人型	ソードマン
 const CAST_TSTMAN	= 10;	// 人型	テストマン
 const CAST_NINJA	= 11;	// 人型	忍者			クイックな動きと手裏剣
 const CAST_WIBARN	= 12;	// 飛竜	ワイバーン		酸の唾を吐く
+const CAST_SUMMON	= 13;	// 人型	召喚士	召喚
 
 const CAST_BIGMAN	= 0;	// 人型	巨人
 const CAST_TOROL	= 0;	// 人型	トロール
@@ -1354,6 +1393,20 @@ let g_json_cast =
 			{name:"バルカン",act_no:ACT_VALKAN	,mov_dir:rad(  0)	,mov_spd:0.25	, rot_spd:rad(0.6)	,rate:210, quant:0, num:3 },
 		]
 	},
+	{
+		name		:"召喚士"	,
+		size		: 12,	
+		tblThink	:
+		[
+			{name:""		,act_no:0			,mov_dir:rad(  0)	,mov_spd:0.0	, rot_spd:rad(0.0)	,rate: 0, quant:  0, num:3 },
+			{name:"B"		,act_no:0			,mov_dir:rad( 120)	,mov_spd:0.75	, rot_spd:rad(0.8)	,rate:20, quant: 8, num:3 },
+			{name:"B"		,act_no:0			,mov_dir:rad(  90)	,mov_spd:1.25	, rot_spd:rad(0.8)	,rate:20, quant: 36, num:3 },
+			{name:"R"		,act_no:0			,mov_dir:rad( 60)	,mov_spd:1.0	, rot_spd:rad(0.8)	,rate:20, quant:36, num:3 },
+			{name:"L"		,act_no:0			,mov_dir:rad( 160)	,mov_spd:0.5	, rot_spd:rad(0.8)	,rate:20, quant:8, num:3 },
+//			{name:"瞬足"	,act_no:ACT_QUICK	,mov_dir:rad(   0)	,mov_spd:0.1 	, rot_spd:rad(28.0)	,rate:4, quant: 30, num:3 },
+			{name:"召喚"	,act_no:ACT_GEN		,mov_dir:rad(  0)	,mov_spd:0.25	, rot_spd:rad(0.3)	,rate:4, quant:0, num:3 },
+		]
+	},
 ];
 
 let g_tblCast = new Cast( g_json_cast );
@@ -1463,6 +1516,10 @@ window.onkeydown = function( ev )
 					u1.x += Math.cos( dir )*spd;
 					u1.y += Math.sin( dir )*spd;
 				}
+			}
+			if ( c == KEY_L )	//
+			{
+				u1.summon.summon_set(CAST_WOLF, u1.x, u1.y, u1.dir, u1.size );
 			}
 			if ( c == KEY_E )	//
 			{
@@ -1604,7 +1661,7 @@ window.onkeydown = function( ev )
 
 					case 2: // 雑魚
 						{
-//break;
+break;
 //							let cast = g_tblCast.tbl[ CAST_WOLF ];
 //							let cast = g_tblCast.tbl[ CAST_GHOST ];
 //							let cast = g_tblCast.tbl[ CAST_ZOMBIE ];
@@ -1635,7 +1692,8 @@ break;
 //							let cast = g_tblCast.tbl[ CAST_SWORDMAN ];
 //							let cast = g_tblCast.tbl[ CAST_TSTMAN ];
 //							let cast = g_tblCast.tbl[ CAST_NINJA ];
-							let cast = g_tblCast.tbl[ CAST_WIBARN ];
+//							let cast = g_tblCast.tbl[ CAST_WIBARN ];
+							let cast = g_tblCast.tbl[ CAST_SUMMON ];
 							g_unit.unit_create( 1, 2, px, py, cast.size, rad(90), cast.tblThink, cast.name, cast.talk );
 						}
 						break;
