@@ -94,6 +94,18 @@ function rand( n ) // n=3以上が正規分布
 	for ( j = 0 ; j < n ; j++ ) r += Math.random();
 	return r/n;
 }
+//-----------------------------------------------------------------------------
+function m100_cos( n ) // 100量子化cos n:0~99
+//-----------------------------------------------------------------------------
+{
+	return Math.cos(n/100*Math.PI);
+}
+//-----------------------------------------------------------------------------
+function m100_cos( n ) // 100量子化sin n:0~99
+//-----------------------------------------------------------------------------
+{
+	return Math.sin(n/100*Math.PI);
+}
 
 class Effect
 {
@@ -369,6 +381,32 @@ class ActDying
 		}
 	}
 };
+class ActSleep
+{
+	//-----------------------------------------------------------------------------
+	constructor()
+	//-----------------------------------------------------------------------------
+	{
+		this.lim		= 0;		//攻撃リミット
+	}
+	//-----------------------------------------------------------------------------
+	sleep_set()
+	//-----------------------------------------------------------------------------
+	{
+		this.lim		= 60*10;
+		this.time		= 0;
+	}
+	//-----------------------------------------------------------------------------
+	sleep_update( u1_x, u1_y, u1_size, u1_dir )
+	//-----------------------------------------------------------------------------
+	{
+		if ( this.lim > 0 )	// 攻撃
+		{
+			this.lim--;
+			this.time++;
+		}
+	}
+};
 class ActKiai
 {
 	//-----------------------------------------------------------------------------
@@ -543,8 +581,13 @@ class ActPunch	// パンチ攻撃アクション
 			this.lim--;
 			let sz = unit_size;
 			let br = unit_size/2;
-
+			br = this.time;
+			if ( br > unit_size/2 ) 
+			{
+				br = unit_size/2;
+			}
 			let r	= (br+unit_size);
+			
 			{
 				let th	= unit_dir+this.dir;
 				let	bx	= r*Math.cos(th)+ax;
@@ -555,7 +598,6 @@ class ActPunch	// パンチ攻撃アクション
 			}
 			{
 				let th	= unit_dir-this.dir;
-//				let r	= unit_size*1.3;
 				let	bx	= r*Math.cos(th)+ax;
 				let	by	= r*Math.sin(th)+ay;
 
@@ -565,10 +607,10 @@ class ActPunch	// パンチ攻撃アクション
 
 				this.dir += this.add_r;	
 				this.add_r += this.acc_r;
-				let a = rad(18);
+				let a = rad(19);
 				if ( this.dir < a ) 
 				{
-					this.add_r	= -this.add_r/2;
+					this.add_r	= -this.add_r/2.6;
 						this.dir = a;
 				}
 //console.log( deg( this.dir ) );
@@ -868,13 +910,14 @@ const ACT_SUMMON	= 8;	// 生成	召喚士がモンスターを生成する
 const ACT_LASER	= 9;	// 攻撃	通常攻撃
 const ACT_LONG		=10;	// 剣戟	長い手を伸ばして攻撃
 const ACT_KIAI		=11;	// 気合	噛付いて投げ飛ばす
+const ACT_SLEEP		=18;	// 遁走	ボスが倒されたり
 
-const ACT_ALPHA		= 12;	// 半透明	薄くなって移動。薄い間は攻撃できないが、ダメージも食らわない
-const ACT_WARP		= 13;	// ワープ	フェードアウトし、別のところからフェードインして現れる
-const ACT_PUSH		= 14;	// 押す	弾き飛ばすけ
-const ACT_JUMP		= 15;	// ジャンプ	踏付け
-const ACT_GUID		= 16;	// 誘導	誘導属性がある。追尾モンスター生成でも良いかも
-const ACT_RUN		= 17;	// 遁走	ボスが倒されたり
+const ACT_ALPHA		=12;	// 半透明	薄くなって移動。薄い間は攻撃できないが、ダメージも食らわない
+const ACT_WARP		=13;	// ワープ	フェードアウトし、別のところからフェードインして現れる
+const ACT_PUSH		=14;	// 押す	弾き飛ばすけ
+const ACT_JUMP		=15;	// ジャンプ	踏付け
+const ACT_GUID		=16;	// 誘導	誘導属性がある。追尾モンスター生成でも良いかも
+const ACT_RUN		=17;	// 遁走	ボスが倒されたり
 
 class Unit
 {
@@ -916,6 +959,7 @@ class Unit
 				long	: new ActLong,
 				volt	: new ActVolt,
 				dying	: new ActDying,
+				sleep	: new ActSleep,
 				kiai	: new ActKiai,
 				quick	: new ActQuick,
 				shot	: new ActShot,
@@ -944,11 +988,11 @@ class Unit
 
 		let	er = Math.cos(rad(u1.time*10))*0.6;
 		let dx,dy;
-		if(1)
+		if(1) // 目表示
 		{
-			dx = (u1.size*0.8) * Math.cos( u1.dir ) + u1.x;
-			dy = (u1.size*0.8) * Math.sin( u1.dir ) + u1.y;
-			circle( dx,dy,(u1.size*0.2) );
+			let r = u1.size*0.8 + er;
+			dx = r * Math.cos( u1.dir ) + u1.x;
+			dy = r * Math.sin( u1.dir ) + u1.y;
 		}
 		else
 		{
@@ -997,18 +1041,24 @@ class Unit
 		{
 			print( u1.x+u1.size+8, u1.y-u1.size+16, "くらえ！焦熱のブレス" );
 			circle( u1.x, u1.y, er+u1.size );	// 本体表示
+			circle( dx,dy,(u1.size*0.2) );		// 口、目表示
+
 		}
 		else
 		if ( u1.punch.lim > 0 )
 		{
 			print( u1.x+u1.size+8, u1.y-u1.size+16, "パンチ～" );
 			circle( u1.x, u1.y, er+u1.size );	// 本体表示
+			circle( dx,dy,(u1.size*0.2) );		// 口、目表示
+
 		}
 		else
 		if ( u1.bite.lim > 0 )
 		{
 			print( u1.x+u1.size+8, u1.y-u1.size+16, "咬み咬み" );
 			circle( u1.x, u1.y, er+u1.size );	// 本体表示
+			circle( dx,dy,(u1.size*0.2) );		// 口、目表示
+
 		}
 		else
 		if ( u1.laser.lim > 0 )
@@ -1021,12 +1071,16 @@ class Unit
 
 			line( dx, dy, tx, ty );
 			circle( u1.x, u1.y, er+u1.size );	// 本体表示
+			circle( dx,dy,(u1.size*0.2) );		// 口、目表示
+
 		}
 		else
 		if ( u1.long.lim > 0 )
 		{
 			print( u1.x+u1.size+8, u1.y-u1.size+16, "ロング攻撃" );
 			circle( u1.x, u1.y, er+u1.size );	// 本体表示
+			circle( dx,dy,(u1.size*0.2) );		// 口、目表示
+
 		}
 		else
 		if ( u1.quick.lim > 0 ) 					// 高速移動
@@ -1035,6 +1089,8 @@ class Unit
 			ux += u1.quick.ax;	
 			uy += u1.quick.ay;	
 			circle( u1.x, u1.y, er+u1.size );	// 本体表示
+			circle( dx,dy,(u1.size*0.2) );		// 口、目表示
+
 		}
 		else
 		if ( u1.summon.lim > 0 ) 					// 電撃
@@ -1078,6 +1134,7 @@ class Unit
 					let x = rand(3)*sz-sz/2;
 					let y = rand(3)*sz-sz/2;
 					circle( u1.x+x, u1.y+y, er+u1.size );	// 本体表示
+					circle( dx,dy,(u1.size*0.2) );		// 口、目表示
 				}
 			}
 
@@ -1087,7 +1144,8 @@ class Unit
 			let y = (s.y1-s.y0)*t + s.y0;
 			let r = (s.r1-s.r0)*t + s.r0;
 
-				circle( x, y, r );	// 本体表示
+			circle( x, y, r );	// 本体表示
+			circle( dx,dy,(u1.size*0.2) );		// 口、目表示
 
 //				circle( u1.x, u1.y, er+u1.size );	// 本体表示
 		}
@@ -1134,6 +1192,32 @@ class Unit
 				let x = rand(3)*sz-sz/2;
 				let y = rand(3)*sz-sz/2;
 				circle( u1.x+x, u1.y+y, er+u1.size );	// 本体表示
+			}
+		}
+		else
+		if ( u1.sleep.lim > 0 ) 					// 睡眠
+		{
+			print( u1.x+u1.size+8, u1.y-u1.size+16, "Zzz..." );
+
+			er = Math.cos(rad(u1.sleep.time*5))*1.8+er;
+			let r = u1.size*0.8 + er;
+			dx = r * Math.cos( u1.dir ) + u1.x;
+			dy = r * Math.sin( u1.dir ) + u1.y;
+			circle( u1.x, u1.y, er+u1.size );	// 本体表示
+			circle( dx,dy,(u1.size*0.2) );		// 口、目表示
+
+			if ( (u1.sleep.time % 48) == 0 )
+			{
+					g_effect.effect_gen( 
+						 dx
+						,dy
+						, u1.size*0.2
+						, u1.dir-rad(45)
+						, 0.25
+						, 80
+						, 0.05
+						,0
+					);
 			}
 		}
 		else
@@ -1195,7 +1279,9 @@ class Unit
 					);
 				}
 				line( x0,y0,x2,y2);
-			}				circle( u1.x, u1.y, er+u1.size );	// 本体表示
+			}
+			circle( u1.x, u1.y, er+u1.size );	// 本体表示
+			circle( dx,dy,(u1.size*0.2) );		// 口、目表示
 		}
 		else
 		if ( u1.twincle.lim > 0 )
@@ -1225,7 +1311,8 @@ class Unit
 		}
 		else
 		{
-				circle( u1.x, u1.y, er+u1.size );	// 本体表示
+			circle( u1.x, u1.y, er+u1.size );	// 本体表示
+			circle( dx,dy,(u1.size*0.2) );		// 口、目表示
 		}
 		
 		////////////////
@@ -1243,6 +1330,7 @@ class Unit
 
 		u1.volt.main_update( u1.x, u1.y, u1.size, u1.dir );	
 		u1.dying.dying_update( u1.x, u1.y, u1.size, u1.dir );
+		u1.sleep.sleep_update( u1.x, u1.y, u1.size, u1.dir );
 		u1.kiai.kiai_update( u1.x, u1.y, u1.size, u1.dir );
 		u1.quick.quick_update( u1.x, u1.y, u1.size, u1.dir );	
 
@@ -1254,6 +1342,7 @@ class Unit
 		u1.jump.tst_update( u1.x, u1.y, u1.size, u1.dir );	
 		u1.guid.tst_update( u1.x, u1.y, u1.size, u1.dir );	
 		u1.run.tst_update( u1.x, u1.y, u1.size, u1.dir );	
+
 
 		if ( u1.gid == 0 ) return;	// グループID=0 はNONE
 		if ( u1.gid == 1 ) return;	// グループID=1 はPlayer
@@ -1304,6 +1393,7 @@ class Unit
 
 					if ( num == ACT_VOLT	)	u1.volt.set( 32 );	// 電撃	ダメージ＆一定時間動けなくなる。また近くに連鎖する
 					if ( num == ACT_DYING	)	u1.dying.dying_set();
+					if ( num == ACT_SLEEP	)	u1.sleep.sleep_set();
 					if ( num == ACT_KIAI	)	u1.kiai.kiai_set();	// 気合	噛付いて投げ飛ばす
 					if ( num == ACT_QUICK	)	
 					{
@@ -1802,6 +1892,10 @@ window.onkeydown = function( ev )
 				}
 			}
 
+			if ( c == KEY_G )	//
+			{
+				u1.sleep.sleep_set();	
+			}
 			if ( c == KEY_H )	//
 			{
 				u1.kiai.kiai_set();	
