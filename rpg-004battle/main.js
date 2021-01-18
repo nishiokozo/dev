@@ -1,4 +1,38 @@
 let g=html_canvas.getContext('2d');
+
+//-----------------------------------------------------------------------------
+function streachImage2Canvas( img )
+//-----------------------------------------------------------------------------
+{
+	// -----------------------------------------
+	// ImageDataをcanvasに合成
+	// -----------------------------------------
+	// g   : html_canvas.getContext('2d')
+	// img : g.createImageData( width, height )
+
+	g.imageSmoothingEnabled = g.msImageSmoothingEnabled = 0; // スムージングOFF
+
+	{
+	// 引き伸ばして表示
+	    let cv=document.createElement('canvas');				// 新たに<canvas>タグを生成
+	    cv.width=img.width;
+	    cv.height=img.height;
+		cv.getContext("2d").putImageData(img,0,0);				// 作成したcanvasにImageDataをコピー
+		{
+			let sx = 0;
+			let sy = 0;
+			let sw = img.width;
+			let sh = img.height;
+			let dx = 0;
+			let dy = 0;
+			let dw = 640;
+			let dh = 400;
+			g.drawImage( cv,sx,sy,sw,sh,dx,dy,dw,dh);	// ImageDataは引き延ばせないけど、Imageは引き延ばせる
+		}
+		
+	}
+}
+
 //-----------------------------------------------------------------------------
 function rad( v )
 //-----------------------------------------------------------------------------
@@ -21,6 +55,45 @@ let box = function( sx,sy, ex,ey )
 	g.closePath();
 	g.stroke();
 
+}
+//-----------------------------------------------------------------------------
+let fill_hach= function( sx,sy, ex,ey, step )
+//-----------------------------------------------------------------------------
+{
+//	box(sx,sy,ex,ey);
+	let w = ex-sx;
+	let h = ey-sy;
+	for ( let x = -w ; x <= w ; x+=step )
+	{
+		let x1 = x;
+		let y1 = 0;
+		let x2 = x+w;
+		let y2 = h;
+		if ( x1 < 0 ) 
+		{
+			x1 = 0;
+			y1 = h-(x+w) * (h/w);
+		}
+		if ( x2 > w ) 
+		{
+			x2 = w;
+			y2 = h-(x) * (h/w);
+		}
+		// 左上がりストライプ
+		line( 
+			 sx+x1
+			,sy+y1
+			,sx+x2
+			,sy+y2
+		);
+		// 右上がりストライプ
+		line( 
+			 sx+x1
+			,sy+(h-y1)
+			,sx+x2
+			,sy+(h-y2)
+		);
+	}
 }
 //-----------------------------------------------------------------------------
 let fill= function( sx,sy, ex,ey )
@@ -223,8 +296,6 @@ class ActSummon
 		this.y0 = dy;
 		this.x1 = dx + Math.cos( u1_dir ) * (u1_size + this.cast.size);
 		this.y1 = dy + Math.sin( u1_dir ) * (u1_size + this.cast.size);
-//		let t = this.time / ( this.time + this.lim );
-
 	}
 	//-----------------------------------------------------------------------------
 	summon_update( u1_x, u1_y, u1_size, u1_dir )
@@ -340,13 +411,13 @@ class ActVolt
 		this.lim		= 0;		//攻撃リミット
 	}
 	//-----------------------------------------------------------------------------
-	set( lim  )
+	volt_set( lim  )
 	//-----------------------------------------------------------------------------
 	{
 		this.lim		= lim;
 	}
 	//-----------------------------------------------------------------------------
-	main_update( u1_x, u1_y, u1_size, u1_dir )
+	volt_update( u1_x, u1_y, u1_size, u1_dir )
 	//-----------------------------------------------------------------------------
 	{
 		if ( this.lim > 0 )	// 攻撃
@@ -760,7 +831,7 @@ class ActLaser	// レーザー
 		this.lim		= 0;		//攻撃リミット
 	}
 	//-----------------------------------------------------------------------------
-	laser_set( num = 1, interval = 1 )
+	bow_set( num = 1, interval = 1 )
 	//-----------------------------------------------------------------------------
 	{
 		this.lim	= num*interval;
@@ -768,7 +839,7 @@ class ActLaser	// レーザー
 		this.freq	= interval;
 	}
 	//-----------------------------------------------------------------------------
-	laser_update( u1_x, u1_y, u1_size, u1_dir )
+	bow_update( u1_x, u1_y, u1_size, u1_dir )
 	//-----------------------------------------------------------------------------
 	{
 		if ( this.lim > 0 )	// 攻撃
@@ -887,9 +958,9 @@ class Cast
 				t.ratio /= amt;
 			}
 		}
-		for ( let t of this.tbl )
+		for ( let key of Object.keys(this.tbl) )
 		{
-			makeratio( t.tblThink );
+			makeratio( this.tbl[key].tblThink );
 		}
 
 	}
@@ -907,7 +978,7 @@ const ACT_QUICK		=22;	// 瞬間移動	すっと小さくなって消え、直線
 const ACT_SHOT		= 6;	// 投げる	岩を投げるようなイメージ
 const ACT_VALKAN	= 7;	// 散弾	ドラゴンが大量の酸の唾を吐くようなイメージ
 const ACT_SUMMON	= 8;	// 生成	召喚士がモンスターを生成する
-const ACT_LASER	= 9;	// 攻撃	通常攻撃
+const ACT_BOW		= 9;	// 攻撃	通常攻撃
 const ACT_LONG		=10;	// 剣戟	長い手を伸ばして攻撃
 const ACT_KIAI		=11;	// 気合	噛付いて投げ飛ばす
 const ACT_SLEEP		=18;	// 遁走	ボスが倒されたり
@@ -955,7 +1026,7 @@ class Unit
 				breath	: new ActBreath,
 				valkan	: new ActValkan,
 				bite	: new ActBite,
-				laser	: new ActLaser,
+				bow		: new ActLaser,
 				long	: new ActLong,
 				volt	: new ActVolt,
 				dying	: new ActDying,
@@ -1061,11 +1132,11 @@ class Unit
 
 		}
 		else
-		if ( u1.laser.lim > 0 )
+		if ( u1.bow.lim > 0 )
 		{
 			print( u1.x+u1.size+8, u1.y-u1.size+16, "攻撃" );
 			
-			let r = u1.laser.time*4;
+			let r = u1.bow.time*4;
 			let tx = dx + r * Math.cos( u1.dir );
 			let ty = dy + r * Math.sin( u1.dir );
 
@@ -1316,19 +1387,19 @@ class Unit
 		}
 		
 		////////////////
-		// main_update
+		// update
 		////////////////
 
 		u1.sword.swd_update( u1.x, u1.y, u1.size, u1.dir );
 		u1.punch.punch_update( u1.x, u1.y, u1.size, u1.dir );
 		u1.twincle.twn_update();
 		u1.bite.bite_update( dx, dy, u1.size, u1.dir );
-		u1.laser.laser_update( dx, dy, u1.size, u1.dir );
+		u1.bow.bow_update( dx, dy, u1.size, u1.dir );
 		u1.long.long_update( dx, dy, u1.size, u1.dir );
 		u1.breath.breath_update( dx, dy, u1.size, u1.dir );
 		u1.valkan.valkan_update( dx, dy, u1.size, u1.dir );
 
-		u1.volt.main_update( u1.x, u1.y, u1.size, u1.dir );	
+		u1.volt.volt_update( u1.x, u1.y, u1.size, u1.dir );	
 		u1.dying.dying_update( u1.x, u1.y, u1.size, u1.dir );
 		u1.sleep.sleep_update( u1.x, u1.y, u1.size, u1.dir );
 		u1.kiai.kiai_update( u1.x, u1.y, u1.size, u1.dir );
@@ -1387,11 +1458,11 @@ class Unit
 					if ( num == ACT_BREATH	)	u1.breath.breath_set();
 					if ( num == ACT_VALKAN	)	u1.valkan.valkan_set();
 					if ( num == ACT_BITE	)	u1.bite.bite_set();
-					if ( num == ACT_LASER	)	u1.laser.laser_set();
+					if ( num == ACT_BOW		)	u1.bow.bow_set();
 					if ( num == ACT_LONG	)	u1.long.long_set( u1.size/8 );
 					if ( num == ACT_SWORD	)	u1.sword.swd_set( 1 );
 
-					if ( num == ACT_VOLT	)	u1.volt.set( 32 );	// 電撃	ダメージ＆一定時間動けなくなる。また近くに連鎖する
+					if ( num == ACT_VOLT	)	u1.volt.volt_set( 32 );	// 電撃	ダメージ＆一定時間動けなくなる。また近くに連鎖する
 					if ( num == ACT_DYING	)	u1.dying.dying_set();
 					if ( num == ACT_SLEEP	)	u1.sleep.sleep_set();
 					if ( num == ACT_KIAI	)	u1.kiai.kiai_set();	// 気合	噛付いて投げ飛ばす
@@ -1427,8 +1498,8 @@ class Unit
 					}
 
 					if ( num == ACT_SHOT	)	u1.shot.shot_set(2,6);	// 投げる	岩を投げるようなイメージ
-					if ( num == ACT_SUMMON		)	u1.summon.summon_set(CAST_WOLF, u1.x, u1.y, u1.dir, u1.size );	// 召喚
-					if ( num == ACT_ALPHA	)	u1.alpha.tst_set();	// 半透明	薄くなって移動。薄い間は攻撃できないが、ダメージも食らわない
+					if ( num == ACT_SUMMON	)	u1.summon.summon_set(CAST_WOLF, u1.x, u1.y, u1.dir, u1.size );	// 召喚
+					if ( num == ACT_ALPHA	)	u1.alpha.tst_set();	// 半透明	薄くなって移動。薄い間は攻撃できないがダメージも食らわない
 					if ( num == ACT_WARP	)	u1.warp.tst_set();	// ワープ	フェードアウトし、別のところからフェードインして現れる
 					if ( num == ACT_PUSH	)	u1.push.tst_set();	// 押す	弾き飛ばすけ
 					if ( num == ACT_JUMP	)	u1.jump.tst_set();	// ジャンプ	踏付け
@@ -1522,38 +1593,18 @@ class Unit
 
 let g_unit = new Unit;
 
-
-const CAST_NONE		= 0;	// NONE
-const CAST_PLAYER1	= 1;	// 人型	Player
-const CAST_PLAYER2	= 2;	// 人型	Player
-const CAST_PLAYER3	= 3;	// 人型	Player
-const CAST_DRAGON	= 4;	// 竜型	ドラゴン
-const CAST_WOLF		= 5;	// 獣型	ウルフ
-const CAST_MINO		= 6;	// 人型ミノタウロス
-const CAST_GHOST	= 7;	// 幽体	ゴースト
-const CAST_ZOMBIE	= 8;	// 人型	ゾンビ
-const CAST_SWORDMAN	= 9;	// 人型	ソードマン
-const CAST_TSTMAN	= 10;	// 人型	テストマン
-const CAST_NINJA	= 11;	// 人型	忍者			クイックな動きと手裏剣
-const CAST_WIBARN	= 12;	// 飛竜	ワイバーン		酸の唾を吐く
-const CAST_SUMMON	= 13;	// 人型	召喚士	召喚
-const CAST_ORC		= 14;	// 人型	オーク
-
-const CAST_BIGMAN	= 0;	// 人型	巨人
-const CAST_TOROL	= 0;	// 人型	トロール
-const CAST_GOBLIN	= 0;	// 人型	ゴブリン	
-const CAST_CYCROPS	= 0;	// 人型	サイクロプス	目からレーザー
-
 let g_json_cast = 
-[
+{
+	"DUMMY":
 	{
-		name		:"NONE",
+		name		:"DUMMY",
 		size		:  2,	
 		tblThink	:
 		[
 			{name:""		,act_no:0			,mov_dir:rad(0)	,mov_spd:0.25	, rot_spd:rad(1)	,rate: 0, quant:  0, num:3 },
 		]
 	},
+	"PLAYER1":
 	{
 		name		:"こーぞ",
 		size		:  13,	
@@ -1562,6 +1613,7 @@ let g_json_cast =
 			{name:""		,act_no:0			,mov_dir:rad(0)	,mov_spd:0.25	, rot_spd:rad(1)	,rate: 0, quant:  0, num:3 },
 		]
 	},
+	"PLAYER2":
 	{
 		name		:"ティナ",
 		size		:  11,	
@@ -1570,6 +1622,7 @@ let g_json_cast =
 			{name:""		,act_no:0			,mov_dir:rad(0)	,mov_spd:0.25	, rot_spd:rad(1)	,rate: 0, quant:  0, num:3 },
 		]
 	},
+	"PLAYER3":
 	{
 		name		:"ユイ",
 		size		:  11,	
@@ -1578,6 +1631,7 @@ let g_json_cast =
 			{name:""		,act_no:0			,mov_dir:rad(0)	,mov_spd:0.25	, rot_spd:rad(1)	,rate: 0, quant:  0, num:3 },
 		]
 	},
+	"DRAGON":	// 竜型	ドラゴン
 	{
 		name		:"ドラゴン"	,
 		size		: 52,	
@@ -1590,6 +1644,7 @@ let g_json_cast =
 			{name:"ブレス"	,act_no:1,mov_dir:rad(0)	,mov_spd:0.25	, rot_spd:rad(0.6)	,rate:10, quant:0, num:3 },
 		]
 	},
+	"WOLF":	// 獣型	ウルフ
 	{
 		name		:"ウルフ"		,
 		size		: 10,	
@@ -1603,6 +1658,7 @@ let g_json_cast =
 			{name:"噛付き"	,act_no:2,mov_dir:rad(   0)	,mov_spd:0.75	, rot_spd:rad(0.2)	,rate:10, quant:0, num:3 },
 		]
 	},
+	"MINO":	// 人型ミノタウロス
 	{
 		name		:"ミノタウロス",
 		size		: 30,	
@@ -1616,6 +1672,7 @@ let g_json_cast =
 			{name:"パンチ"	,act_no:3,mov_dir:rad(   0)	,mov_spd:0.75	, rot_spd:rad(0.6)	,rate:30, quant:0, num:3 },
 		]
 	},
+	"GHOST":	// 幽体	ゴースト
 	{
 		name		:"ゴースト"	,
 		size		: 14,	
@@ -1629,6 +1686,7 @@ let g_json_cast =
 			{name:"TWINCLE"	,act_no:4			,mov_dir:rad(   0)	,mov_spd:1.30 	, rot_spd:rad(0.3)	,rate:20, quant: 0, num:3 },
 		]
 	},
+	"ZOMBIE":	// 人型	ゾンビ
 	{
 		name		:"ゾンビ"		,
 		size		: 12,	
@@ -1641,6 +1699,7 @@ let g_json_cast =
 			{name:"FL"		,act_no:0			,mov_dir:rad( -30)	,mov_spd:0.25	, rot_spd:rad(0.1)	,rate:10, quant: 72, num:3 },
 		]
 	},
+	"SWORDMAN":	// 人型	ソードマン
 	{
 		name		:"ソードマン"	,
 		size		: 16,	
@@ -1656,6 +1715,7 @@ let g_json_cast =
 
 		]
 	},
+	"TSTMAN":	// 人型	テストマン
 	{
 		name		:"テストマン"	,
 		size		: 16,
@@ -1672,7 +1732,6 @@ let g_json_cast =
 			{name:"パンチ"	,act_no:ACT_PUNCH	,mov_dir:rad(   0)	,mov_spd:0.1 	, rot_spd:rad(0.3)	,rate:20, quant: 20, num:3 },
 			{name:"点滅"	,act_no:ACT_TWINCLE	,mov_dir:rad(   0)	,mov_spd:0.1 	, rot_spd:rad(0.3)	,rate:20, quant: 20, num:3 },
 			{name:"剣"		,act_no:ACT_SWORD	,mov_dir:rad(   0)	,mov_spd:0.1 	, rot_spd:rad(0.3)	,rate:20, quant: 20, num:3 },
-
 			{name:"脈動"	,act_no:ACT_DYING	,mov_dir:rad(   0)	,mov_spd:0.1 	, rot_spd:rad(0.3)	,rate:20, quant: 20, num:3 },
 			{name:"射撃"	,act_no:ACT_SHOT	,mov_dir:rad(   0)	,mov_spd:0.1 	, rot_spd:rad(0.3)	,rate:20, quant: 20, num:3 },
 			{name:"瞬足"	,act_no:ACT_QUICK	,mov_dir:rad(   0)	,mov_spd:0.1 	, rot_spd:rad(4.0)	,rate:120, quant: 20, num:3 },
@@ -1689,6 +1748,7 @@ let g_json_cast =
 			{name:"遁走"	,act_no:ACT_RUN		,mov_dir:rad(   0)	,mov_spd:0.1 	, rot_spd:rad(0.3)	,rate:20, quant: 20, num:3 },
 		]
 	},
+	"NINJA":	// 人型	忍者			クイックな動きと手裏剣
 	{
 		name		:"忍者"	,
 		size		: 16,
@@ -1705,6 +1765,7 @@ let g_json_cast =
 			{name:"撃つ"	,act_no:ACT_SHOT	,mov_dir:rad(   0)	,mov_spd:0.1 	, rot_spd:rad(28.0)	,rate:20, quant: 0, num:3 },
 		]
 	},
+	"WIBARN":	// 飛竜	ワイバーン		酸の唾を吐く
 	{
 		name		:"ワイバーン"	,
 		size		: 32,	
@@ -1717,6 +1778,7 @@ let g_json_cast =
 			{name:"バルカン",act_no:ACT_VALKAN	,mov_dir:rad(  0)	,mov_spd:0.25	, rot_spd:rad(0.6)	,rate:10, quant:0, num:3 },
 		]
 	},
+	"SUMMON":	// 人型	召喚士	召喚
 	{
 		name		:"召喚士"	,
 		size		: 12,	
@@ -1727,10 +1789,10 @@ let g_json_cast =
 			{name:"B"		,act_no:0			,mov_dir:rad(  90)	,mov_spd:1.25	, rot_spd:rad(0.8)	,rate:20, quant: 36, num:3 },
 			{name:"R"		,act_no:0			,mov_dir:rad( 60)	,mov_spd:1.0	, rot_spd:rad(0.8)	,rate:20, quant:36, num:3 },
 			{name:"L"		,act_no:0			,mov_dir:rad( 160)	,mov_spd:0.5	, rot_spd:rad(0.8)	,rate:20, quant:8, num:3 },
-//			{name:"瞬足"	,act_no:ACT_QUICK	,mov_dir:rad(   0)	,mov_spd:0.1 	, rot_spd:rad(28.0)	,rate:4, quant: 30, num:3 },
 			{name:"召喚"	,act_no:ACT_SUMMON	,mov_dir:rad(  0)	,mov_spd:0.25	, rot_spd:rad(0.3)	,rate:4, quant:0, num:3 },
 		]
 	},
+	"ORC":	// 人型	オーク
 	{
 		name		:"オーク"	,
 		size		: 14,	
@@ -1740,33 +1802,101 @@ let g_json_cast =
 			{name:"F"		,act_no:0			,mov_dir:rad(   0)	,mov_spd:0.2 	, rot_spd:rad(0.3)	,rate:10, quant: 72, num:3 },
 			{name:"FR"		,act_no:0			,mov_dir:rad(  45)	,mov_spd:0.4	, rot_spd:rad(0.6)	,rate:10, quant: 72, num:3 },
 			{name:"FR"		,act_no:0			,mov_dir:rad(  90)	,mov_spd:0.4	, rot_spd:rad(0.6)	,rate:20, quant: 72, num:3 },
-			{name:"BL"		,act_no:0			,mov_dir:rad(-140)	,mov_spd:0.3	, rot_spd:rad(0.1)	,rate:20, quant: 96, num:3 },
+			{name:"BL"		,act_no:0			,mov_dir:rad(-140)	,mov_spd:0.3	, rot_spd:rad(0.1)	,rate:20, quant: 36, num:3 },
 			{name:"攻撃"	,act_no:ACT_LONG	,mov_dir:rad(   0)	,mov_spd:2.30 	, rot_spd:rad(0.3)	,rate:20, quant: 0, num:3 },
 		]
 	},
-];
+	"ARCHER":	// 人型	弓
+	{
+		name		:"アーチャー",
+		size		: 12,	
+		tblThink	:
+		[
+			{name:""		,act_no:0			,mov_dir:rad(   0)	,mov_spd:0.20	, rot_spd:rad(1)	,rate: 0, quant:  0, num:3 },
+			{name:"B"		,act_no:0			,mov_dir:rad( 180)	,mov_spd:0.25	, rot_spd:rad(0.2)	,rate:30, quant: 72, num:3 },
+			{name:"F"		,act_no:0			,mov_dir:rad(   0)	,mov_spd:0.40	, rot_spd:rad(0.2)	,rate:10, quant:120, num:3 },
+			{name:"R"		,act_no:0			,mov_dir:rad(  45)	,mov_spd:0.40 	, rot_spd:rad(0.2)	,rate:10, quant:120, num:3 },
+			{name:"L"		,act_no:0			,mov_dir:rad( -45)	,mov_spd:0.40 	, rot_spd:rad(0.2)	,rate:10, quant:120, num:3 },
+			{name:"弓"		,act_no:ACT_BOW		,mov_dir:rad(   0)	,mov_spd:0.75	, rot_spd:rad(0.6)	,rate:30, quant:0, num:3 },
+		]
+	},
+//	"GIANT":	// 人型	巨人
+//	"TOROL":	// 人型	トロール
+//	"GOBLIN":	// 人型	ゴブリン	
+//	"CYCROPS":	// 人型	サイクロプス	目からレーザー
+};
 
-let g_tblCast = new Cast( g_json_cast );
+const g_tblCast = new Cast( g_json_cast );
 
+let g_img = g.createImageData( 200, 200 );
 
+let g_map;
+// フロアマトリクス
+{
+	let size= 52;
+	let w = Math.floor(html_canvas.width/size);
+	let h = Math.floor(html_canvas.height/size);
+	let sx = (html_canvas.width-w*size)/2+size/2;
+	let sy = (html_canvas.height-h*size)/2+size/2;
+
+	g_map = Array(w);
+	for ( let i = 0 ; i < g_map.length ; i++ ) g_map[i] = Array(h);
+
+	for ( let x = 0 ; x < w ; x++ )
+	{
+		for ( let y = 0 ; y < h ; y++ )
+		{
+			if ( rand(1) > 0.9 )
+			{
+				g_map[y][x] = 1;
+			}
+		}
+	}
+}
+		let g_sets=[
+			[9,9,0,9,0,9,9],
+			[9,0,9,3,9,0,9],
+			[0,0,0,9,0,0,0],
+			[0,4,0,0,0,4,0],
+			[0,0,0,9,0,0,0],
+			[9,0,9,1,9,0,9],
+			[9,9,9,9,9,9,9],
+		];
 //-----------------------------------------------------------------------------
 function main_update()
 //-----------------------------------------------------------------------------
 {
 	cls();
-
-	if (0)	// フロアマトリクス
+	if (1)	// フロアマトリクス
 	{
 		let size= 52;
 		let w = Math.floor(html_canvas.width/size);
 		let h = Math.floor(html_canvas.height/size);
 		let sx = (html_canvas.width-w*size)/2+size/2;
 		let sy = (html_canvas.height-h*size)/2+size/2;
+
+
 		for ( let x = 0 ; x < w ; x++ )
 		{
 			for ( let y = 0 ; y < h ; y++ )
 			{
-				circle( x*size+sx, y*size+sy, 16 );
+				if ( g_sets[y][x] == 1 ) continue;
+				if ( g_sets[y][x] == 3 ) continue;
+				if ( g_sets[y][x] == 4 ) continue;
+				if ( g_map[y][x] == 1 )
+//				if ( x == 3 && y == 3 )
+				{
+					//circle( x*size+sx, y*size+sy, 16+8,3 );
+					let s = size-0;
+					let x0 = x*size+sx;
+					let y0 = y*size+sy;
+					let x1 = x0-s/2;
+					let y1 = y0-s/2;
+					let x2 = x0+s/2;
+					let y2 = y0+s/2;
+					fill_hach( x1,y1,x2,y2, 13 );
+					//print( x*size+sx, y*size+sy, Math.floor(g_map[y][x]*100) );
+				}
 			}
 		}
 	}
@@ -1798,13 +1928,10 @@ function main_update()
 	}
 
 	if(0)
-	{ // クリッピング
-		circle( html_canvas.width/2, html_canvas.height/2, 191 );
+	{ // クリッピング実験
+		circle( html_canvas.width/2, html_canvas.height/2, 160 );
 	    g.clip();
 	}
-
-
-
 
 	// エフェクト更新
 	g_effect.effect_update();
@@ -1812,59 +1939,73 @@ function main_update()
 	// ユニット更新
 	g_unit.unit_updateUnit();
 
-    
 
+	{// 別に作ったImageDataを重ね合わせ表示
+		let x = 50;
+		let y = 50;
+		let col = 0x00ff00;
+		{
+			let a = 0xff;
+			let adr = (y*g_img.width+x)*4;
+			g_img.data[ adr +0 ] = (col>>16)&0xff;
+			g_img.data[ adr +1 ] = (col>> 8)&0xff;
+			g_img.data[ adr +2 ] = (col>> 0)&0xff;
+			g_img.data[ adr +3 ] = a&0xff;
+			streachImage2Canvas( g_img );
+		}
+	}
+	
 	requestAnimationFrame( main_update );
-
 }
-
-const	KEY_CR	= 13;
-const	KEY_0	= 48;//	0x30	0
-const	KEY_1	= 49;	//	0x31	1
-const	KEY_2	= 50;	//	0x32	2
-const	KEY_3	= 51;	//	0x33	3
-const	KEY_4	= 52;	//	0x34	4
-const	KEY_5	= 53;	//	0x35	5
-const	KEY_6	= 54;	//	0x36	6
-const	KEY_7	= 55;	//	0x37	7
-const	KEY_8	= 56;	//	0x38	8
-const	KEY_9	= 57;	//	0x39	9
-const	KEY_A	= 65;	//0x41	
-const	KEY_B	= 66;	//0x42	
-const	KEY_C	= 67;	//0x43	
-const	KEY_D	= 68;	//0x44	
-const	KEY_E	= 69;	//0x45	
-const	KEY_F	= 70;	//0x46	
-const	KEY_G	= 71;	//0x47	
-const	KEY_H	= 72;	//0x48	
-const	KEY_I	= 73;	//0x49	
-const	KEY_J	= 74;	//0x4a	
-const	KEY_K	= 75;	//0x4b	
-const	KEY_L	= 76;	//0x4c	
-const	KEY_M	= 77;	//0x4d	
-const	KEY_N	= 78;	//0x4e	
-const	KEY_O	= 79;	//0x4f	
-const	KEY_P	= 80;	//0x50	
-const	KEY_Q	= 81;	//0x51	
-const	KEY_R	= 82;	//0x52	
-const	KEY_S	= 83;	//0x53	
-const	KEY_T	= 84;	//0x54	
-const	KEY_U	= 85;	//0x55	
-const	KEY_V	= 86;	//0x56	
-const	KEY_W	= 87;	//0x57	
-const	KEY_X	= 88;	//0x58	
-const	KEY_Y	= 89;	//0x59	
-const	KEY_Z	= 90;	//0x5a	
-
-const	KEY_LEFT	= 37;
-const	KEY_UP		= 38;
-const	KEY_RIGHT	= 39;
-const	KEY_DOWN	= 40;
 
 //-----------------------------------------------------------------------------
 window.onkeydown = function( ev )
 //-----------------------------------------------------------------------------
 {
+	const	KEY_CR	= 13;
+	const	KEY_0	= 48;	//0x30
+	const	KEY_1	= 49;	//0x31
+	const	KEY_2	= 50;	//0x32
+	const	KEY_3	= 51;	//0x33
+	const	KEY_4	= 52;	//0x34
+	const	KEY_5	= 53;	//0x35
+	const	KEY_6	= 54;	//0x36
+	const	KEY_7	= 55;	//0x37
+	const	KEY_8	= 56;	//0x38
+	const	KEY_9	= 57;	//0x39
+	const	KEY_A	= 65;	//0x41
+	const	KEY_B	= 66;	//0x42
+	const	KEY_C	= 67;	//0x43
+	const	KEY_D	= 68;	//0x44
+	const	KEY_E	= 69;	//0x45
+	const	KEY_F	= 70;	//0x46
+	const	KEY_G	= 71;	//0x47
+	const	KEY_H	= 72;	//0x48
+	const	KEY_I	= 73;	//0x49
+	const	KEY_J	= 74;	//0x4a
+	const	KEY_K	= 75;	//0x4b
+	const	KEY_L	= 76;	//0x4c
+	const	KEY_M	= 77;	//0x4d
+	const	KEY_N	= 78;	//0x4e
+	const	KEY_O	= 79;	//0x4f
+	const	KEY_P	= 80;	//0x50
+	const	KEY_Q	= 81;	//0x51
+	const	KEY_R	= 82;	//0x52
+	const	KEY_S	= 83;	//0x53
+	const	KEY_T	= 84;	//0x54
+	const	KEY_U	= 85;	//0x55
+	const	KEY_V	= 86;	//0x56
+	const	KEY_W	= 87;	//0x57
+	const	KEY_X	= 88;	//0x58
+	const	KEY_Y	= 89;	//0x59
+	const	KEY_Z	= 90;	//0x5a
+
+	const	KEY_LEFT	= 37;
+	const	KEY_UP		= 38;
+	const	KEY_RIGHT	= 39;
+	const	KEY_DOWN	= 40;
+
+
 	let	c = ev.keyCode;
 
 
@@ -1906,11 +2047,11 @@ window.onkeydown = function( ev )
 			}
 			if ( c == KEY_K )	//
 			{
-				u1.laser.laser_set();
+				u1.bow.bow_set();
 			}
 			if ( c == KEY_L )	//
 			{
-				u1.summon.summon_set(CAST_WOLF, u1.x, u1.y, u1.dir, u1.size );
+				u1.summon.summon_set("WOLF", u1.x, u1.y, u1.dir, u1.size );
 			}
 			if ( c == KEY_E )	//
 			{
@@ -1922,7 +2063,7 @@ window.onkeydown = function( ev )
 			}
 			if ( c == KEY_T )	//
 			{
-				u1.volt.set(32);	// 電撃	ダメージ＆一定時間動けなくなる。また近くに連鎖する
+				u1.volt.volt_set(32);	// 電撃	ダメージ＆一定時間動けなくなる。また近くに連鎖する
 			}
 			if ( c == KEY_Y )	//
 			{
@@ -1962,62 +2103,52 @@ window.onkeydown = function( ev )
 			}
 		}
 	}
-	//--
-
 }
 
+//-----------------------------------------------------------------------------
+window.onload = function()
+//-----------------------------------------------------------------------------
+{
+	//.unit_create( 0, 100, 350, 16, rad(-90), "ティナ",THINK_NONE );
+	//.unit_create( 0, 290, 300, 16, rad(-90), "ユイ",THINK_NONE );
 
-
-//.unit_create( 0, 100, 350, 16, rad(-90), "ティナ",THINK_NONE );
-//.unit_create( 0, 290, 300, 16, rad(-90), "ユイ",THINK_NONE );
-
-//.unit_create( 1,100,  40, 25, 0.25, rad(90),"ワイバーン",THINK_ATTACK_BREATH );
-//.unit_create( 1,192, 150, 36, 0.25, rad(90), "ドラゴン",THINK_ATTACK_BREATH );
-//.unit_create( 1,300, 130, 22, 0.25, rad(90), "ゴースト",THINK_ATTACK_BREATH );
-
-	
+	//.unit_create( 1,100,  40, 25, 0.25, rad(90),"ワイバーン",THINK_ATTACK_BREATH );
+	//.unit_create( 1,192, 150, 36, 0.25, rad(90), "ドラゴン",THINK_ATTACK_BREATH );
+	//.unit_create( 1,300, 130, 22, 0.25, rad(90), "ゴースト",THINK_ATTACK_BREATH );
 
 	{//ユニット配置
 
-		let tbl=[
-			[9,9,0,9,0,9,9],
-			[9,0,9,3,9,0,9],
-			[0,0,0,9,0,0,0],
-			[0,4,0,0,0,4,0],
-			[0,0,0,9,0,0,0],
-			[9,0,9,1,9,0,9],
-			[9,9,9,9,9,9,9],
-		];
 
 
 
 		{
-			for ( let y = 0 ; y < tbl.length ; y++ )
+			for ( let y = 0 ; y < g_sets.length ; y++ )
 			{
-				for ( let x = 0 ; x < tbl[y].length ; x++ )
+				for ( let x = 0 ; x < g_sets[y].length ; x++ )
 				{
-					switch( tbl[y][x] )
+					if ( g_map[y][x] == 1 ) continue;
+					switch( g_sets[y][x] )
 					{
 						case 0:	// 雑魚
 							if ( y < 3 )
 							{
-								if ( rand(1) < 0.2 ) tbl[y][x] = 2;
+								if ( rand(1) < 0.2 ) g_sets[y][x] = 2;
 							}
 							else
 							{
-								if ( rand(1) < 0.1 ) tbl[y][x] = 2;
+								if ( rand(1) < 0.1 ) g_sets[y][x] = 2;
 							}
 							break;
 
 						case 3:	// ボス
 							{
-							//	if ( rand(1) < 0.2 ) tbl[y][x] = 0;
+							//	if ( rand(1) < 0.2 ) g_sets[y][x] = 0;
 							}
 							break;
 
 						case 4:	// 中ボス
 							{
-								if ( rand(1) < 0.2 ) tbl[y][x] = 0;
+								if ( rand(1) < 0.2 ) g_sets[y][x] = 0;
 							}
 							break;
 					}
@@ -2040,11 +2171,14 @@ window.onkeydown = function( ev )
 					let py = y*size+sy;
 
 
-					switch( tbl[y][x] )
+					switch( g_sets[y][x] )
 					{
 					case 1: // プレイヤー
 						{
-							let cast = g_tblCast.tbl[ CAST_PLAYER1+cntPlayer ];
+							let cast;
+							if ( cntPlayer == 0 ) cast = g_tblCast.tbl[ "PLAYER1" ];
+							if ( cntPlayer == 1 ) cast = g_tblCast.tbl[ "PLAYER2" ];
+							if ( cntPlayer == 2 ) cast = g_tblCast.tbl[ "PLAYER3" ];
 							g_unit.unit_create( 0, 1, px, py, cast.size, rad(-90), cast.tblThink, cast.name, cast.talk );
 							cntPlayer++;
 						}
@@ -2053,12 +2187,13 @@ window.onkeydown = function( ev )
 					case 2: // 雑魚
 						{
 //break;
-//							let cast = g_tblCast.tbl[ CAST_WOLF ];
-//							let cast = g_tblCast.tbl[ CAST_GHOST ];
-//							let cast = g_tblCast.tbl[ CAST_ZOMBIE ];
-//							let cast = g_tblCast.tbl[ CAST_SWORDMAN ];
-//							let cast = g_tblCast.tbl[ CAST_NINJA ];
-							let cast = g_tblCast.tbl[ CAST_ORC ];
+//							let cast = g_tblCast.tbl[ "WOLF" ];
+//							let cast = g_tblCast.tbl[ "GHOST" ];
+//							let cast = g_tblCast.tbl[ "ZOMBIE" ];
+//							let cast = g_tblCast.tbl[ "SWORDMAN" ];
+//							let cast = g_tblCast.tbl[ "NINJA" ];
+//							let cast = g_tblCast.tbl[ "ORC" ];
+							let cast = g_tblCast.tbl[ "ARCHER" ];
 							g_unit.unit_create( 0, 2, px, py, cast.size, rad(90), cast.tblThink, cast.name, cast.talk );
 						}
 						break;
@@ -2066,10 +2201,10 @@ window.onkeydown = function( ev )
 					case 4: // 中ボス
 break;
 						{
-//							let cast = g_tblCast.tbl[ CAST_DRAGON ];
-//							let cast = g_tblCast.tbl[ CAST_MINO ];
-//							let cast = g_tblCast.tbl[ CAST_TSTMAN ];
-							let cast = g_tblCast.tbl[ CAST_NINJA ];
+//							let cast = g_tblCast.tbl[ "DRAGON" ];
+//							let cast = g_tblCast.tbl[ "MINO" ];
+//							let cast = g_tblCast.tbl[ "TSTMAN" ];
+							let cast = g_tblCast.tbl[ "NINJA" ];
 							g_unit.unit_create( 0, 2, px, py, cast.size, rad(90), cast.tblThink, cast.name, cast.talk );
 						}
 						break;
@@ -2077,15 +2212,16 @@ break;
 					case 3: // ボス
 //break;
 						{
-//							let cast = g_tblCast.tbl[ CAST_GHOST ];
-//							let cast = g_tblCast.tbl[ CAST_SWORDMAN ];
-//							let cast = g_tblCast.tbl[ CAST_DRAGON ];
-							let cast = g_tblCast.tbl[ CAST_MINO ];
-//							let cast = g_tblCast.tbl[ CAST_SWORDMAN ];
-//							let cast = g_tblCast.tbl[ CAST_TSTMAN ];
-//							let cast = g_tblCast.tbl[ CAST_NINJA ];
-//							let cast = g_tblCast.tbl[ CAST_WIBARN ];
-//							let cast = g_tblCast.tbl[ CAST_SUMMON ];
+//							let cast = g_tblCast.tbl[ "GHOST" ];
+//							let cast = g_tblCast.tbl[ "SWORDMAN" ];
+//							let cast = g_tblCast.tbl[ "DRAGON" ];
+//							let cast = g_tblCast.tbl[ "MINO" ];
+//							let cast = g_tblCast.tbl[ "SWORDMAN" ];
+//							let cast = g_tblCast.tbl[ "TSTMAN" ];
+							let cast = g_tblCast.tbl[ "NINJA" ];
+//							let cast = g_tblCast.tbl[ "WIBARN" ];
+//							let cast = g_tblCast.tbl[ "SUMMON" ];
+//							let cast = g_tblCast.tbl[ "ARCHER" ];
 							g_unit.unit_create( 1, 2, px, py, cast.size, rad(90), cast.tblThink, cast.name, cast.talk );
 						}
 						break;
@@ -2096,6 +2232,6 @@ break;
 			}
 		}
 	}
-
-requestAnimationFrame( main_update );
+	requestAnimationFrame( main_update );
+}
 
