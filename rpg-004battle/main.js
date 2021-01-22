@@ -1846,7 +1846,7 @@ let g_map;
 	{
 		for ( let y = 0 ; y < h ; y++ )
 		{
-			if ( rand(1) > 0.9 )
+			if ( rand(1) > 0.95 )
 			{
 				g_map[y][x] = 1;
 			}
@@ -2163,6 +2163,14 @@ window.onload = function()
 			let sx = (html_canvas.width-w*size)/2+size/2;
 			let sy = (html_canvas.height-h*size)/2+size/2;
 
+			let tblEnemy =
+			[
+				["WOLF","GHOST","ZOMBIE","NINJA","ORC","ARCHER",],
+				["GHOST","WIBARN","MINO","NINJA","SUMMON","SWORDMAN",],
+				["DRAGON","MINO","SWORDMAN","TSTMAN","NINJA","WIBARN"],
+			];
+
+
 			for ( let y = 0 ; y < h ; y++ )
 			{
 				for ( let x = 0 ; x < w ; x++ )
@@ -2193,7 +2201,9 @@ window.onload = function()
 //							let cast = g_tblCast.tbl[ "SWORDMAN" ];
 //							let cast = g_tblCast.tbl[ "NINJA" ];
 //							let cast = g_tblCast.tbl[ "ORC" ];
-							let cast = g_tblCast.tbl[ "ARCHER" ];
+//							let cast = g_tblCast.tbl[ "ARCHER" ];
+							let e = tblEnemy[0];
+							let cast = g_tblCast.tbl[ e[ Math.floor(e.length*rand(1)) ]];
 							g_unit.unit_create( 0, 2, px, py, cast.size, rad(90), cast.tblThink, cast.name, cast.talk );
 						}
 						break;
@@ -2204,7 +2214,9 @@ break;
 //							let cast = g_tblCast.tbl[ "DRAGON" ];
 //							let cast = g_tblCast.tbl[ "MINO" ];
 //							let cast = g_tblCast.tbl[ "TSTMAN" ];
-							let cast = g_tblCast.tbl[ "NINJA" ];
+//							let cast = g_tblCast.tbl[ "NINJA" ];
+							let e = tblEnemy[1];
+							let cast = g_tblCast.tbl[ e[ Math.floor(e.length*rand(1)) ]];
 							g_unit.unit_create( 0, 2, px, py, cast.size, rad(90), cast.tblThink, cast.name, cast.talk );
 						}
 						break;
@@ -2218,10 +2230,12 @@ break;
 //							let cast = g_tblCast.tbl[ "MINO" ];
 //							let cast = g_tblCast.tbl[ "SWORDMAN" ];
 //							let cast = g_tblCast.tbl[ "TSTMAN" ];
-							let cast = g_tblCast.tbl[ "NINJA" ];
+//							let cast = g_tblCast.tbl[ "NINJA" ];
 //							let cast = g_tblCast.tbl[ "WIBARN" ];
 //							let cast = g_tblCast.tbl[ "SUMMON" ];
 //							let cast = g_tblCast.tbl[ "ARCHER" ];
+							let e = tblEnemy[2];
+							let cast = g_tblCast.tbl[ e[ Math.floor(e.length*rand(1)) ]];
 							g_unit.unit_create( 1, 2, px, py, cast.size, rad(90), cast.tblThink, cast.name, cast.talk );
 						}
 						break;
