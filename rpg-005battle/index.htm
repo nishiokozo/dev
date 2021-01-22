@@ -5,16 +5,19 @@
 		<title>btl</title>
 	</head>
 	<body align="center">
+<h3 style="color:#cccccc">naplunolaus</h3>
 		<canvas id="html_canvas"  width="512" height="512" style="border:0px solid" ></canvas>
-		<canvas id="html_canvas2"  width="256" height="256" style="border:1px solid" ></canvas>
 		<script src="main.js"></script>
 <br>
 	  blur
-		<input type="text" id="blur" value="15" size="3" maxlength="3">
+		<input type="text" id="blur" value="15" size="1" maxlength="3">
 	  low
-		<input type="text" id="low" value="0.5" size="5" maxlength="3">
+		<input type="text" id="low" value="0.5" size="1" maxlength="3">
 	  col
-		<input type="text" id="col" value="6" size="3" maxlength="3">
+		<input type="text" id="col" value="6" size="1" maxlength="3">
+	  nohit
+		<input type="text" id="nohit" value="0" size="1" maxlength="1">
+  		
 		<input type="button" value="param更新" onClick="map_hotstart()">
 	reso
 		<select id="html_reso">
@@ -25,7 +28,6 @@
 		</select>
 
 	  <input type="button" value="seed更新" onClick="map_init()">
-	  <input type="button" value="MAP表示" onClick="map_init()">
 
 	</body>
 </html>

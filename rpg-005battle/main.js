@@ -1,3 +1,17 @@
+
+//-----------------------------------------------------------------------------
+function html_getValue_checkboxname( name ) // チェックボックス用
+//-----------------------------------------------------------------------------
+{
+	const list = document.getElementsByName( name );
+console.log(list);
+	for ( let l of list )
+	{
+		//if ( l.checked) 
+		return l.value;
+	}
+}
+
 //-----------------------------------------------------------------------------
 function html_getValue_radioname( name ) // ラジオボタン用
 //-----------------------------------------------------------------------------
@@ -406,9 +420,6 @@ function map_hotstart()
 //-----------------------------------------------------------------------------
 {
 	g_map_buf = map_gen( g_map_SZ );
-
-
-
 
 	if ( null != document.getElementById("html_canvas2") )
 	{
@@ -2029,6 +2040,10 @@ if(0)
 						}
 
 						// ユニット同士の衝突
+//						lif (   html_getValue_textid("col");
+
+						if ( 1 == html_getValue_textid("nohit") ) return false;
+
 						for ( let u2 of g_unit.tblUnit )
 						{
 							if ( u2 == u1 )
@@ -2695,6 +2710,16 @@ function game_init( start_x, start_y )
 		}
 	}
 	{
+		let tblEnemy =
+		[
+			["WOLF","GHOST","ZOMBIE","NINJA","ORC","ARCHER",],
+			["GHOST","WIBARN","MINO","NINJA","SUMMON","SWORDMAN",],
+			["DRAGON","MINO","SWORDMAN","TSTMAN","NINJA","WIBARN"],
+		];
+		let e0 = Math.floor(tblEnemy[0].length*rand(1))
+		let e1 = Math.floor(tblEnemy[1].length*rand(1))
+		let e2 = Math.floor(tblEnemy[2].length*rand(1))
+
 		let cntPlayer = 0;
 		for ( let y = 0 ; y < g_tile_h ; y++ )
 		{
@@ -2704,17 +2729,6 @@ function game_init( start_x, start_y )
 				let py = y*g_tile_SZ+g_tile_sy +start_y ;//+ (g_map_SZ*g_tile_SZ);
 
 				if ( y >= g_sets.length || x >= g_sets[y].length ) continue;
-
-
-				let tblEnemy =
-				[
-					["WOLF","GHOST","ZOMBIE","NINJA","ORC","ARCHER",],
-					["GHOST","WIBARN","MINO","NINJA","SUMMON","SWORDMAN",],
-					["DRAGON","MINO","SWORDMAN","TSTMAN","NINJA","WIBARN"],
-				];
-				let e0 = Math.floor(tblEnemy[0].length*rand(1))
-				let e1 = Math.floor(tblEnemy[1].length*rand(1))
-				let e2 = Math.floor(tblEnemy[2].length*rand(1))
 
 
 				switch( g_sets[y][x] )
@@ -2732,7 +2746,7 @@ function game_init( start_x, start_y )
 
 				case 2: // 雑魚
 					{
-break;
+//break;
 //							let cast = g_tblCast.tbl[ "WOLF" ];
 //							let cast = g_tblCast.tbl[ "GHOST" ];
 //							let cast = g_tblCast.tbl[ "ZOMBIE" ];
@@ -2875,6 +2889,9 @@ function main_update()
 	}
 
 
+	print( 0,8, "units:" + g_unit.tblUnit.length.toString() );
+//console.log(g_unit.tblUnit.length);
+
 	{ // マップ描画
 		// 月と太陽と北極星
 		{
@@ -2892,6 +2909,21 @@ function main_update()
 			}
 			draw_sun( 80, 80, 7, 11, 15 );
 
+			// ☆
+			function drawStar(px, py, r )
+			{
+//				circle( px, py, r0 );
+				let st = rad(360*2/5);
+				for ( let th = rad(-90) ; th <= Math.PI*4 ; th += st )
+				{
+					let x1 = r*Math.cos(th) + px;
+					let y1 = r*Math.sin(th) + py;
+					let x2 = r*Math.cos(th-st) + px;
+					let y2 = r*Math.sin(th-st) + py;
+					line( x1, y1, x2, y2 );
+				}
+			}
+
 			function draw_pole( px, py, r0, r1, r2 ) 
 			{ // 北極星
 				circle( px, py, r0 );
@@ -2904,7 +2936,8 @@ function main_update()
 					line( x1, y1, x2, y2 );
 				}
 			}
-			draw_pole( 256, 10, 5, 3, 8 );
+//			draw_pole( 256, 10, 5, 3, 8 );
+			drawStar( 256, 10, 5 );
 
 			function draw_moon( px, py, r0 ) 
 			{ // 月 29.5日周期で満ち欠け
@@ -2916,90 +2949,91 @@ function main_update()
 			draw_moon( 185, 20, 8 );
 		}
 
-		if(1)
-		{ // クリッピング実験
-			circle( html_canvas.width/2, html_canvas.height/2, (g_tile_w)*g_tile_SZ/2 );
-		    ctx.clip();
-		}
-		box( 
-			g_tile_sx-g_tile_SZ/2+0.5,
-			g_tile_sy-g_tile_SZ/2+0.5,
-			(g_tile_w-1)*g_tile_SZ+g_tile_sx+g_tile_SZ/2+0.5,
-			(g_tile_h-1)*g_tile_SZ+g_tile_sy+g_tile_SZ/2+0.5
-		);
-
-
-		if(1)
 		{
-			let ox = g_tile_cx-html_canvas.width/2;		//左上オフセットx
-			let oy = g_tile_cy-html_canvas.height/2;	//左上オフセットy
+			ctx.save();
+			{ // クリッピング
+				circle( html_canvas.width/2, html_canvas.height/2, (g_tile_w)*g_tile_SZ/2 );
+			    ctx.clip();
+			}
+			box( 
+				g_tile_sx-g_tile_SZ/2+0.5,
+				g_tile_sy-g_tile_SZ/2+0.5,
+				(g_tile_w-1)*g_tile_SZ+g_tile_sx+g_tile_SZ/2+0.5,
+				(g_tile_h-1)*g_tile_SZ+g_tile_sy+g_tile_SZ/2+0.5
+			);
 
-			let mx = Math.floor( ox / g_tile_SZ );
-			let my = Math.floor( oy / g_tile_SZ );
-			let x = 0;
-			let y = 0;
 
-
-			for ( let y = 0 ; y < g_tile_h+2 ; y++ )
+			if(1)
 			{
-				for ( let x = 0 ; x < g_tile_w+2 ; x++ )
-				{
-					let ax = (mx+x);
-					let ay = (my+y);
-					if ( ax >= g_map_SZ	) ax -= g_map_SZ;
-					if ( ay >= g_map_SZ	) ay -= g_map_SZ;
-					if ( ax < 0 			) ax += g_map_SZ;
-					if ( ay < 0 			) ay += g_map_SZ;
-				
-					let a = g_map_buf[ g_map_SZ*ay + ax ];
+				let ox = g_tile_cx-html_canvas.width/2;		//左上オフセットx
+				let oy = g_tile_cy-html_canvas.height/2;	//左上オフセットy
 
+				let mx = Math.floor( ox / g_tile_SZ );
+				let my = Math.floor( oy / g_tile_SZ );
+				let x = 0;
+				let y = 0;
+
+
+				for ( let y = 0 ; y < g_tile_h+2 ; y++ )
+				{
+					for ( let x = 0 ; x < g_tile_w+2 ; x++ )
+					{
+						let ax = (mx+x);
+						let ay = (my+y);
+						if ( ax >= g_map_SZ	) ax -= g_map_SZ;
+						if ( ay >= g_map_SZ	) ay -= g_map_SZ;
+						if ( ax < 0 			) ax += g_map_SZ;
+						if ( ay < 0 			) ay += g_map_SZ;
+					
+						let a = g_map_buf[ g_map_SZ*ay + ax ];
+
+						if ( a > 0 )
+						{
+							let ax = -(ox)%g_tile_SZ;
+							let ay = -(oy)%g_tile_SZ;
+
+							let x0 = x*g_tile_SZ+g_tile_sx + ax - g_tile_SZ;
+							let y0 = y*g_tile_SZ+g_tile_sy + ay - g_tile_SZ;
+							let x1 = x0-g_tile_SZ/2;
+							let y1 = y0-g_tile_SZ/2;
+							let x2 = x0+g_tile_SZ/2;
+							let y2 = y0+g_tile_SZ/2;
+							fill_hach( x1,y1,x2,y2, 13 );
+
+						}
+					}
+				}
+			}
+			else
+			for ( let y = 0 ; y < g_tile_h ; y++ )
+			{
+				for ( let x = 0 ; x < g_tile_w ; x++ )
+				{
+					let mx = ( 0 + x ) % g_map_SZ;
+					let my = ( 0 + y ) % g_map_SZ;
+
+					let a = g_map_buf[ g_map_SZ*my + mx ];
 					if ( a > 0 )
 					{
-						let ax = -(ox)%g_tile_SZ;
-						let ay = -(oy)%g_tile_SZ;
-
-						let x0 = x*g_tile_SZ+g_tile_sx + ax - g_tile_SZ;
-						let y0 = y*g_tile_SZ+g_tile_sy + ay - g_tile_SZ;
+						let x0 = x*g_tile_SZ+g_tile_sx;
+						let y0 = y*g_tile_SZ+g_tile_sy;
 						let x1 = x0-g_tile_SZ/2;
 						let y1 = y0-g_tile_SZ/2;
 						let x2 = x0+g_tile_SZ/2;
 						let y2 = y0+g_tile_SZ/2;
 						fill_hach( x1,y1,x2,y2, 13 );
-
 					}
 				}
 			}
-		}
-		else
-		for ( let y = 0 ; y < g_tile_h ; y++ )
-		{
-			for ( let x = 0 ; x < g_tile_w ; x++ )
-			{
-				let mx = ( 0 + x ) % g_map_SZ;
-				let my = ( 0 + y ) % g_map_SZ;
+			// エフェクト更新
+			g_effect.effect_update();
 
-				let a = g_map_buf[ g_map_SZ*my + mx ];
-				if ( a > 0 )
-				{
-					let x0 = x*g_tile_SZ+g_tile_sx;
-					let y0 = y*g_tile_SZ+g_tile_sy;
-					let x1 = x0-g_tile_SZ/2;
-					let y1 = y0-g_tile_SZ/2;
-					let x2 = x0+g_tile_SZ/2;
-					let y2 = y0+g_tile_SZ/2;
-					fill_hach( x1,y1,x2,y2, 13 );
-				}
-			}
-		}
-//		print( 0,8, Math.floor(g_tile_cx).toString()+","+Math.floor(g_tile_cy).toString() );
-		
+			// ユニット更新
+			g_unit.unit_allupdate();
+
+			ctx.restore();
+		}			
 	}
-
-	// エフェクト更新
-	g_effect.effect_update();
-
-	// ユニット更新
-	g_unit.unit_allupdate();
 
 
 	{// 別に作ったImageDataを重ね合わせ表示
