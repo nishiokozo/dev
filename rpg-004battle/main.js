@@ -1498,7 +1498,7 @@ class Unit
 					}
 
 					if ( num == ACT_SHOT	)	u1.shot.shot_set(2,6);	// 投げる	岩を投げるようなイメージ
-					if ( num == ACT_SUMMON	)	u1.summon.summon_set(CAST_WOLF, u1.x, u1.y, u1.dir, u1.size );	// 召喚
+					if ( num == ACT_SUMMON	)	u1.summon.summon_set("ZOMBIE", u1.x, u1.y, u1.dir, u1.size );	// 召喚
 					if ( num == ACT_ALPHA	)	u1.alpha.tst_set();	// 半透明	薄くなって移動。薄い間は攻撃できないがダメージも食らわない
 					if ( num == ACT_WARP	)	u1.warp.tst_set();	// ワープ	フェードアウトし、別のところからフェードインして現れる
 					if ( num == ACT_PUSH	)	u1.push.tst_set();	// 押す	弾き飛ばすけ
@@ -2169,7 +2169,9 @@ window.onload = function()
 				["GHOST","WIBARN","MINO","NINJA","SUMMON","SWORDMAN",],
 				["DRAGON","MINO","SWORDMAN","TSTMAN","NINJA","WIBARN"],
 			];
-
+			let e0 = Math.floor(tblEnemy[0].length*rand(1))
+			let e1 = Math.floor(tblEnemy[1].length*rand(1))
+			let e2 = Math.floor(tblEnemy[2].length*rand(1))
 
 			for ( let y = 0 ; y < h ; y++ )
 			{
@@ -2202,8 +2204,7 @@ window.onload = function()
 //							let cast = g_tblCast.tbl[ "NINJA" ];
 //							let cast = g_tblCast.tbl[ "ORC" ];
 //							let cast = g_tblCast.tbl[ "ARCHER" ];
-							let e = tblEnemy[0];
-							let cast = g_tblCast.tbl[ e[ Math.floor(e.length*rand(1)) ]];
+							let cast = g_tblCast.tbl[ tblEnemy[0][ e0 ]];
 							g_unit.unit_create( 0, 2, px, py, cast.size, rad(90), cast.tblThink, cast.name, cast.talk );
 						}
 						break;
@@ -2215,8 +2216,7 @@ break;
 //							let cast = g_tblCast.tbl[ "MINO" ];
 //							let cast = g_tblCast.tbl[ "TSTMAN" ];
 //							let cast = g_tblCast.tbl[ "NINJA" ];
-							let e = tblEnemy[1];
-							let cast = g_tblCast.tbl[ e[ Math.floor(e.length*rand(1)) ]];
+							let cast = g_tblCast.tbl[ tblEnemy[1][ e1 ]];
 							g_unit.unit_create( 0, 2, px, py, cast.size, rad(90), cast.tblThink, cast.name, cast.talk );
 						}
 						break;
@@ -2234,9 +2234,8 @@ break;
 //							let cast = g_tblCast.tbl[ "WIBARN" ];
 //							let cast = g_tblCast.tbl[ "SUMMON" ];
 //							let cast = g_tblCast.tbl[ "ARCHER" ];
-							let e = tblEnemy[2];
-							let cast = g_tblCast.tbl[ e[ Math.floor(e.length*rand(1)) ]];
-							g_unit.unit_create( 1, 2, px, py, cast.size, rad(90), cast.tblThink, cast.name, cast.talk );
+							let cast = g_tblCast.tbl[ tblEnemy[2][ e2 ]];
+							g_unit.unit_create( 0, 2, px, py, cast.size, rad(90), cast.tblThink, cast.name, cast.talk );
 						}
 						break;
 

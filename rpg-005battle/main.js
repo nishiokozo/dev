@@ -137,8 +137,8 @@ class map_GRA
 		// -----------------------------------------
 		// ImageDataをcanvasに合成
 		// -----------------------------------------
-		// g   : html_canvas.getContext('2d')
-		// img : g.createImageData( width, height )
+		// ctx   : html_canvas.getContext('2d')
+		// img : ctx.createImageData( width, height )
 
 		this.ctx.imageSmoothingEnabled = this.ctx.msImageSmoothingEnabled = 0; // スムージングOFF
 		{
@@ -439,7 +439,7 @@ function map_init()
 }
 
 ////////////////////////////
-let g=html_canvas.getContext('2d');
+let ctx=html_canvas.getContext('2d');
 //-----------------------------------------------------------------------------
 function streachImage2Canvas( img )
 //-----------------------------------------------------------------------------
@@ -447,10 +447,10 @@ function streachImage2Canvas( img )
 	// -----------------------------------------
 	// ImageDataをcanvasに合成
 	// -----------------------------------------
-	// g   : html_canvas.getContext('2d')
-	// img : g.createImageData( width, height )
+	// ctx : html_canvas.getContext('2d')
+	// img : ctx.createImageData( width, height )
 
-	g.imageSmoothingEnabled = g.msImageSmoothingEnabled = 0; // スムージングOFF
+	ctx.imageSmoothingEnabled = ctx.msImageSmoothingEnabled = 0; // スムージングOFF
 
 	{
 	// 引き伸ばして表示
@@ -467,7 +467,7 @@ function streachImage2Canvas( img )
 			let dy = 0;
 			let dw = 640;
 			let dh = 400;
-			g.drawImage( cv,sx,sy,sw,sh,dx,dy,dw,dh);	// ImageDataは引き延ばせないけど、Imageは引き延ばせる
+			ctx.drawImage( cv,sx,sy,sw,sh,dx,dy,dw,dh);	// ImageDataは引き延ばせないけど、Imageは引き延ばせる
 		}
 		
 	}
@@ -489,11 +489,11 @@ function deg( v )
 let box = function( sx,sy, ex,ey )
 //-----------------------------------------------------------------------------
 {
-	g.beginPath();
-	g.strokeStyle = "#000000";
-    g.rect(sx,sy,ex-sx,ey-sy);
-	g.closePath();
-	g.stroke();
+	ctx.beginPath();
+	ctx.strokeStyle = "#000000";
+    ctx.rect(sx,sy,ex-sx,ey-sy);
+	ctx.closePath();
+	ctx.stroke();
 }
 //-----------------------------------------------------------------------------
 let fill_hach= function( sx,sy, ex,ey, step )
@@ -537,12 +537,12 @@ let fill_hach= function( sx,sy, ex,ey, step )
 let fill= function( sx,sy, ex,ey )
 //-----------------------------------------------------------------------------
 {
-	g.beginPath();
-    g.rect(sx,sy,ex-sx,ey-sy);
-	g.closePath();
-	g.fillStyle = "#000000";
-	g.fill();
-	g.stroke();
+	ctx.beginPath();
+    ctx.rect(sx,sy,ex-sx,ey-sy);
+	ctx.closePath();
+	ctx.fillStyle = "#000000";
+	ctx.fill();
+	ctx.stroke();
 
 }
 
@@ -550,13 +550,13 @@ let fill= function( sx,sy, ex,ey )
 let line = function( sx,sy, ex,ey, wide=1.1 )
 //-----------------------------------------------------------------------------
 {
-	g.beginPath();
-	g.strokeStyle = "#000000";
-	g.lineWidth = wide;
-	g.moveTo( sx, sy );
-	g.lineTo( ex, ey );
-	g.closePath();
-	g.stroke();
+	ctx.beginPath();
+	ctx.strokeStyle = "#000000";
+	ctx.lineWidth = wide;
+	ctx.moveTo( sx, sy );
+	ctx.lineTo( ex, ey );
+	ctx.closePath();
+	ctx.stroke();
 
 }
 
@@ -564,30 +564,30 @@ let line = function( sx,sy, ex,ey, wide=1.1 )
 function print( tx, ty, str )
 //-----------------------------------------------------------------------------
 {
-	g.font = "10px monospace";
-	g.fillStyle = "#ffffff";
-	g.fillText( str, tx+1, ty+1 );
-	g.fillStyle = "#000000";
-	g.fillText( str, tx, ty );
+	ctx.font = "10px monospace";
+	ctx.fillStyle = "#ffffff";
+	ctx.fillText( str, tx+1, ty+1 );
+	ctx.fillStyle = "#000000";
+	ctx.fillText( str, tx, ty );
 }
 
 //-----------------------------------------------------------------------------
 let circle = function( x,y,r, width=1.1  )
 //-----------------------------------------------------------------------------
 {
-	g.beginPath();
-	g.lineWidth = width;
-	g.arc(x, y, r, 0, Math.PI * 2, true);
-	g.closePath();
-	g.stroke();
+	ctx.beginPath();
+	ctx.lineWidth = width;
+	ctx.arc(x, y, r, 0, Math.PI * 2, true);
+	ctx.closePath();
+	ctx.stroke();
 }
 
 //-----------------------------------------------------------------------------
 function cls()
 //-----------------------------------------------------------------------------
 {
-	g.fillStyle = "#ffffff";
-	g.fillRect( 0, 0, html_canvas.width, html_canvas.height );
+	ctx.fillStyle = "#ffffff";
+	ctx.fillRect( 0, 0, html_canvas.width, html_canvas.height );
 }
 
 //-----------------------------------------------------------------------------
@@ -1941,7 +1941,7 @@ class Unit
 					}
 
 					if ( num == ACT_SHOT	)	u1.shot.shot_set(2,6);	// 投げる	岩を投げるようなイメージ
-					if ( num == ACT_SUMMON	)	u1.summon.summon_set(CAST_WOLF, u1.x, u1.y, u1.dir, u1.size );	// 召喚
+					if ( num == ACT_SUMMON	)	u1.summon.summon_set("ZOMBIE", u1.x, u1.y, u1.dir, u1.size );	// 召喚
 					if ( num == ACT_ALPHA	)	u1.alpha.tst_set();	// 半透明	薄くなって移動。薄い間は攻撃できないがダメージも食らわない
 					if ( num == ACT_WARP	)	u1.warp.tst_set();	// ワープ	フェードアウトし、別のところからフェードインして現れる
 					if ( num == ACT_PUSH	)	u1.push.tst_set();	// 押す	弾き飛ばすけ
@@ -2122,11 +2122,11 @@ let g_json_cast =
 		size		: 52,	
 		tblThink	:
 		[
-			{name:""		,act_no:0			,mov_dir:rad(0)	,mov_spd:0.25	, rot_spd:rad(1)	,rate: 0, quant:  0, num:3 },
+			{name:""		,act_no:0			,mov_dir:rad(0)		,mov_spd:0.25	, rot_spd:rad(1)	,rate: 0, quant:  0, num:3 },
 			{name:"B"		,act_no:0			,mov_dir:rad(180)	,mov_spd:0.25	, rot_spd:rad(0.2)	,rate:20, quant: 72, num:3 },
 			{name:"R"		,act_no:0			,mov_dir:rad( 60)	,mov_spd:0.25	, rot_spd:rad(0.2)	,rate:20, quant:120, num:3 },
 			{name:"L"		,act_no:0			,mov_dir:rad(-60)	,mov_spd:0.25	, rot_spd:rad(0.2)	,rate:20, quant:120, num:3 },
-			{name:"ブレス"	,act_no:1,mov_dir:rad(0)	,mov_spd:0.25	, rot_spd:rad(0.6)	,rate:10, quant:0, num:3 },
+			{name:"ブレス"	,act_no:ACT_BREATH	,mov_dir:rad(0)		,mov_spd:0.25	, rot_spd:rad(0.6)	,rate:10, quant:0, num:3 },
 		]
 	},
 	"WOLF":	// 獣型	ウルフ
@@ -2313,7 +2313,7 @@ let g_json_cast =
 
 const g_tblCast = new Cast( g_json_cast );
 
-let g_img = g.createImageData( 200, 200 );
+let g_img = ctx.createImageData( 200, 200 );
 
 let g_tile_tbl;
 
@@ -2537,29 +2537,22 @@ window.onkeydown = function( ev )
 			if ( cntPlayer > 1 ) {if ( Math.random() < 0.5 ) continue;}
 			if ( c == KEY_LEFT	) u1.dir -= rad(7);
 			if ( c == KEY_RIGHT	) u1.dir += rad(7);
+
+			if ( c == KEY_R	)
+			{
+ctx.rotate( 50 * Math.PI / 180 ) ;
+}
 			{
 				let spd = 0;
 				let dir = u1.dir;
-/*
-				if ( c == KEY_A	) {spd=3;dir = u1.dir -rad(90);}
-				if ( c == KEY_D	) {spd=3;dir = u1.dir +rad(90);}
-*/
+
 				if ( c == KEY_UP	) {spd=3;dir = u1.dir;}
 				if ( c == KEY_DOWN	) {spd=-3;dir = u1.dir;}
-if(0)
-{
-				if ( c == KEY_A	) {g_map_ox--;if ( g_map_ox < 0 			) g_map_ox = g_map_SZ-1;}
-				if ( c == KEY_D	) {g_map_ox++;if ( g_map_ox >= g_map_SZ 	) g_map_ox = 0;}
-				if ( c == KEY_W	) {g_map_oy--;if ( g_map_oy < 0 			) g_map_oy = g_map_SZ-1;}
-				if ( c == KEY_S	) {g_map_oy++;if ( g_map_oy >= g_map_SZ 	) g_map_oy = 0;}
-}
-else
-{
+
 				if ( c == KEY_W	) {spd= 6;dir = u1.dir;}
 				if ( c == KEY_S	) {spd= 6;dir = u1.dir+rad(180);}
 				if ( c == KEY_A	) {spd= 6;dir = u1.dir+rad(-90);}
 				if ( c == KEY_D	) {spd= 6;dir = u1.dir+rad( 90);}
-}
 
 				{ // MOVE
 					u1.x += Math.cos( dir )*spd;
@@ -2699,6 +2692,19 @@ function game_init( start_x, start_y )
 				let py = y*g_tile_SZ+g_tile_sy +start_y ;//+ (g_map_SZ*g_tile_SZ);
 
 				if ( y >= g_tile_tbl.length || x >= g_tile_tbl[y].length ) continue;
+
+
+				let tblEnemy =
+				[
+					["WOLF","GHOST","ZOMBIE","NINJA","ORC","ARCHER",],
+					["GHOST","WIBARN","MINO","NINJA","SUMMON","SWORDMAN",],
+					["DRAGON","MINO","SWORDMAN","TSTMAN","NINJA","WIBARN"],
+				];
+				let e0 = Math.floor(tblEnemy[0].length*rand(1))
+				let e1 = Math.floor(tblEnemy[1].length*rand(1))
+				let e2 = Math.floor(tblEnemy[2].length*rand(1))
+
+
 				switch( g_sets[y][x] )
 				{
 				case 1: // プレイヤー
@@ -2721,8 +2727,10 @@ break;
 //							let cast = g_tblCast.tbl[ "SWORDMAN" ];
 //							let cast = g_tblCast.tbl[ "NINJA" ];
 //							let cast = g_tblCast.tbl[ "ORC" ];
-						let cast = g_tblCast.tbl[ "ARCHER" ];
-						g_unit.unit_create( 0, 2, px, py, cast.size, rad(90), cast.tblThink, cast.name, cast.talk );
+//						let cast = g_tblCast.tbl[ "ARCHER" ];
+//						g_unit.unit_create( 0, 2, px, py, cast.size, rad(90), cast.tblThink, cast.name, cast.talk );
+							let cast = g_tblCast.tbl[ tblEnemy[0][ e0 ]];
+							g_unit.unit_create( 0, 2, px, py, cast.size, rad(90), cast.tblThink, cast.name, cast.talk );
 					}
 					break;
 
@@ -2732,8 +2740,10 @@ break;
 //							let cast = g_tblCast.tbl[ "DRAGON" ];
 //							let cast = g_tblCast.tbl[ "MINO" ];
 //							let cast = g_tblCast.tbl[ "TSTMAN" ];
-						let cast = g_tblCast.tbl[ "NINJA" ];
-						g_unit.unit_create( 0, 2, px, py, cast.size, rad(90), cast.tblThink, cast.name, cast.talk );
+//						let cast = g_tblCast.tbl[ "NINJA" ];
+//						g_unit.unit_create( 0, 2, px, py, cast.size, rad(90), cast.tblThink, cast.name, cast.talk );
+							let cast = g_tblCast.tbl[ tblEnemy[1][ e1 ]];
+							g_unit.unit_create( 0, 2, px, py, cast.size, rad(90), cast.tblThink, cast.name, cast.talk );
 					}
 					break;
 
@@ -2746,11 +2756,13 @@ break;
 //							let cast = g_tblCast.tbl[ "MINO" ];
 //							let cast = g_tblCast.tbl[ "SWORDMAN" ];
 //							let cast = g_tblCast.tbl[ "TSTMAN" ];
-						let cast = g_tblCast.tbl[ "NINJA" ];
+//						let cast = g_tblCast.tbl[ "NINJA" ];
 //							let cast = g_tblCast.tbl[ "WIBARN" ];
 //							let cast = g_tblCast.tbl[ "SUMMON" ];
 //							let cast = g_tblCast.tbl[ "ARCHER" ];
-						g_unit.unit_create( 1, 2, px, py, cast.size, rad(90), cast.tblThink, cast.name, cast.talk );
+//						g_unit.unit_create( 1, 2, px, py, cast.size, rad(90), cast.tblThink, cast.name, cast.talk );
+							let cast = g_tblCast.tbl[ tblEnemy[2][ e2 ]];
+							g_unit.unit_create( 0, 2, px, py, cast.size, rad(90), cast.tblThink, cast.name, cast.talk );
 					}
 					break;
 
@@ -2895,7 +2907,7 @@ function main_update()
 		if(1)
 		{ // クリッピング実験
 			circle( html_canvas.width/2, html_canvas.height/2, (g_tile_w)*g_tile_SZ/2 );
-		    g.clip();
+		    ctx.clip();
 		}
 		box( 
 			g_tile_sx-g_tile_SZ/2+0.5,
@@ -2972,7 +2984,7 @@ function main_update()
 	}
 
 	// エフェクト更新
-	g_effect.effect_update( g_tile_cx, g_tile_cy );
+	g_effect.effect_update( g_tile_cx-256, g_tile_cy-256 );
 
 	// ユニット更新
 	g_unit.unit_allupdate();
