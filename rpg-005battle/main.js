@@ -4,7 +4,7 @@ function html_getValue_checkboxname( name ) // チェックボックス用
 //-----------------------------------------------------------------------------
 {
 	const list = document.getElementsByName( name );
-console.log(list);
+//console.log(list);
 	for ( let l of list )
 	{
 		//if ( l.checked) 
@@ -61,11 +61,13 @@ class map_GRA
 	print( tx, ty, str )
 	//-----------------------------------------------------------------------------
 	{
+		this.ctx.beginPath();
 		this.ctx.font = "12px monospace";
 		this.ctx.fillStyle = "#000000";
 		this.ctx.fillText( str, tx+1, ty+1 );
 		this.ctx.fillStyle = "#ffffff";
 		this.ctx.fillText( str, tx, ty );
+		this.ctx.closePath();
 	}
 	//-----------------------------------------------------------------------------
 	line = function( sx,sy, ex,ey )
@@ -340,7 +342,7 @@ function map_genSeed( SZ )
 		g_map_buf0[ (y*SZ+x) ] = val;
 	}
 
-	// 枠
+	// 枠	島化
 if(0)
 	for ( let i = 0 ; i < SZ ; i++ )
 	{
@@ -411,10 +413,6 @@ function map_gen( SZ )
 }
 
 
-let g_tile_cx = 0;
-let g_tile_cy = 0;
-let g_map_buf;
-let g_map_gra;
 //-----------------------------------------------------------------------------
 function map_hotstart()
 //-----------------------------------------------------------------------------
@@ -511,22 +509,22 @@ let fill_hach= function( sx,sy, ex,ey, step )
 //-----------------------------------------------------------------------------
 {
 	let w = ex-sx;
-	let g_tile_h = ey-sy;
+	let g_scr_h = ey-sy;
 	for ( let x = -w ; x <= w ; x+=step )
 	{
 		let x1 = x;
 		let y1 = 0;
 		let x2 = x+w;
-		let y2 = g_tile_h;
+		let y2 = g_scr_h;
 		if ( x1 < 0 ) 
 		{
 			x1 = 0;
-			y1 = g_tile_h-(x+w) * (g_tile_h/w);
+			y1 = g_scr_h-(x+w) * (g_scr_h/w);
 		}
 		if ( x2 > w ) 
 		{
 			x2 = w;
-			y2 = g_tile_h-(x) * (g_tile_h/w);
+			y2 = g_scr_h-(x) * (g_scr_h/w);
 		}
 		// 左上がりストライプ
 		line( 
@@ -538,9 +536,9 @@ let fill_hach= function( sx,sy, ex,ey, step )
 		// 右上がりストライプ
 		line( 
 			 sx+x1
-			,sy+(g_tile_h-y1)
+			,sy+(g_scr_h-y1)
 			,sx+x2
-			,sy+(g_tile_h-y2)
+			,sy+(g_scr_h-y2)
 		);
 	}
 }
@@ -558,12 +556,25 @@ let fill= function( sx,sy, ex,ey )
 }
 
 //-----------------------------------------------------------------------------
-let line = function( sx,sy, ex,ey, wide=1.1 )
+let line = function( sx,sy, ex,ey )
 //-----------------------------------------------------------------------------
 {
 	ctx.beginPath();
 	ctx.strokeStyle = "#000000";
-	ctx.lineWidth = wide;
+	ctx.lineWidth = 1.1;
+	ctx.moveTo( sx, sy );
+	ctx.lineTo( ex, ey );
+	ctx.closePath();
+	ctx.stroke();
+
+}
+//-----------------------------------------------------------------------------
+let line_bold = function( sx,sy, ex,ey )
+//-----------------------------------------------------------------------------
+{
+	ctx.beginPath();
+	ctx.strokeStyle = "#000000";
+	ctx.lineWidth = 3.0;
 	ctx.moveTo( sx, sy );
 	ctx.lineTo( ex, ey );
 	ctx.closePath();
@@ -575,19 +586,24 @@ let line = function( sx,sy, ex,ey, wide=1.1 )
 function print( tx, ty, str )
 //-----------------------------------------------------------------------------
 {
+	ctx.beginPath();
 	ctx.font = "10px monospace";
 	ctx.fillStyle = "#ffffff";
 	ctx.fillText( str, tx+1, ty+1 );
 	ctx.fillStyle = "#000000";
+//	ctx.lineWidth = 0.5;
+	ctx.closePath();
 	ctx.fillText( str, tx, ty );
+//	ctx.strokeText( str, tx, ty );	// 輪郭描画
+
 }
 
 //-----------------------------------------------------------------------------
-let circle = function( x,y,r, width=1.1  )
+let circle = function( x,y,r )
 //-----------------------------------------------------------------------------
 {
 	ctx.beginPath();
-	ctx.lineWidth = width;
+	ctx.lineWidth = 1.1;
 	ctx.arc(x, y, r, 0, Math.PI * 2, true);
 	ctx.closePath();
 	ctx.stroke();
@@ -602,12 +618,12 @@ function cls()
 }
 
 //-----------------------------------------------------------------------------
-function line_dir( x, y, dir, r, wide = 1.1 )
+function line_dir( x, y, dir, r )
 //-----------------------------------------------------------------------------
 {
 	let x2 = r * Math.cos( dir )+x;
 	let y2 = r * Math.sin( dir )+y;
-	line( x, y, x2, y2, wide );
+	line( x, y, x2, y2 );
 }
 
 
@@ -680,15 +696,12 @@ class Effect
 
 				if ( e.type == 0 )
 				{
-//					circle( e.x-cx, e.y-cy, e.r );
 					unit_circle( e.x, e.y, e.r );
 				}
 				else
 				{
 					let ox = e.x +Math.cos( th )*e.spd*6;
 					let oy = e.y +Math.sin( th )*e.spd*6;
-//					line( e.x-cx, e.y-cy, ox-cx, oy-cy );
-//					circle( e.x-cx, e.y-cy, e.r );
 					unit_line( e.x, e.y, ox, oy );
 					unit_circle( e.x, e.y, e.r );
 				}
@@ -697,26 +710,29 @@ class Effect
 	}
 };
 
-		function unit_print( x, y, str )
-		{
-			let cx = g_tile_cx -html_canvas.width/2;
-			let cy = g_tile_cy -html_canvas.height/2;
-			print( x-cx, y-cy, str );
-		}
-		function unit_circle( x, y, r )
-		{
-			let cx = g_tile_cx -html_canvas.width/2;
-			let cy = g_tile_cy -html_canvas.height/2;
-			circle( x-cx, y-cy, r );
-		}
-		function unit_line( x1, y1, x2,y2 )
-		{
-			let cx = g_tile_cx -html_canvas.width/2;
-			let cy = g_tile_cy -html_canvas.height/2;
-			line( x1-cx, y1-cy, x2-cx, y2-cy );
-		}
+let unit_tblString=[];
+function unit_print( x, y, str )
+{
+	let cx = g_scr_cx;
+	let cy = g_scr_cy;
+	//print( x-cx, y-cy, str );
+	unit_tblString.push( {x:x-cx, y:y-cy, str:str} );
 
-let g_effect = new Effect(100);
+}
+function unit_circle( x, y, r )
+{
+	let cx = g_scr_cx;
+	let cy = g_scr_cy;
+	circle( x-cx, y-cy, r );
+}
+function unit_line( x1, y1, x2,y2 )
+{
+	let cx = g_scr_cx;
+	let cy = g_scr_cy;
+	line( x1-cx, y1-cy, x2-cx, y2-cy );
+}
+
+let g_effect;// = new Effect(100);
 
 class ActTst
 {
@@ -1029,7 +1045,7 @@ class ActSword
 				let th2	= unit_dir+this.swd_dir2;
 				let	cx	= 2*r*Math.cos(th2)+ax;
 				let	cy	= 2*r*Math.sin(th2)+ay;
-				line(bx,by,cx,cy,3.0);
+				line_bold(bx,by,cx,cy);
 			}
 		}
 		if ( this.swd_stat == 2 )
@@ -1048,7 +1064,7 @@ class ActSword
 				this.swd_dir += this.swd_add_r;	
 				this.swd_dir2 += this.swd_add_r*1.5;	
 				this.swd_add_r += this.swd_acc_r;
-				line(bx,by,cx,cy,3.0);
+				line_bold(bx,by,cx,cy);
 			}
 		}
 		
@@ -1461,6 +1477,13 @@ class Unit
 	constructor()
 	//-----------------------------------------------------------------------------
 	{
+		//this.tblUnit =[];
+		this.unit_init();//
+	}
+	//-----------------------------------------------------------------------------
+	unit_init()
+	//-----------------------------------------------------------------------------
+	{
 		this.tblUnit =[];
 	}
 	//-----------------------------------------------------------------------------
@@ -1838,7 +1861,7 @@ class Unit
 					let y1 = r*Math.sin(th) + u1.y;
 					let x2 = r*Math.cos(th+sz) + u1.x;
 					let y2 = r*Math.sin(th+sz) + u1.y;
-					unit_line( x1,y1,x2,y2,1.4);
+					unit_line( x1,y1,x2,y2);
 					th += st;
 				}
 				unit_line( x0,y0,x2,y2);
@@ -1991,12 +2014,12 @@ class Unit
 
 if(0)
 {
-	let x = Math.floor((u1.x+g_tile_SZ/2-g_tile_sx)/g_tile_SZ);
-	let y = Math.floor((u1.y+g_tile_SZ/2-g_tile_sy)/g_tile_SZ);
+	let x = Math.floor((u1.x+g_scr_tile_SZ/2-g_scr_sx)/g_scr_tile_SZ);
+	let y = Math.floor((u1.y+g_scr_tile_SZ/2-g_scr_sy)/g_scr_tile_SZ);
 
-	let s = g_tile_SZ-0;
-	let x0 = x*g_tile_SZ+g_tile_sx;
-	let y0 = y*g_tile_SZ+g_tile_sy;
+	let s = g_scr_tile_SZ-0;
+	let x0 = x*g_scr_tile_SZ+g_scr_sx;
+	let y0 = y*g_scr_tile_SZ+g_scr_sy;
 	let x1 = x0-s/2;
 	let y1 = y0-s/2;
 	let x2 = x0+s/2;
@@ -2016,18 +2039,18 @@ if(0)
 						let flg = false; 
 
 						//	壁との衝突
-						for ( let y = 0 ; y < g_tile_h ; y++ )
+						for ( let y = 0 ; y < g_scr_h ; y++ )
 						{
-							for ( let x = 0 ; x < g_tile_w ; x++ )
+							for ( let x = 0 ; x < g_scr_w ; x++ )
 							{
-//								if ( y >= g_tile_tbl.length || x >= g_tile_tbl[y].length ) continue;
-//								if ( g_tile_tbl[y][x] != 1 ) continue;
-								let x0 = x*g_tile_SZ+g_tile_sx;
-								let y0 = y*g_tile_SZ+g_tile_sy;
-								let x1 = x0-g_tile_SZ/2;
-								let y1 = y0-g_tile_SZ/2;
-								let x2 = x0+g_tile_SZ/2;
-								let y2 = y0+g_tile_SZ/2;
+//								if ( y >= g_scr_tbl.length || x >= g_scr_tbl[y].length ) continue;
+//								if ( g_scr_tbl[y][x] != 1 ) continue;
+								let x0 = x*g_scr_tile_SZ+g_scr_sx;
+								let y0 = y*g_scr_tile_SZ+g_scr_sy;
+								let x1 = x0-g_scr_tile_SZ/2;
+								let y1 = y0-g_scr_tile_SZ/2;
+								let x2 = x0+g_scr_tile_SZ/2;
+								let y2 = y0+g_scr_tile_SZ/2;
 								let sz = u1.size;
 								if ( 
 									( (ux > x1-sz) && (ux < x2+sz) )
@@ -2340,13 +2363,13 @@ const g_tblCast = new Cast( g_json_cast );
 
 let g_img = ctx.createImageData( 200, 200 );
 
-//let g_tile_tbl;
+//let g_scr_tbl;
 
-const g_tile_SZ = 52;
-let g_tile_w = Math.floor(html_canvas.width/g_tile_SZ);
-let g_tile_h = Math.floor(html_canvas.height/g_tile_SZ);
-let g_tile_sx = (html_canvas.width-g_tile_w*g_tile_SZ)/2+g_tile_SZ/2;
-let g_tile_sy = (html_canvas.height-g_tile_h*g_tile_SZ)/2+g_tile_SZ/2;
+const g_scr_tile_SZ = 52;
+let g_scr_w = Math.floor(html_canvas.width/g_scr_tile_SZ);
+let g_scr_h = Math.floor(html_canvas.height/g_scr_tile_SZ);
+let g_scr_sx = (html_canvas.width-g_scr_w*g_scr_tile_SZ)/2+g_scr_tile_SZ/2;
+let g_scr_sy = (html_canvas.height-g_scr_h*g_scr_tile_SZ)/2+g_scr_tile_SZ/2;
 
 let g_map_mini =
 [
@@ -2463,45 +2486,37 @@ let g_map_mini =
 // フロアマトリクス
 /*
 {
-	g_tile_tbl = new Array(g_tile_w);
-	for ( let i = 0 ; i < g_tile_tbl.length ; i++ ) g_tile_tbl[i] = new Array(g_tile_h);
+	g_scr_tbl = new Array(g_scr_w);
+	for ( let i = 0 ; i < g_scr_tbl.length ; i++ ) g_scr_tbl[i] = new Array(g_scr_h);
 
 
 	let r = Math.floor(rand(1)*g_map_mini.length);
 r=1;
 	if (1)
 	{
-		g_tile_tbl = g_map_mini[r];
+		g_scr_tbl = g_map_mini[r];
 	}
 	else
 	{
-		for ( let x = 0 ; x < g_tile_w ; x++ )
+		for ( let x = 0 ; x < g_scr_w ; x++ )
 		{
-			for ( let y = 0 ; y < g_tile_h ; y++ )
+			for ( let y = 0 ; y < g_scr_h ; y++ )
 			{
 				if ( rand(1) > 0.7 )
 				{
-					g_tile_tbl[y][x] = 1;
+					g_scr_tbl[y][x] = 1;
 				}
 				else
 				{
-					g_tile_tbl[y][x] = 0;
+					g_scr_tbl[y][x] = 0;
 				}
 			}
 		}
 	}
 }
 */
-		let g_sets=[
-			[9,9,0,9,0,9,9],
-			[9,0,9,3,9,0,9],
-			[0,0,0,9,0,0,0],
-			[0,4,0,0,0,4,0],
-			[0,0,0,9,0,0,0],
-			[9,0,9,1,9,0,9],
-			[9,9,9,9,9,9,9],
-		];
 
+			let g_scr_rot = 0;
 
 //-----------------------------------------------------------------------------
 window.onkeydown = function( ev )
@@ -2554,7 +2569,7 @@ window.onkeydown = function( ev )
 	let	c = ev.keyCode;
 
 
-//	let u1;// 	= g_unit.tblUnit[0];
+
 	let cntPlayer =0;
 	for ( let u1 of g_unit.tblUnit ) 
 	{
@@ -2562,13 +2577,11 @@ window.onkeydown = function( ev )
 		{
 			cntPlayer++;
 			if ( cntPlayer > 1 ) {if ( Math.random() < 0.5 ) continue;}
-			if ( c == KEY_LEFT	) u1.dir -= rad(7);
-			if ( c == KEY_RIGHT	) u1.dir += rad(7);
+			if ( c == KEY_LEFT	) u1.dir -= rad(4);
+			if ( c == KEY_RIGHT	) u1.dir += rad(4);
 
-			if ( c == KEY_R	)
-			{
-ctx.rotate( 50 * Math.PI / 180 ) ;
-}
+
+
 			{
 				let spd = 0;
 				let dir = u1.dir;
@@ -2585,15 +2598,12 @@ ctx.rotate( 50 * Math.PI / 180 ) ;
 					u1.x += Math.cos( dir )*spd;
 					u1.y += Math.sin( dir )*spd;
 
-					const sz = g_map_SZ * g_tile_SZ;
+					const sz = g_map_SZ * g_scr_tile_SZ;
 					if ( u1.x < 0 	) u1.x = sz-1;
 					if ( u1.x >= sz ) u1.x = 0;
 					if ( u1.y < 0 	) u1.y = sz-1;
 					if ( u1.y >= sz ) u1.y = 0;
 				}
-
-			
-
 			}
 
 			if ( c == KEY_F )	//ソード
@@ -2668,19 +2678,28 @@ ctx.rotate( 50 * Math.PI / 180 ) ;
 function game_init( start_x, start_y )
 //-----------------------------------------------------------------------------
 {//ユニット配置
+//console.log( start_x, start_y );
+
 	//.unit_create( 0, 100, 350, 16, rad(-90), "ティナ",THINK_NONE );
 	//.unit_create( 0, 290, 300, 16, rad(-90), "ユイ",THINK_NONE );
 
 	//.unit_create( 1,100,  40, 25, 0.25, rad(90),"ワイバーン",THINK_ATTACK_BREATH );
 	//.unit_create( 1,192, 150, 36, 0.25, rad(90), "ドラゴン",THINK_ATTACK_BREATH );
 	//.unit_create( 1,300, 130, 22, 0.25, rad(90), "ゴースト",THINK_ATTACK_BREATH );
+		let g_sets=[
+			[9,9,0,9,0,9,9],
+			[9,0,9,3,9,0,9],
+			[0,0,0,9,0,0,0],
+			[0,4,0,0,0,4,0],
+			[0,0,0,9,0,0,0],
+			[9,0,9,1,9,0,9],
+			[9,9,9,9,9,9,9],
+		];
 	{
 		for ( let y = 0 ; y < g_sets.length ; y++ )
 		{
 			for ( let x = 0 ; x < g_sets[y].length ; x++ )
 			{
-//				if ( y >= g_tile_tbl.length || x >= g_tile_tbl[y].length ) continue;
-//				if ( g_tile_tbl[y][x] == 1 ) continue;
 				switch( g_sets[y][x] )
 				{
 					case 0:	// 雑魚
@@ -2721,12 +2740,12 @@ function game_init( start_x, start_y )
 		let e2 = Math.floor(tblEnemy[2].length*rand(1))
 
 		let cntPlayer = 0;
-		for ( let y = 0 ; y < g_tile_h ; y++ )
+		for ( let y = 0 ; y < g_scr_h ; y++ )
 		{
-			for ( let x = 0 ; x < g_tile_w ; x++ )
+			for ( let x = 0 ; x < g_scr_w ; x++ )
 			{
-				let px = x*g_tile_SZ+g_tile_sx +start_x;//+ (g_map_SZ*g_tile_SZ);
-				let py = y*g_tile_SZ+g_tile_sy +start_y ;//+ (g_map_SZ*g_tile_SZ);
+				let px = x*g_scr_tile_SZ+g_scr_sx +start_x;//+ (g_map_SZ*g_scr_tile_SZ);
+				let py = y*g_scr_tile_SZ+g_scr_sy +start_y ;//+ (g_map_SZ*g_scr_tile_SZ);
 
 				if ( y >= g_sets.length || x >= g_sets[y].length ) continue;
 
@@ -2746,47 +2765,20 @@ function game_init( start_x, start_y )
 
 				case 2: // 雑魚
 					{
-//break;
-//							let cast = g_tblCast.tbl[ "WOLF" ];
-//							let cast = g_tblCast.tbl[ "GHOST" ];
-//							let cast = g_tblCast.tbl[ "ZOMBIE" ];
-//							let cast = g_tblCast.tbl[ "SWORDMAN" ];
-//							let cast = g_tblCast.tbl[ "NINJA" ];
-//							let cast = g_tblCast.tbl[ "ORC" ];
-//						let cast = g_tblCast.tbl[ "ARCHER" ];
-//						g_unit.unit_create( 0, 2, px, py, cast.size, rad(90), cast.tblThink, cast.name, cast.talk );
 							let cast = g_tblCast.tbl[ tblEnemy[0][ e0 ]];
 							g_unit.unit_create( 0, 2, px, py, cast.size, rad(90), cast.tblThink, cast.name, cast.talk );
 					}
 					break;
 
 				case 4: // 中ボス
-//break;
 					{
-//							let cast = g_tblCast.tbl[ "DRAGON" ];
-//							let cast = g_tblCast.tbl[ "MINO" ];
-//							let cast = g_tblCast.tbl[ "TSTMAN" ];
-//						let cast = g_tblCast.tbl[ "NINJA" ];
-//						g_unit.unit_create( 0, 2, px, py, cast.size, rad(90), cast.tblThink, cast.name, cast.talk );
 							let cast = g_tblCast.tbl[ tblEnemy[1][ e1 ]];
 							g_unit.unit_create( 0, 2, px, py, cast.size, rad(90), cast.tblThink, cast.name, cast.talk );
 					}
 					break;
 
 				case 3: // ボス
-//break;
 					{
-//							let cast = g_tblCast.tbl[ "GHOST" ];
-//							let cast = g_tblCast.tbl[ "SWORDMAN" ];
-//							let cast = g_tblCast.tbl[ "DRAGON" ];
-//							let cast = g_tblCast.tbl[ "MINO" ];
-//							let cast = g_tblCast.tbl[ "SWORDMAN" ];
-//							let cast = g_tblCast.tbl[ "TSTMAN" ];
-//						let cast = g_tblCast.tbl[ "NINJA" ];
-//							let cast = g_tblCast.tbl[ "WIBARN" ];
-//							let cast = g_tblCast.tbl[ "SUMMON" ];
-//							let cast = g_tblCast.tbl[ "ARCHER" ];
-//						g_unit.unit_create( 1, 2, px, py, cast.size, rad(90), cast.tblThink, cast.name, cast.talk );
 							let cast = g_tblCast.tbl[ tblEnemy[2][ e2 ]];
 							g_unit.unit_create( 0, 2, px, py, cast.size, rad(90), cast.tblThink, cast.name, cast.talk );
 					}
@@ -2803,6 +2795,7 @@ function game_init( start_x, start_y )
 function main_update()
 //-----------------------------------------------------------------------------
 {
+
 //test();	return;
 	if(0)
 	{
@@ -2810,14 +2803,14 @@ function main_update()
 		{
 			let size= 8;
 			let w = Math.floor(html_canvas.width/size);
-			let g_tile_h = Math.floor(html_canvas.height/size);
+			let g_scr_h = Math.floor(html_canvas.height/size);
 			let sx = (html_canvas.width-w*size)/2+size/2;
-			let sy = (html_canvas.height-g_tile_h*size)/2+size/2;
+			let sy = (html_canvas.height-g_scr_h*size)/2+size/2;
 
 
 			for ( let x = 0 ; x < w ; x++ )
 			{
-				for ( let y = 0 ; y < g_tile_h ; y++ )
+				for ( let y = 0 ; y < g_scr_h ; y++ )
 				{
 //					circle( x*size+sx, y*size+sy, 16+8,1 );
 						let s = size-0;
@@ -2840,24 +2833,24 @@ function main_update()
 	{
 		let size= 54;
 		let w = Math.floor(html_canvas.width/size);
-		let g_tile_h = Math.floor(html_canvas.height/size);
+		let g_scr_h = Math.floor(html_canvas.height/size);
 		let sx = (html_canvas.width-w*size)/2+size/2;
-		let sy = (html_canvas.height-g_tile_h*size)/2+size/2;
+		let sy = (html_canvas.height-g_scr_h*size)/2+size/2;
 
 
 		for ( let x = 0 ; x < w ; x++ )
 		{
-			for ( let y = 0 ; y < g_tile_h ; y++ )
+			for ( let y = 0 ; y < g_scr_h ; y++ )
 			{
 				circle( x*size+sx, y*size+sy, 16+8,1 );
-					let s = size-0;
-					let x0 = x*size+sx;
-					let y0 = y*size+sy;
-					let x1 = x0-s/2;
-					let y1 = y0-s/2;
-					let x2 = x0+s/2;
-					let y2 = y0+s/2;
-					box( x1,y1,x2,y2, 13 );
+				let s = size-0;
+				let x0 = x*size+sx;
+				let y0 = y*size+sy;
+				let x1 = x0-s/2;
+				let y1 = y0-s/2;
+				let x2 = x0+s/2;
+				let y2 = y0+s/2;
+				box( x1,y1,x2,y2, 13 );
 			}
 		}
 	}
@@ -2868,8 +2861,25 @@ function main_update()
 		{
 			if ( u1.gid == 1 )	// グループID=1 はPlayer
 			{
-				g_tile_cx = u1.x;
-				g_tile_cy = u1.y;
+				g_scr_cx = u1.x;
+				g_scr_cy = u1.y;
+				
+				let to = rad(-90)-u1.dir;
+				let s = to - g_scr_rot;
+				if ( s < -Math.PI ) s += Math.PI*2;
+				if ( s >  Math.PI ) s -= Math.PI*2;
+				let r = 0;
+				if ( s > 0 ) 
+				{
+					r =  Math.min(s,rad(2));
+				}
+				if ( s < 0 ) 
+				{
+					r =  -Math.min(-s,rad(2));
+				}
+//				g_scr_rot += r;
+//				g_scr_rot = (g_scr_rot*2+to)/3;
+				g_scr_rot = to;
 				break;
 			}
 		}
@@ -2881,20 +2891,18 @@ function main_update()
 
 		// カーソル表示
 		let sc = html_canvas2.height/g_map_SZ;
-		let x = Math.floor(g_tile_cx/g_tile_SZ)*sc+0.5;
-		let y = Math.floor(g_tile_cy/g_tile_SZ)*sc+0.5;
-		let r = (g_tile_h/2)*sc;
-//		g_map_gra.circle( x, y, r, "#000" );
-		g_map_gra.circle( x, y, r+1, "#FFF" );
+		let x = Math.floor(g_scr_cx/g_scr_tile_SZ)*sc+0.5;
+		let y = Math.floor(g_scr_cy/g_scr_tile_SZ)*sc+0.5;
+		let r = (g_scr_h/2)*sc;
+		g_map_gra.circle( x, y, r, "#fff" );
 	}
 
 
 	print( 0,8, "units:" + g_unit.tblUnit.length.toString() );
-//console.log(g_unit.tblUnit.length);
 
 	{ // マップ描画
-		// 月と太陽と北極星
-		{
+
+		{// 月と太陽と北極星
 			function draw_sun( px, py, r0, r1, r2 ) 
 			{ // 太陽
 				circle( px, py, r0 );
@@ -2909,10 +2917,12 @@ function main_update()
 			}
 			draw_sun( 80, 80, 7, 11, 15 );
 
-			// ☆
-			function drawStar(px, py, r )
+			// ☆北極星
+			function draw_pole( pr, rot, r )
 			{
-//				circle( px, py, r0 );
+				let px = pr * Math.cos( rot );
+				let py = pr * Math.sin( rot );
+			
 				let st = rad(360*2/5);
 				for ( let th = rad(-90) ; th <= Math.PI*4 ; th += st )
 				{
@@ -2923,21 +2933,6 @@ function main_update()
 					line( x1, y1, x2, y2 );
 				}
 			}
-
-			function draw_pole( px, py, r0, r1, r2 ) 
-			{ // 北極星
-				circle( px, py, r0 );
-				for ( let th = 0 ; th < Math.PI*2 ; th += rad(90) )
-				{
-					let x1 = r1*Math.cos(th) + px;
-					let y1 = r1*Math.sin(th) + py;
-					let x2 = r2*Math.cos(th) + px;
-					let y2 = r2*Math.sin(th) + py;
-					line( x1, y1, x2, y2 );
-				}
-			}
-//			draw_pole( 256, 10, 5, 3, 8 );
-			drawStar( 256, 10, 5 );
 
 			function draw_moon( px, py, r0 ) 
 			{ // 月 29.5日周期で満ち欠け
@@ -2951,88 +2946,115 @@ function main_update()
 
 		{
 			ctx.save();
-			{ // クリッピング
-				circle( html_canvas.width/2, html_canvas.height/2, (g_tile_w)*g_tile_SZ/2 );
-			    ctx.clip();
-			}
-			box( 
-				g_tile_sx-g_tile_SZ/2+0.5,
-				g_tile_sy-g_tile_SZ/2+0.5,
-				(g_tile_w-1)*g_tile_SZ+g_tile_sx+g_tile_SZ/2+0.5,
-				(g_tile_h-1)*g_tile_SZ+g_tile_sy+g_tile_SZ/2+0.5
-			);
-
-
-			if(1)
+			ctx.translate(html_canvas.width/2,html_canvas.height/2);
 			{
-				let ox = g_tile_cx-html_canvas.width/2;		//左上オフセットx
-				let oy = g_tile_cy-html_canvas.height/2;	//左上オフセットy
+			draw_pole( 245, rad(-90)+g_scr_rot, 5 );
 
-				let mx = Math.floor( ox / g_tile_SZ );
-				let my = Math.floor( oy / g_tile_SZ );
-				let x = 0;
-				let y = 0;
+				{ // クリッピング
+					circle( 0,0, (g_scr_w)*g_scr_tile_SZ/2 );
+					ctx.clip();
+				}
 
-
-				for ( let y = 0 ; y < g_tile_h+2 ; y++ )
+				ctx.save();
 				{
-					for ( let x = 0 ; x < g_tile_w+2 ; x++ )
+					ctx.rotate( g_scr_rot ) ;
+
+					box( 
+						g_scr_sx-g_scr_tile_SZ/2+0.5							-256,
+						g_scr_sy-g_scr_tile_SZ/2+0.5							-256,
+						(g_scr_w-1)*g_scr_tile_SZ+g_scr_sx+g_scr_tile_SZ/2+0.5	-256,
+						(g_scr_h-1)*g_scr_tile_SZ+g_scr_sy+g_scr_tile_SZ/2+0.5	-256	
+					);
+
+
+					if(1)
 					{
-						let ax = (mx+x);
-						let ay = (my+y);
-						if ( ax >= g_map_SZ	) ax -= g_map_SZ;
-						if ( ay >= g_map_SZ	) ay -= g_map_SZ;
-						if ( ax < 0 			) ax += g_map_SZ;
-						if ( ay < 0 			) ay += g_map_SZ;
-					
-						let a = g_map_buf[ g_map_SZ*ay + ax ];
+						let ox = g_scr_cx-html_canvas.width/2;	//左上オフセットx
+						let oy = g_scr_cy-html_canvas.height/2;	//左上オフセットy
 
-						if ( a > 0 )
+						let mx = Math.floor( ox / g_scr_tile_SZ );
+						let my = Math.floor( oy / g_scr_tile_SZ );
+						let x = 0;
+						let y = 0;
+
+
+						for ( let y = 0 ; y < g_scr_h+2 ; y++ )
 						{
-							let ax = -(ox)%g_tile_SZ;
-							let ay = -(oy)%g_tile_SZ;
+							for ( let x = 0 ; x < g_scr_w+2 ; x++ )
+							{
+								let ax = (mx+x);
+								let ay = (my+y);
+								if ( ax >= g_map_SZ	) ax -= g_map_SZ;
+								if ( ay >= g_map_SZ	) ay -= g_map_SZ;
+								if ( ax < 0 			) ax += g_map_SZ;
+								if ( ay < 0 			) ay += g_map_SZ;
+							
+								let a = g_map_buf[ g_map_SZ*ay + ax ];
 
-							let x0 = x*g_tile_SZ+g_tile_sx + ax - g_tile_SZ;
-							let y0 = y*g_tile_SZ+g_tile_sy + ay - g_tile_SZ;
-							let x1 = x0-g_tile_SZ/2;
-							let y1 = y0-g_tile_SZ/2;
-							let x2 = x0+g_tile_SZ/2;
-							let y2 = y0+g_tile_SZ/2;
-							fill_hach( x1,y1,x2,y2, 13 );
+								if ( a > 0 )
+								{
+									let ax = -(ox)%g_scr_tile_SZ;
+									let ay = -(oy)%g_scr_tile_SZ;
 
+									let x0 = x*g_scr_tile_SZ+g_scr_sx + ax - g_scr_tile_SZ;
+									let y0 = y*g_scr_tile_SZ+g_scr_sy + ay - g_scr_tile_SZ;
+									let x1 = x0-g_scr_tile_SZ/2	-256;
+									let y1 = y0-g_scr_tile_SZ/2	-256;
+									let x2 = x0+g_scr_tile_SZ/2	-256;
+									let y2 = y0+g_scr_tile_SZ/2	-256;
+									fill_hach( x1,y1,x2,y2, 13 );
+
+								}
+							}
 						}
 					}
-				}
-			}
-			else
-			for ( let y = 0 ; y < g_tile_h ; y++ )
-			{
-				for ( let x = 0 ; x < g_tile_w ; x++ )
-				{
-					let mx = ( 0 + x ) % g_map_SZ;
-					let my = ( 0 + y ) % g_map_SZ;
-
-					let a = g_map_buf[ g_map_SZ*my + mx ];
-					if ( a > 0 )
+					else
+					for ( let y = 0 ; y < g_scr_h ; y++ )
 					{
-						let x0 = x*g_tile_SZ+g_tile_sx;
-						let y0 = y*g_tile_SZ+g_tile_sy;
-						let x1 = x0-g_tile_SZ/2;
-						let y1 = y0-g_tile_SZ/2;
-						let x2 = x0+g_tile_SZ/2;
-						let y2 = y0+g_tile_SZ/2;
-						fill_hach( x1,y1,x2,y2, 13 );
+						for ( let x = 0 ; x < g_scr_w ; x++ )
+						{
+							let mx = ( 0 + x ) % g_map_SZ;
+							let my = ( 0 + y ) % g_map_SZ;
+
+							let a = g_map_buf[ g_map_SZ*my + mx ];
+							if ( a > 0 )
+							{
+								let x0 = x*g_scr_tile_SZ+g_scr_sx;
+								let y0 = y*g_scr_tile_SZ+g_scr_sy;
+								let x1 = x0-g_scr_tile_SZ/2;
+								let y1 = y0-g_scr_tile_SZ/2;
+								let x2 = x0+g_scr_tile_SZ/2;
+								let y2 = y0+g_scr_tile_SZ/2;
+								fill_hach( x1,y1,x2,y2, 13 );
+							}
+						}
+					}
+					// エフェクト更新
+					g_effect.effect_update();
+
+					// ユニット更新
+					g_unit.unit_allupdate();
+				}
+				ctx.restore();
+
+				{// 文字列表示
+					for ( let u1 of g_unit.tblUnit ) 
+					{
+						let c = Math.cos( g_scr_rot );
+						let s = Math.sin( g_scr_rot );
+						let x = u1.x-g_scr_cx;
+						let y = u1.y-g_scr_cy;
+
+						let px = x*c - y*s;
+						let py = x*s + y*c;
+						print( px+u1.size, py-u1.size, u1.name );
 					}
 				}
+			
 			}
-			// エフェクト更新
-			g_effect.effect_update();
-
-			// ユニット更新
-			g_unit.unit_allupdate();
-
 			ctx.restore();
-		}			
+
+		}
 	}
 
 
@@ -3053,13 +3075,22 @@ function main_update()
 	
 	requestAnimationFrame( main_update );
 }
-
+let g_scr_cx = 0;
+let g_scr_cy = 0;
+let g_map_buf;
+let g_map_gra;
 //-----------------------------------------------------------------------------
 window.onload = function( e )
 //-----------------------------------------------------------------------------
 {
+
+	g_effect = new Effect(100);
+	g_unit.unit_init();
 	map_init();
-	game_init(32*52*2,32*52*2);
+	console.log("r ",  html_getValue_comboid( "html_reso" ) );
+
+	console.log(g_map_SZ);
+	game_init(g_map_SZ/2*g_scr_tile_SZ,g_map_SZ/2*g_scr_tile_SZ);
 
 	requestAnimationFrame( main_update );
 }
