@@ -70,12 +70,12 @@ class map_GRA
 		this.ctx.closePath();
 	}
 	//-----------------------------------------------------------------------------
-	line = function( sx,sy, ex,ey )
+	line = function( sx,sy, ex,ey, col="#000" )
 	//-----------------------------------------------------------------------------
 	{
 		this.ctx.beginPath();
-		this.ctx.strokeStyle = "#000000";
-		this.ctx.lineWidth = 1.1;
+		this.ctx.strokeStyle = col;
+		this.ctx.lineWidth = 1.0;
 		this.ctx.moveTo( sx, sy );
 		this.ctx.lineTo( ex, ey );
 		this.ctx.closePath();
@@ -87,7 +87,7 @@ class map_GRA
 	{
 		this.ctx.beginPath();
 		this.ctx.strokeStyle = col;//"#000000";
-		this.ctx.lineWidth = 1.1;
+		this.ctx.lineWidth = 1.0;
 		this.ctx.arc(x, y, r, 0, Math.PI * 2, true);
 		this.ctx.closePath();
 		this.ctx.stroke();
@@ -561,7 +561,7 @@ let line = function( sx,sy, ex,ey )
 {
 	ctx.beginPath();
 	ctx.strokeStyle = "#000000";
-	ctx.lineWidth = 1.1;
+	ctx.lineWidth = 1.0;
 	ctx.moveTo( sx, sy );
 	ctx.lineTo( ex, ey );
 	ctx.closePath();
@@ -603,7 +603,18 @@ let circle = function( x,y,r )
 //-----------------------------------------------------------------------------
 {
 	ctx.beginPath();
-	ctx.lineWidth = 1.1;
+	ctx.lineWidth = 1.0;
+	ctx.arc(x, y, r, 0, Math.PI * 2, true);
+	ctx.closePath();
+	ctx.stroke();
+}
+//-----------------------------------------------------------------------------
+function circle_red( x,y,r )
+//-----------------------------------------------------------------------------
+{
+	ctx.beginPath();
+	ctx.strokeStyle = "#F00";
+	ctx.lineWidth = 1.0;
 	ctx.arc(x, y, r, 0, Math.PI * 2, true);
 	ctx.closePath();
 	ctx.stroke();
@@ -724,6 +735,12 @@ function unit_circle( x, y, r )
 	let cx = g_scr_cx;
 	let cy = g_scr_cy;
 	circle( x-cx, y-cy, r );
+}
+function unit_circle_red( x, y, r )
+{
+	let cx = g_scr_cx;
+	let cy = g_scr_cy;
+	circle_red( x-cx, y-cy, r );
 }
 function unit_line( x1, y1, x2,y2 )
 {
@@ -1135,9 +1152,9 @@ class ActPunch	// パンチ攻撃アクション
 			let sz = unit_size;
 			let br = unit_size/2;
 			br = this.time;
-			if ( br > unit_size/2 ) 
+			if ( br > unit_size/4 ) 
 			{
-				br = unit_size/2;
+				br = unit_size/4;
 			}
 			let r	= (br+unit_size);
 			
@@ -1160,10 +1177,10 @@ class ActPunch	// パンチ攻撃アクション
 
 				this.dir += this.add_r;	
 				this.add_r += this.acc_r;
-				let a = rad(19);
+				let a = rad(11);
 				if ( this.dir < a ) 
 				{
-					this.add_r	= -this.add_r/2.6;
+					this.add_r	= -this.add_r/4;
 					this.dir = a;
 				}
 				this.time++;
@@ -1494,8 +1511,11 @@ class Unit
 			{
 				boss		: boss,
 				gid			: gid,	// グループID , 1:Player
+				stat		: 0,	// 0:nomal 1:衝突中
 				x			: x,
 				y			: y,
+				add_x		: 0,
+				add_y		: 0,
 				size		: size,
 				dir			: dir,
 				tblThink	: tblThink,
@@ -1592,8 +1612,8 @@ class Unit
 		{
 		}
 
-		let ux = u1.x;
-		let uy = u1.y;
+//		let ux = u1.x;
+//		let uy = u1.y;
 
 		u1.time+=1;
 
@@ -1646,8 +1666,8 @@ class Unit
 		if ( u1.quick.lim > 0 ) 					// 高速移動
 		{
 			unit_print( u1.x+u1.size+8, u1.y-u1.size+16, "フフッ" );
-			ux += u1.quick.ax;	
-			uy += u1.quick.ay;	
+			u1.add_x += u1.quick.ax;	
+			u1.add_y += u1.quick.ay;	
 			unit_circle( u1.x, u1.y, er+u1.size );	// 本体表示
 			unit_circle( dx,dy,(u1.size*0.2) );		// 口、目表示
 
@@ -1869,8 +1889,17 @@ class Unit
 		}
 		else
 		{
-			unit_circle( u1.x, u1.y, er+u1.size );	// 本体表示
-			unit_circle( dx,dy,(u1.size*0.2) );		// 口、目表示
+			if( u1.stat == 0 )
+			{
+				unit_circle( u1.x, u1.y, er+u1.size );	// 本体表示
+				unit_circle( dx,dy,(u1.size*0.2) );		// 口、目表示
+			}
+			else
+			{
+				unit_circle_red( u1.x, u1.y, er+u1.size );	// 本体表示
+				unit_circle_red( dx,dy,(u1.size*0.2) );		// 口、目表示
+			}
+			
 		}
 		
 		////////////////
@@ -2012,83 +2041,13 @@ class Unit
 					u1.dir += r;
 				}
 
-if(0)
-{
-	let x = Math.floor((u1.x+g_scr_tile_SZ/2-g_scr_sx)/g_scr_tile_SZ);
-	let y = Math.floor((u1.y+g_scr_tile_SZ/2-g_scr_sy)/g_scr_tile_SZ);
-
-	let s = g_scr_tile_SZ-0;
-	let x0 = x*g_scr_tile_SZ+g_scr_sx;
-	let y0 = y*g_scr_tile_SZ+g_scr_sy;
-	let x1 = x0-s/2;
-	let y1 = y0-s/2;
-	let x2 = x0+s/2;
-	let y2 = y0+s/2;
-	box( x1,y1,x2,y2 );
-}
-{
-}
 				{	//MOVE
 
 					let th = u1.dir+act.mov_dir;
-					ux += Math.cos( th )*act.mov_spd;
-					uy += Math.sin( th )*act.mov_spd;
-
-					let isCol = function() //衝突判定
-					{
-						let flg = false; 
-
-						//	壁との衝突
-						for ( let y = 0 ; y < g_scr_h ; y++ )
-						{
-							for ( let x = 0 ; x < g_scr_w ; x++ )
-							{
-//								if ( y >= g_scr_tbl.length || x >= g_scr_tbl[y].length ) continue;
-//								if ( g_scr_tbl[y][x] != 1 ) continue;
-								let x0 = x*g_scr_tile_SZ+g_scr_sx;
-								let y0 = y*g_scr_tile_SZ+g_scr_sy;
-								let x1 = x0-g_scr_tile_SZ/2;
-								let y1 = y0-g_scr_tile_SZ/2;
-								let x2 = x0+g_scr_tile_SZ/2;
-								let y2 = y0+g_scr_tile_SZ/2;
-								let sz = u1.size;
-								if ( 
-									( (ux > x1-sz) && (ux < x2+sz) )
-								&&	( (uy > y1-sz) && (uy < y2+sz) )
-								)
-								{
-									return true;
-								}
-							}
-						}
-
-						// ユニット同士の衝突
-//						lif (   html_getValue_textid("col");
-
-						if ( 1 == html_getValue_textid("nohit") ) return false;
-
-						for ( let u2 of g_unit.tblUnit )
-						{
-							if ( u2 == u1 )
-							{
-								continue;
-							}
-							let x1	= u2.x;
-							let y1	= u2.y;
-							let len	= u2.size + u1.size;
-							let far = Math.sqrt( (x1-ux)*(x1-ux) + (y1-uy)*(y1-uy) );			
-							if ( len+0 > far ) flg = true;
-						}
-						return flg
-					}
-					
-					if ( isCol() == false )
-					{
-						u1.x = ux;
-						u1.y = uy;
-					}
-					
+					u1.add_x += Math.cos( th )*act.mov_spd;
+					u1.add_y += Math.sin( th )*act.mov_spd;
 				}
+
 			}
 
 			u1.think_lim--;
@@ -2110,6 +2069,95 @@ if(0)
 			}
 		}
 	}
+
+	//-----------------------------------------------------------------------------
+	unit_collition( u1 )
+	//-----------------------------------------------------------------------------
+	{
+		let ux = u1.x + u1.add_x;
+		let uy = u1.y + u1.add_y;
+		u1.add_x = 0;
+		u1.add_y = 0;
+
+		let isCol = function() //衝突判定
+		{
+			let flg = false; 
+
+			//	壁との衝突
+			for ( let y = 0 ; y < g_scr_h ; y++ )
+			{
+				for ( let x = 0 ; x < g_scr_w ; x++ )
+				{
+					let x0 = x*g_tile_SZ+g_scr_sx;
+					let y0 = y*g_tile_SZ+g_scr_sy;
+					let x1 = x0-g_tile_SZ/2;
+					let y1 = y0-g_tile_SZ/2;
+					let x2 = x0+g_tile_SZ/2;
+					let y2 = y0+g_tile_SZ/2;
+					let sz = u1.size;
+					if ( 
+						( (ux > x1-sz) && (ux < x2+sz) )
+					&&	( (uy > y1-sz) && (uy < y2+sz) )
+					)
+					{
+						return true;
+					}
+				}
+			}
+
+			// ユニット同士の衝突
+
+			if ( 1 == html_getValue_textid("nohit") ) return false;
+
+			u1.stat = 0;
+
+			for ( let u2 of g_unit.tblUnit )
+			{
+				if ( u2 == u1 )
+				{
+					continue;
+				}
+				let x2	= u2.x;
+				let y2	= u2.y;
+				let size	= u2.size + u1.size;
+				let far = Math.sqrt( (x2-ux)*(x2-ux) + (y2-uy)*(y2-uy) );			
+				if ( size > far ) 
+				{
+					let far = Math.sqrt( (x2-u1.x)*(x2-u1.x) + (y2-u1.y)*(y2-u1.y) );			
+					if ( size > far ) 
+					{
+						// 移動前から既に衝突してる状態なら、次回に離れるように移動するように設定。
+						let dir = Math.atan2( (y2-u1.y), (x2-u1.x) );
+						let r = far-size+ 10;
+						u1.add_x = -r * Math.cos( dir );
+						u1.add_y = -r * Math.sin( dir );
+						u2.add_x = r * Math.cos( dir );
+						u2.add_y = r * Math.sin( dir );
+						u1.stat = 1;
+					}
+					else
+					{
+						// 移動前には衝突していないのなら書き戻すような処理
+					}
+					return true;
+				}
+			}
+			return flg
+		}
+		
+		if ( isCol() == false )
+		{
+			u1.x = ux;
+			u1.y = uy;
+			const sz = g_map_SZ * g_tile_SZ;
+			if ( u1.x < 0 	) u1.x = sz-1;
+			if ( u1.x >= sz ) u1.x = 0;
+			if ( u1.y < 0 	) u1.y = sz-1;
+			if ( u1.y >= sz ) u1.y = 0;
+		}
+		
+	}
+
 		
 	//-----------------------------------------------------------------------------
 	unit_allupdate()
@@ -2118,6 +2166,10 @@ if(0)
 		for ( let u1 of g_unit.tblUnit ) 
 		{
 			this.unit_update( u1 );
+		}
+		for ( let u1 of g_unit.tblUnit ) 
+		{
+			this.unit_collition( u1 );
 		}
 	}
 	
@@ -2322,7 +2374,7 @@ let g_json_cast =
 			{name:"B"		,act_no:0			,mov_dir:rad(  90)	,mov_spd:1.25	, rot_spd:rad(0.8)	,rate:20, quant: 36, num:3 },
 			{name:"R"		,act_no:0			,mov_dir:rad( 60)	,mov_spd:1.0	, rot_spd:rad(0.8)	,rate:20, quant:36, num:3 },
 			{name:"L"		,act_no:0			,mov_dir:rad( 160)	,mov_spd:0.5	, rot_spd:rad(0.8)	,rate:20, quant:8, num:3 },
-			{name:"召喚"	,act_no:ACT_SUMMON	,mov_dir:rad(  0)	,mov_spd:0.25	, rot_spd:rad(0.3)	,rate:4, quant:0, num:3 },
+			{name:"召喚"	,act_no:ACT_VOLT	,mov_dir:rad(  0)	,mov_spd:0.25	, rot_spd:rad(0.3)	,rate:4, quant:0, num:3 },
 		]
 	},
 	"ORC":	// 人型	オーク
@@ -2361,162 +2413,13 @@ let g_json_cast =
 
 const g_tblCast = new Cast( g_json_cast );
 
-let g_img = ctx.createImageData( 200, 200 );
+const g_tile_SZ = 52;
+let g_scr_w = Math.floor(html_canvas.width/g_tile_SZ);
+let g_scr_h = Math.floor(html_canvas.height/g_tile_SZ);
+let g_scr_sx = (html_canvas.width-g_scr_w*g_tile_SZ)/2+g_tile_SZ/2;
+let g_scr_sy = (html_canvas.height-g_scr_h*g_tile_SZ)/2+g_tile_SZ/2;
 
-//let g_scr_tbl;
-
-const g_scr_tile_SZ = 52;
-let g_scr_w = Math.floor(html_canvas.width/g_scr_tile_SZ);
-let g_scr_h = Math.floor(html_canvas.height/g_scr_tile_SZ);
-let g_scr_sx = (html_canvas.width-g_scr_w*g_scr_tile_SZ)/2+g_scr_tile_SZ/2;
-let g_scr_sy = (html_canvas.height-g_scr_h*g_scr_tile_SZ)/2+g_scr_tile_SZ/2;
-
-let g_map_mini =
-[
-	[
-		[0,0,0,0,0,0,0],
-		[0,0,0,0,0,0,0],
-		[0,0,0,0,0,0,0],
-		[0,0,0,0,0,0,0],
-		[0,0,0,0,0,0,0],
-		[0,0,0,0,0,0,0],
-		[0,0,0,0,0,0,0],
-	],
-	[
-		[1,0,0,0,0,0,1],
-		[0,0,0,0,0,0,0],
-		[0,0,0,0,0,0,0],
-		[0,0,0,0,0,0,0],
-		[0,0,0,0,0,0,0],
-		[0,0,0,0,0,0,0],
-		[1,0,0,0,0,0,1],
-	],
-	[
-		[1,1,0,0,0,1,1],
-		[1,0,0,0,0,0,1],
-		[0,0,0,0,0,0,0],
-		[0,0,0,0,0,0,0],
-		[0,0,0,0,0,0,0],
-		[1,0,0,0,0,0,1],
-		[1,1,0,0,0,1,1],
-	],
-	[
-		[1,1,1,1,1,1,1],
-		[1,0,0,0,0,0,1],
-		[1,0,0,0,0,0,1],
-		[1,0,0,0,0,0,1],
-		[1,0,0,0,0,0,1],
-		[1,0,0,0,0,0,1],
-		[1,1,1,1,1,1,1],
-	],
-	[
-		[1,0,0,0,0,0,1],
-		[1,0,0,0,0,0,1],
-		[1,0,0,0,0,0,1],
-		[1,0,0,0,0,0,1],
-		[1,0,0,0,0,0,1],
-		[1,0,0,0,0,0,1],
-		[1,0,0,0,0,0,1],
-	],
-	[
-		[1,1,1,1,1,1,1],
-		[0,0,0,0,0,0,0],
-		[0,0,0,0,0,0,0],
-		[0,0,0,0,0,0,0],
-		[0,0,0,0,0,0,0],
-		[0,0,0,0,0,0,0],
-		[0,0,0,0,0,0,0],
-		[1,1,1,1,1,1,1],
-	],
-	[
-		[1,1,0,0,0,1,1],
-		[1,1,0,0,0,1,1],
-		[1,1,0,0,0,1,1],
-		[1,1,0,0,0,1,1],
-		[1,1,0,0,0,1,1],
-		[1,1,0,0,0,1,1],
-		[1,1,0,0,0,1,1],
-	],
-	[
-		[0,0,0,0,0,0,0],
-		[0,0,0,0,0,0,0],
-		[0,0,0,1,0,0,0],
-		[0,0,1,1,1,0,0],
-		[0,0,0,1,0,0,0],
-		[0,0,0,0,0,0,0],
-		[0,0,0,0,0,0,0],
-	],
-	[
-		[0,0,0,0,0,0,0],
-		[0,0,0,0,0,0,0],
-		[0,0,0,0,0,0,0],
-		[0,0,0,0,0,0,0],
-		[1,0,0,0,0,0,1],
-		[1,1,0,0,0,1,1],
-		[1,1,1,0,1,1,1],
-	],
-	[
-		[0,0,0,0,0,0,0],
-		[0,0,0,0,0,0,0],
-		[0,0,0,0,0,0,0],
-		[1,1,0,0,0,1,1],
-		[0,0,0,0,0,0,0],
-		[0,0,0,0,0,0,0],
-		[0,0,0,0,0,0,0],
-	],
-	[
-		[0,0,0,0,0,0,0],
-		[0,0,0,0,0,0,0],
-		[0,0,0,1,0,0,0],
-		[0,0,0,1,0,0,0],
-		[0,0,0,1,0,0,0],
-		[0,0,0,0,0,0,0],
-		[0,0,0,0,0,0,0],
-	],
-	[
-		[0,0,0,0,0,0,0],
-		[0,0,0,0,0,0,0],
-		[0,0,1,0,1,0,0],
-		[0,0,0,1,0,0,0],
-		[0,0,1,0,1,0,0],
-		[0,0,0,0,0,0,0],
-		[0,0,0,0,0,0,0],
-	],
-];
-// フロアマトリクス
-/*
-{
-	g_scr_tbl = new Array(g_scr_w);
-	for ( let i = 0 ; i < g_scr_tbl.length ; i++ ) g_scr_tbl[i] = new Array(g_scr_h);
-
-
-	let r = Math.floor(rand(1)*g_map_mini.length);
-r=1;
-	if (1)
-	{
-		g_scr_tbl = g_map_mini[r];
-	}
-	else
-	{
-		for ( let x = 0 ; x < g_scr_w ; x++ )
-		{
-			for ( let y = 0 ; y < g_scr_h ; y++ )
-			{
-				if ( rand(1) > 0.7 )
-				{
-					g_scr_tbl[y][x] = 1;
-				}
-				else
-				{
-					g_scr_tbl[y][x] = 0;
-				}
-			}
-		}
-	}
-}
-*/
-
-			let g_scr_rot = 0;
+let g_scr_rot = 0;
 
 //-----------------------------------------------------------------------------
 window.onkeydown = function( ev )
@@ -2580,8 +2483,6 @@ window.onkeydown = function( ev )
 			if ( c == KEY_LEFT	) u1.dir -= rad(4);
 			if ( c == KEY_RIGHT	) u1.dir += rad(4);
 
-
-
 			{
 				let spd = 0;
 				let dir = u1.dir;
@@ -2598,7 +2499,7 @@ window.onkeydown = function( ev )
 					u1.x += Math.cos( dir )*spd;
 					u1.y += Math.sin( dir )*spd;
 
-					const sz = g_map_SZ * g_scr_tile_SZ;
+					const sz = g_map_SZ * g_tile_SZ;
 					if ( u1.x < 0 	) u1.x = sz-1;
 					if ( u1.x >= sz ) u1.x = 0;
 					if ( u1.y < 0 	) u1.y = sz-1;
@@ -2678,7 +2579,6 @@ window.onkeydown = function( ev )
 function game_init( start_x, start_y )
 //-----------------------------------------------------------------------------
 {//ユニット配置
-//console.log( start_x, start_y );
 
 	//.unit_create( 0, 100, 350, 16, rad(-90), "ティナ",THINK_NONE );
 	//.unit_create( 0, 290, 300, 16, rad(-90), "ユイ",THINK_NONE );
@@ -2695,6 +2595,8 @@ function game_init( start_x, start_y )
 			[9,0,9,1,9,0,9],
 			[9,9,9,9,9,9,9],
 		];
+		const hosei_x = 3;
+		const hosei_y = 5;
 	{
 		for ( let y = 0 ; y < g_sets.length ; y++ )
 		{
@@ -2733,6 +2635,7 @@ function game_init( start_x, start_y )
 		[
 			["WOLF","GHOST","ZOMBIE","NINJA","ORC","ARCHER",],
 			["GHOST","WIBARN","MINO","NINJA","SUMMON","SWORDMAN",],
+//			["SUMMON",],
 			["DRAGON","MINO","SWORDMAN","TSTMAN","NINJA","WIBARN"],
 		];
 		let e0 = Math.floor(tblEnemy[0].length*rand(1))
@@ -2744,11 +2647,11 @@ function game_init( start_x, start_y )
 		{
 			for ( let x = 0 ; x < g_scr_w ; x++ )
 			{
-				let px = x*g_scr_tile_SZ+g_scr_sx +start_x;//+ (g_map_SZ*g_scr_tile_SZ);
-				let py = y*g_scr_tile_SZ+g_scr_sy +start_y ;//+ (g_map_SZ*g_scr_tile_SZ);
 
 				if ( y >= g_sets.length || x >= g_sets[y].length ) continue;
 
+				let px = (x-hosei_x)*g_tile_SZ+start_x;
+				let py = (y-hosei_y)*g_tile_SZ+start_y;
 
 				switch( g_sets[y][x] )
 				{
@@ -2764,6 +2667,7 @@ function game_init( start_x, start_y )
 					break;
 
 				case 2: // 雑魚
+break;
 					{
 							let cast = g_tblCast.tbl[ tblEnemy[0][ e0 ]];
 							g_unit.unit_create( 0, 2, px, py, cast.size, rad(90), cast.tblThink, cast.name, cast.talk );
@@ -2771,6 +2675,7 @@ function game_init( start_x, start_y )
 					break;
 
 				case 4: // 中ボス
+//break;
 					{
 							let cast = g_tblCast.tbl[ tblEnemy[1][ e1 ]];
 							g_unit.unit_create( 0, 2, px, py, cast.size, rad(90), cast.tblThink, cast.name, cast.talk );
@@ -2795,40 +2700,8 @@ function game_init( start_x, start_y )
 function main_update()
 //-----------------------------------------------------------------------------
 {
-
-//test();	return;
-	if(0)
-	{
-		cls();
-		{
-			let size= 8;
-			let w = Math.floor(html_canvas.width/size);
-			let g_scr_h = Math.floor(html_canvas.height/size);
-			let sx = (html_canvas.width-w*size)/2+size/2;
-			let sy = (html_canvas.height-g_scr_h*size)/2+size/2;
-
-
-			for ( let x = 0 ; x < w ; x++ )
-			{
-				for ( let y = 0 ; y < g_scr_h ; y++ )
-				{
-//					circle( x*size+sx, y*size+sy, 16+8,1 );
-						let s = size-0;
-						let x0 = x*size+sx;
-						let y0 = y*size+sy;
-						let x1 = x0-s/2;
-						let y1 = y0-s/2;
-						let x2 = x0+s/2;
-						let y2 = y0+s/2;
-						box( x1,y1,x2,y2, 13 );
-				}
-			}
-		}
-		requestAnimationFrame( main_update );
-		return;
-	}
-	
 	cls();
+
 	if (0)	// フロアマトリクス
 	{
 		let size= 54;
@@ -2861,6 +2734,45 @@ function main_update()
 		{
 			if ( u1.gid == 1 )	// グループID=1 はPlayer
 			{
+				if(navigator.getGamepads)
+				{
+					let list = navigator.getGamepads();
+					for ( pad of list )
+					{
+						if ( pad != null )		
+						{
+							let lx = pad.axes[0];
+							let ly = pad.axes[1];
+							let rx = pad.axes[2];
+							let ry = pad.axes[3];
+
+							{// 左レバー制御
+								let spd = Math.sqrt(ly*ly+lx*lx);
+								let dir = u1.dir+Math.atan2(lx,-ly);
+								if ( Math.abs(spd) > 0.2 )
+								{
+									u1.add_x += Math.cos( dir )*spd*2;
+									u1.add_y += Math.sin( dir )*spd*2;
+								}
+							}
+
+							{// 右レバー制御
+								let spd = 0;
+								let dir = u1.dir;
+								if ( Math.abs(rx) > 0.2 ) dir = u1.dir += rad(rx);
+								if ( Math.abs(ry) > 0.2 ) spd += -ry;
+								if ( Math.abs(spd) > 0.2 )
+								{
+									u1.add_x += Math.cos( dir )*spd*2;
+									u1.add_y += Math.sin( dir )*spd*2;
+								}
+
+							}
+						}
+					}
+				}
+
+
 				g_scr_cx = u1.x;
 				g_scr_cy = u1.y;
 				
@@ -2891,12 +2803,14 @@ function main_update()
 
 		// カーソル表示
 		let sc = html_canvas2.height/g_map_SZ;
-		let x = Math.floor(g_scr_cx/g_scr_tile_SZ)*sc+0.5;
-		let y = Math.floor(g_scr_cy/g_scr_tile_SZ)*sc+0.5;
+		let x = g_scr_cx/g_tile_SZ*sc;
+		let y = g_scr_cy/g_tile_SZ*sc;
 		let r = (g_scr_h/2)*sc;
 		g_map_gra.circle( x, y, r, "#fff" );
+		let ax = r*Math.cos(rad(-90)-g_scr_rot)+x;
+		let ay = r*Math.sin(rad(-90)-g_scr_rot)+y;
+		g_map_gra.line( x, y, ax,ay, "#fff" );
 	}
-
 
 	print( 0,8, "units:" + g_unit.tblUnit.length.toString() );
 
@@ -2948,10 +2862,10 @@ function main_update()
 			ctx.save();
 			ctx.translate(html_canvas.width/2,html_canvas.height/2);
 			{
-			draw_pole( 245, rad(-90)+g_scr_rot, 5 );
+				draw_pole( 245, rad(-90)+g_scr_rot, 5 );
 
 				{ // クリッピング
-					circle( 0,0, (g_scr_w)*g_scr_tile_SZ/2 );
+					circle( 0,0, (g_scr_w)*g_tile_SZ/2 );
 					ctx.clip();
 				}
 
@@ -2959,76 +2873,52 @@ function main_update()
 				{
 					ctx.rotate( g_scr_rot ) ;
 
-					box( 
-						g_scr_sx-g_scr_tile_SZ/2+0.5							-256,
-						g_scr_sy-g_scr_tile_SZ/2+0.5							-256,
-						(g_scr_w-1)*g_scr_tile_SZ+g_scr_sx+g_scr_tile_SZ/2+0.5	-256,
-						(g_scr_h-1)*g_scr_tile_SZ+g_scr_sy+g_scr_tile_SZ/2+0.5	-256	
-					);
+					const ofx = -html_canvas.width/2;	//canvas 左上オフセットx
+					const ofy = -html_canvas.height/2;	//canvas 左上オフセットy
 
+					// 表示エリア確認用
+					box( 
+												g_scr_sx-g_tile_SZ/2	+ofx +0.5,
+												g_scr_sy-g_tile_SZ/2	+ofy +0.5,
+						(g_scr_w-1)*g_tile_SZ+	g_scr_sx+g_tile_SZ/2	+ofx +0.5,
+						(g_scr_h-1)*g_tile_SZ+	g_scr_sy+g_tile_SZ/2	+ofy +0.5	
+					);
 
 					if(1)
 					{
-						let ox = g_scr_cx-html_canvas.width/2;	//左上オフセットx
-						let oy = g_scr_cy-html_canvas.height/2;	//左上オフセットy
+						let mx = Math.floor( g_scr_cx / g_tile_SZ );
+						let my = Math.floor( g_scr_cy / g_tile_SZ );
+						let nx = (g_scr_cx)%g_tile_SZ;
+						let ny = (g_scr_cy)%g_tile_SZ;
 
-						let mx = Math.floor( ox / g_scr_tile_SZ );
-						let my = Math.floor( oy / g_scr_tile_SZ );
-						let x = 0;
-						let y = 0;
-
-
-						for ( let y = 0 ; y < g_scr_h+2 ; y++ )
+						let wh = 4;
+						for ( let y = -wh ; y <= wh+1 ; y++ )
 						{
-							for ( let x = 0 ; x < g_scr_w+2 ; x++ )
+							for ( let x = -wh ; x <= wh+1 ; x++ )
 							{
 								let ax = (mx+x);
 								let ay = (my+y);
 								if ( ax >= g_map_SZ	) ax -= g_map_SZ;
 								if ( ay >= g_map_SZ	) ay -= g_map_SZ;
-								if ( ax < 0 			) ax += g_map_SZ;
-								if ( ay < 0 			) ay += g_map_SZ;
+								if ( ax < 0 		) ax += g_map_SZ;
+								if ( ay < 0 		) ay += g_map_SZ;
 							
 								let a = g_map_buf[ g_map_SZ*ay + ax ];
-
 								if ( a > 0 )
 								{
-									let ax = -(ox)%g_scr_tile_SZ;
-									let ay = -(oy)%g_scr_tile_SZ;
-
-									let x0 = x*g_scr_tile_SZ+g_scr_sx + ax - g_scr_tile_SZ;
-									let y0 = y*g_scr_tile_SZ+g_scr_sy + ay - g_scr_tile_SZ;
-									let x1 = x0-g_scr_tile_SZ/2	-256;
-									let y1 = y0-g_scr_tile_SZ/2	-256;
-									let x2 = x0+g_scr_tile_SZ/2	-256;
-									let y2 = y0+g_scr_tile_SZ/2	-256;
+									let x0 = x*g_tile_SZ -nx;
+									let y0 = y*g_tile_SZ -ny;
+									let x1 = x0-g_tile_SZ/2;
+									let y1 = y0-g_tile_SZ/2;
+									let x2 = x0+g_tile_SZ/2;
+									let y2 = y0+g_tile_SZ/2;
 									fill_hach( x1,y1,x2,y2, 13 );
 
 								}
 							}
 						}
 					}
-					else
-					for ( let y = 0 ; y < g_scr_h ; y++ )
-					{
-						for ( let x = 0 ; x < g_scr_w ; x++ )
-						{
-							let mx = ( 0 + x ) % g_map_SZ;
-							let my = ( 0 + y ) % g_map_SZ;
 
-							let a = g_map_buf[ g_map_SZ*my + mx ];
-							if ( a > 0 )
-							{
-								let x0 = x*g_scr_tile_SZ+g_scr_sx;
-								let y0 = y*g_scr_tile_SZ+g_scr_sy;
-								let x1 = x0-g_scr_tile_SZ/2;
-								let y1 = y0-g_scr_tile_SZ/2;
-								let x2 = x0+g_scr_tile_SZ/2;
-								let y2 = y0+g_scr_tile_SZ/2;
-								fill_hach( x1,y1,x2,y2, 13 );
-							}
-						}
-					}
 					// エフェクト更新
 					g_effect.effect_update();
 
@@ -3057,22 +2947,6 @@ function main_update()
 		}
 	}
 
-
-	{// 別に作ったImageDataを重ね合わせ表示
-		let x = 50;
-		let y = 50;
-		let col = 0x00ff00;
-		{
-			let a = 0xff;
-			let adr = (y*g_img.width+x)*4;
-			g_img.data[ adr +0 ] = (col>>16)&0xff;
-			g_img.data[ adr +1 ] = (col>> 8)&0xff;
-			g_img.data[ adr +2 ] = (col>> 0)&0xff;
-			g_img.data[ adr +3 ] = a&0xff;
-			streachImage2Canvas( g_img );
-		}
-	}
-	
 	requestAnimationFrame( main_update );
 }
 let g_scr_cx = 0;
@@ -3085,12 +2959,14 @@ window.onload = function( e )
 {
 
 	g_effect = new Effect(100);
-	g_unit.unit_init();
-	map_init();
-	console.log("r ",  html_getValue_comboid( "html_reso" ) );
 
-	console.log(g_map_SZ);
-	game_init(g_map_SZ/2*g_scr_tile_SZ,g_map_SZ/2*g_scr_tile_SZ);
+	g_unit.unit_init();
+
+	map_init();
+
+	const sx = g_map_SZ/2*g_tile_SZ; 
+	const sy = g_map_SZ/2*g_tile_SZ; 
+	game_init(sx,sy);
 
 	requestAnimationFrame( main_update );
 }
