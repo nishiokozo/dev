@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>wld</title>
+	</head>
+	<body align="center">
+		<H2>js 地形生成v2</H2>
+	  blur
+		<input type="text" id="blur" value="20" size="3" maxlength="3">
+	  low
+		<input type="text" id="low" value="0.5" size="3" maxlength="3">
+	  col
+		<input type="text" id="col" value="4" size="3" maxlength="3">
+		<input type="button" value="param更新" onClick="hotstart()">
+	reso
+		<select id="html_combo">
+			<option value="64" >64x64</option>
+			<option value="128" selected >128x128</option>
+			<option value="256">256x256</option>
+		</select>
+
+	  <input type="button" value="seed更新" onClick="window.onload()">
+
+<br>
+		<canvas id="html_canvas1"  width="256" height="256" style="border:1px solid" ></canvas>
+		<canvas id="html_canvas2"  width="256" height="256" style="border:1px solid" ></canvas>
+		<canvas id="html_canvas3"  width="256" height="256" style="border:1px solid" ></canvas>
+		<canvas id="html_canvas4"  width="256" height="256" style="border:1px solid" ></canvas>
+		<canvas id="html_canvas5"  width="256" height="256" style="border:1px solid" ></canvas>
+		<canvas id="html_canvas6"  width="256" height="256" style="border:1px solid" ></canvas>
+		<script src="main.js"></script>
+		<br>
+
+<p>①ノイズを作って</p>
+<p>②3x3のブラーを[blur]回かけ</p>
+<p>③0～1にレベル調整し</p>
+<p>④[low]以下は平面とし</p>
+<p>⑤0～1にレベル調整し</p>
+<p>⑥[col]段階の、等高線っぽいものを生成</p>
+
+	</body>
+</html>

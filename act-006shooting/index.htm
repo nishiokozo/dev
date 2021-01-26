@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>act</title>
+	</head>
+	<body align="center">
+<h3 style="color:#cccccc">over boost</h3>
+		<canvas id="html_canvas"  width="768" height="768" style="border:0px solid" ></canvas>
+		<canvas id="html_canvas2"  width="256" height="256" style="border:0px solid" ></canvas>
+		<script src="main.js"></script>
+<br>
+	  blur
+		<input type="text" id="blur" value="15" size="1" maxlength="3">
+	  low
+		<input type="text" id="low" value="0.5" size="1" maxlength="3">
+	  col
+		<input type="text" id="col" value="6" size="1" maxlength="3">
+	  nohit
+		<input type="text" id="nohit" value="0" size="1" maxlength="1">
+  		
+		<input type="button" value="param更新" onClick="map_hotstart()">
+	reso
+		<select id="html_reso">
+			<option value="64" selected>64x64</option>
+			<option value="128"  >128x128</option>
+			<option value="256">256x256</option>
+			<option value="384">384x384</option>
+		</select>
+
+	  <input type="button" value="seed更新" onClick="window.onload()">
+
+	</body>
+</html>

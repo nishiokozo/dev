@@ -1,0 +1,29 @@
+<title>Z80 Emurator</title>
+<meta charset="utf-8">
+<link rel="stylesheet" type="text/css" media="screen" />
+
+
+	<body align="center" >
+			<h2>Z80 Emulatoor</h2>
+		<input type="button" value="Assemble" onClick="assemble(1)">
+
+	<br>
+		<div align="center" style="font-family:monospace">output
+			<input name="html_radio" type="radio" value="1" onchange="html_radio_click()" checked>Intel Hex
+			<input name="html_radio" type="radio" value="2" onchange="html_radio_click()" >dump Hex
+			<input name="html_radio" type="radio" value="4" onchange="html_radio_click()" >cmd Hex
+			<br>
+
+		<textarea id="src" cols="52" rows="16" style="font-family:monospace">; Z80 code</textarea>
+		<textarea id="dst" cols="52" rows="16" style="font-family:monospace"></textarea>
+
+		<script type="text/javascript" src="main.js"></script>
+		</div>
+
+		<div align="center" style="font-family:monospace">
+
+		</div>
+
+		<input type="button" value="check" onClick="test()">
+	</body>
+</html>
