@@ -685,7 +685,7 @@ class Effect
 		this.idx = 0;
 	}
 	//-----------------------------------------------------------------------------
-	effect_gen( _x, _y, _r, _dir, _spd,_lim, _add_r, type = 0 )
+	effect_gen( _x, _y, _v0_x, _v0_y, _r, _dir, _spd,_lim, _add_r, type = 0 )
 	//-----------------------------------------------------------------------------
 	{
 		let e = this.tblEffect[ this.idx ];
@@ -693,6 +693,8 @@ class Effect
 			e.type		= type;
 			e.x			= _x;
 			e.y			= _y;
+			e.v0_x		= _v0_x;
+			e.v0_y		= _v0_y;
 			e.r			= _r;
 			e.add_r		= _add_r;
 			e.dir		= _dir;
@@ -713,8 +715,8 @@ class Effect
 			{
 				e.lim--;
 				let th = e.dir;
-				e.x += Math.cos( th )*e.spd;
-				e.y += Math.sin( th )*e.spd;
+				e.x += Math.cos( th )*e.spd + e.v0_x;
+				e.y += Math.sin( th )*e.spd + e.v0_y;
 				e.r += e.add_r;
 
 				if ( e.type == 0 )
@@ -723,8 +725,10 @@ class Effect
 				}
 				else
 				{
-					let ox = e.x +Math.cos( th )*e.spd*6;
-					let oy = e.y +Math.sin( th )*e.spd*6;
+//					let ox = e.x +Math.cos( th )*e.spd*6;
+//					let oy = e.y +Math.sin( th )*e.spd*6;
+					let ox = e.x +Math.cos( th )*e.spd*2;
+					let oy = e.y +Math.sin( th )*e.spd*2;
 					unit_line( e.x, e.y, ox, oy );
 					unit_circle( e.x, e.y, e.r );
 				}
@@ -851,7 +855,7 @@ class ActShot
 		this.freq	= interval;
 	}
 	//-----------------------------------------------------------------------------
-	shot_update( u1_x, u1_y, u1_size, u1_dir )
+	shot_update( u1_x, u1_y, u1_acc_x, u1_acc_y, u1_size, u1_dir )
 	//-----------------------------------------------------------------------------
 	{
 		if ( this.lim > 0 )	// 攻撃
@@ -864,9 +868,11 @@ class ActShot
 				g_effect.effect_gen( 
 					  u1_x
 					, u1_y
-					, 2
+					, u1_acc_x
+					, u1_acc_y
+					, 4
 					, u1_dir
-					, 3	// speed
+					, 16	// speed
 					, 50	// lim
 					, 0	// rate scale
 				);
@@ -1223,7 +1229,7 @@ class ActBreath	// ブレス攻撃アクション
 		this.add_r	= 32*0.005;
 	}
 	//-----------------------------------------------------------------------------
-	breath_update( dx, dy, unit_size, unit_dir )
+	breath_update( dx, dy, u1_acc_x, u1_acc_y, unit_size, unit_dir )
 	//-----------------------------------------------------------------------------
 	{
 		if ( this.lim > 0 )	// 攻撃
@@ -1235,6 +1241,8 @@ class ActBreath	// ブレス攻撃アクション
 				g_effect.effect_gen( 
 					  dx
 					, dy
+					, u1_acc_x
+					, u1_acc_y
 					, this.r
 					, this.dir + unit_dir +Math.sin( rad(this.time*1.2) )
 					, this.spd
@@ -1262,7 +1270,7 @@ class ActValkan	// バルカン砲え
 		this.freq	= 2;
 	}
 	//-----------------------------------------------------------------------------
-	valkan_update( dx, dy, unit_size, unit_dir )
+	valkan_update( dx, dy, u1_acc_x, u1_acc_y, unit_size, unit_dir )
 	//-----------------------------------------------------------------------------
 	{
 		if ( this.lim > 0 )	// 攻撃
@@ -1277,6 +1285,8 @@ class ActValkan	// バルカン砲え
 					g_effect.effect_gen( 
 						  dx
 						, dy
+						, u1_acc_x
+						, u1_acc_y
 						, 5.2
 						, dir //+ Math.sin(rad(this.time)*10)
 						, 2 + rand(1)*4 
@@ -1321,6 +1331,8 @@ class ActBite	// 噛みつきアクション
 				g_effect.effect_gen( 
 					 dx
 					,dy
+					,0
+					,0
 					, this.r
 					, unit_dir
 					, this.spd
@@ -1348,7 +1360,7 @@ class ActLaser	// レーザー
 		this.freq	= interval;
 	}
 	//-----------------------------------------------------------------------------
-	bow_update( u1_x, u1_y, u1_size, u1_dir )
+	bow_update( u1_x, u1_y, u1_acc_x, u1_acc_y, u1_size, u1_dir )
 	//-----------------------------------------------------------------------------
 	{
 		if ( this.lim > 0 )	// 攻撃
@@ -1361,9 +1373,11 @@ class ActLaser	// レーザー
 				g_effect.effect_gen( 
 					  u1_x
 					, u1_y
+					, u1_acc_x
+					, u1_acc_y
 					, 2
 					, u1_dir
-					, 3	// speed
+					, 24	// speed
 					, 50	// lim
 					, 0	// rate scale
 					,1
@@ -1404,6 +1418,8 @@ class ActLong	// ロング攻撃
 				g_effect.effect_gen( 
 					 dx
 					,dy
+					,0
+					,0
 					, this.r
 					, unit_dir
 					, this.spd
@@ -1413,6 +1429,8 @@ class ActLong	// ロング攻撃
 				g_effect.effect_gen( 
 					 dx
 					,dy
+					,0
+					,0
 					, this.r
 					, unit_dir
 					, this.spd/2
@@ -1803,6 +1821,8 @@ class Unit
 					g_effect.effect_gen( 
 						 dx
 						,dy
+						, u1.acc_x
+						, u1.acc_y
 						, u1.size*0.2
 						, u1.dir-rad(45)
 						, 0.25
@@ -1835,6 +1855,8 @@ class Unit
 					g_effect.effect_gen( 
 						 x1
 						,y1
+						, u1.acc_x
+						, u1.acc_y
 						, 5
 						, th//u1.dir
 						, 1
@@ -1863,6 +1885,8 @@ class Unit
 					g_effect.effect_gen( 
 						 x1
 						,y1
+						, u1.acc_x
+						, u1.acc_y
 						, 5
 						, th//u1.dir
 						, 0.1
@@ -1924,16 +1948,16 @@ class Unit
 		u1.punch.punch_update( u1.x, u1.y, u1.size, u1.dir );
 		u1.twincle.twn_update();
 		u1.bite.bite_update( dx, dy, u1.size, u1.dir );
-		u1.bow.bow_update( dx, dy, u1.size, u1.dir );
+		u1.bow.bow_update( dx, dy, u1.acc_x, u1.acc_y, u1.size, u1.dir );
 		u1.long.long_update( dx, dy, u1.size, u1.dir );
-		u1.breath.breath_update( dx, dy, u1.size, u1.dir );
-		u1.valkan.valkan_update( dx, dy, u1.size, u1.dir );
+		u1.breath.breath_update( dx, dy, u1.acc_x, u1.acc_y, u1.size, u1.dir );
+		u1.valkan.valkan_update( dx, dy, u1.acc_x, u1.acc_y, u1.size, u1.dir );
 		u1.volt.volt_update( u1.x, u1.y, u1.size, u1.dir );	
 		u1.dying.dying_update( u1.x, u1.y, u1.size, u1.dir );
 		u1.sleep.sleep_update( u1.x, u1.y, u1.size, u1.dir );
 		u1.kiai.kiai_update( u1.x, u1.y, u1.size, u1.dir );
 		u1.quick.quick_update( u1.x, u1.y, u1.size, u1.dir );	
-		u1.shot.shot_update( dx, dy, u1.size, u1.dir );	
+		u1.shot.shot_update( dx, dy, u1.acc_x, u1.acc_y, u1.size, u1.dir );	
 		u1.summon.summon_update( dx, dy, u1.size, u1.dir );	
 		u1.alpha.tst_update( u1.x, u1.y, u1.size, u1.dir );	
 		u1.warp.tst_update( u1.x, u1.y, u1.size, u1.dir );	
@@ -2131,6 +2155,7 @@ class Unit
 									box( x1+1,y1+1,x2-1,y2-1 );
 							}
 						
+							u1.volt.volt_set(32);
 							u1.acc_y = 0;
 							u1.add_y = 0;
 							u1.acc_x = 0;
@@ -2571,7 +2596,7 @@ window.onkeydown = function( ev )
 			}
 			if ( c == KEY_R )	//
 			{
-				u1.shot.shot_set(2,4);
+				u1.shot.shot_set(20,10);
 			}
 			if ( c == KEY_T )	//
 			{
@@ -2810,7 +2835,7 @@ function main_update()
 									u1.acc_x += Math.cos( dir )*spd/2;
 									u1.acc_y += Math.sin( dir )*spd/4;
 								
-									const S = 6;
+									const S = 10;
 									if ( u1.acc_x >=  S ) u1.acc_x = S;
 									if ( u1.acc_x <= -S ) u1.acc_x =-S;
 									if ( u1.acc_y >=  S ) u1.acc_y = S;
