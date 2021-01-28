@@ -559,11 +559,11 @@ let fill= function( sx,sy, ex,ey )
 
 }
 //-----------------------------------------------------------------------------
-let line_black = function( sx,sy, ex,ey )
+let line_col = function( sx,sy, ex,ey, col )
 //-----------------------------------------------------------------------------
 {
 	ctx.beginPath();
-	ctx.strokeStyle = "#000";
+	ctx.strokeStyle = col;
 	ctx.lineWidth = 1.0;
 	ctx.moveTo( sx, sy );
 	ctx.lineTo( ex, ey );
@@ -599,14 +599,14 @@ let line_bold = function( sx,sy, ex,ey )
 }
 
 //-----------------------------------------------------------------------------
-function scr_print( tx, ty, str )
+function scr_print( tx, ty, str, col )
 //-----------------------------------------------------------------------------
 {
 	ctx.beginPath();
 	ctx.font = "10px monospace";
 //	ctx.fillStyle =  g_flgNight?"#000":"#FFF";
 //	ctx.fillText( str, tx+1, ty+1 );
-	ctx.fillStyle = g_flgNight?"#FFF":"#000";
+	ctx.fillStyle = col;
 	ctx.fillText( str, tx, ty );
 	ctx.closePath();
 
@@ -625,12 +625,12 @@ let scr_circle = function( x,y,r )
 	ctx.stroke();
 }
 //-----------------------------------------------------------------------------
-let circle_black = function( x,y,r )
+let circle_col = function( x,y,r, col )
 //-----------------------------------------------------------------------------
 {
 	ctx.beginPath();
 	ctx.lineWidth = 1.0;
-	ctx.strokeStyle = "#000";
+	ctx.strokeStyle = col;
 	ctx.arc(x, y, r, 0, Math.PI * 2, true);
 	ctx.closePath();
 	ctx.stroke();
@@ -650,10 +650,10 @@ function circle_red( x,y,r )
 let g_col = "#000";
 let g_back = "#FFF";
 //-----------------------------------------------------------------------------
-function cls()
+function cls( col = "#FFF" )
 //-----------------------------------------------------------------------------
 {
-	ctx.fillStyle = "#FFF";
+	ctx.fillStyle = col;
 	ctx.fillRect( 0, 0, html_canvas.width, html_canvas.height );
 }
 //-----------------------------------------------------------------------------
@@ -2076,12 +2076,14 @@ class Unit
 		{
 			this.unit_update( u1 );
 		}
+
 		for ( let u1 of g_unit.tblUnit ) 
 		{// 思考ルーチン
 			if ( u1.gid == 0 ) continue;	// グループID=0 はNONE
 			if ( u1.gid == 1 ) continue;	// グループID=1 はPlayer
 			this.unit_think( u1 );
 		}
+
 		for ( let u1 of g_unit.tblUnit ) 
 		{ // 移動準備
 			let ux = u1.x + u1.add_x;
@@ -2098,6 +2100,7 @@ class Unit
 			u1.req_x = ux;
 			u1.req_y = uy;
 		}
+		
 		{ // ユニット同士の衝突
 			for ( let i = 0 ; i < g_unit.tblUnit.length ; i++ )
 			{
@@ -2130,11 +2133,12 @@ class Unit
 						flg = true;
 					}
 					u1.flgCol = flg;
-					u1.flgCol = flg;
+					u2.flgCol = flg;
 				}
 			}
 		}
 		
+		// 移動
 		for ( let u1 of g_unit.tblUnit ) 
 		{
 			if ( u1.flgCol == false )
@@ -2626,13 +2630,14 @@ function game_init( start_x, start_y )
 		let tblEnemy =
 		[
 
-			["SUMMON",],
-			["SUMMON",],
-			["SUMMON",],
 
 			["WOLF","GHOST","ZOMBIE","NINJA","ORC","ARCHER",],
 			["GHOST","WIBARN","MINO","NINJA","SUMMON","SWORDMAN",],
 			["DRAGON","MINO","SWORDMAN","TSTMAN","NINJA","WIBARN"],
+
+			["SUMMON",],
+			["SUMMON",],
+			["SUMMON",],
 		];
 		let e0 = Math.floor(tblEnemy[0].length*rand(1))
 		let e1 = Math.floor(tblEnemy[1].length*rand(1))
@@ -2691,7 +2696,7 @@ function game_init( start_x, start_y )
 		}
 	}
 }
-
+let g_prevButtons;
 //-----------------------------------------------------------------------------
 function main_update()
 //-----------------------------------------------------------------------------
@@ -2705,24 +2710,33 @@ function main_update()
 			{
 				if ( pad != null )		
 				{
+					if ( g_prevButtons == undefined ) g_prevButtons = pad.buttons;
 					let lx = pad.axes[0];
 					let ly = pad.axes[1];
 					let rx = pad.axes[2];
 					let ry = pad.axes[3];
 					for ( let i = 0 ; i < pad.buttons.length ; i++ )
 					{
-						//scr_print( 0,20+10*i, ""+i+":"+pad.buttons[i].value );
+						//scr_print( 0,20+10*i, ""+i+":"+pad.buttons[i].value, g_flgNight?"#FFF":"#000" );
 					}
-					let a = pad.buttons[0].value;
-					let b = pad.buttons[1].value;
-					let x = pad.buttons[2].value;
-					let y = pad.buttons[3].value;
-					let se = pad.buttons[8].value;
-					let st = pad.buttons[9].value;
+					let a  = pad.buttons[ 0].value;
+					let b  = pad.buttons[ 1].value;
+					let x  = pad.buttons[ 2].value;
+					let y  = pad.buttons[ 3].value;
+					let l1 = pad.buttons[ 4].value && !g_prevButtons[ 4].value;
+					let r1 = pad.buttons[ 5].value && !g_prevButtons[ 5].value;
+					let se = pad.buttons[ 8].value && !g_prevButtons[ 8].value;
+					let st = pad.buttons[ 9].value && !g_prevButtons[ 9].value;
+					let u = pad.buttons[12].value && !g_prevButtons[12].value;
+					let d = pad.buttons[13].value && !g_prevButtons[13].value;
+					let l = pad.buttons[14].value && !g_prevButtons[14].value;
+					let r = pad.buttons[15].value && !g_prevButtons[15].value;
 					if ( a ) u1.shot.shot_set(1,2);
 					if ( b ) u1.breath.breath_set();
 					if ( x ) u1.bow.bow_set(1,2);
 					if ( y ) u1.valkan.valkan_set();
+					if ( r ) g_map_gra2.draw_buf( g_map_buf2 );
+					if ( se ) g_flgNight = !g_flgNight;
 					if ( st ) 
 					{
 						map_genSeed( g_map_SZ );
@@ -2751,6 +2765,7 @@ function main_update()
 						}
 
 					}
+					g_prevButtons = pad.buttons;
 				}
 			}
 		}
@@ -2759,17 +2774,24 @@ function main_update()
 	{// 月と太陽と北極星
 		function draw_sun( px, py, r0, r1, r2 ) 
 		{ // 太陽
-			circle_black( px, py, r0 );
+//			circle_col( px, py, r0, g_flgNight?"#000":"#FFF" );
+			for ( let i = 0 ; i < r0 ; i+=0.5 )
+			{
+//				circle_col( px, py, i,g_flgNight?"#000":"#FFF" );
+				circle_col( px, py, i, "white" );
+			}
+				circle_col( px, py, r0, "black" );
+
 			for ( let th = 0 ; th < Math.PI*2 ; th += rad(30) )
 			{
 				let x1 = r1*Math.cos(th) + px;
 				let y1 = r1*Math.sin(th) + py;
 				let x2 = r2*Math.cos(th) + px;
 				let y2 = r2*Math.sin(th) + py;
-				line_black( x1, y1, x2, y2 );
+//				line_col( x1, y1, x2, y2, g_flgNight?"#000":"#FFF" );
+				line_col( x1, y1, x2, y2, "black" );
 			}
 		}
-		draw_sun( 80, 80, 7, 11, 15 );
 
 		// ☆北極星
 		function draw_pole( pr, rot, r )
@@ -2784,7 +2806,8 @@ function main_update()
 				let y1 = r*Math.sin(th) + py;
 				let x2 = r*Math.cos(th-st) + px;
 				let y2 = r*Math.sin(th-st) + py;
-				line_black( x1, y1, x2, y2 );
+//				line_col( x1, y1, x2, y2, g_flgNight?"#000":"#FFF" );
+				line_col( x1, y1, x2, y2, "black" );
 			}
 		}
 
@@ -2792,24 +2815,46 @@ function main_update()
 		{ // 月 29.5日周期で満ち欠け
 			for ( let i = 0 ; i < r0 ; i+=0.5 )
 			{
-				circle_black( px, py, i );
+//				circle_col( px, py, i,g_flgNight?"#000":"#FFF" );
+				circle_col( px, py, i, g_flgNight?"white":"black" );
 			}
+				circle_col( px, py, r0,"black" );
 		}
-		draw_moon( 185, 20, 8 );
+			draw_moon( 185+2, 20+2, 8-2 );
+		if ( g_flgNight ) 
+		{
+		}
+		else
+		{
+			const s = 5;
+			draw_sun( 83, 83, s+7-2, s+11-4, s+15-4 );
+		}
 
 
 		{
 			ctx.save();
 			ctx.translate(html_canvas.width/2,html_canvas.height/2);
 			{
-				let r = Math.floor( html_canvas.width/2-10 );
+				let r = Math.floor( html_canvas.width/2-10-1 );
 				draw_pole( r, rad(-90)+g_scr_rot, 5 );
 			}
 			ctx.restore();
 		}
 	}
 	
-	cls();
+
+	if ( 0 )
+	{
+		// 背景色設定
+		html_set_backgroundColor( g_flgNight?"#FFF":"#000" );
+
+		cls( g_flgNight?"#FFF":"#000");
+	}
+	else
+	{
+		// メイン画面の周囲をクリア
+		cls( "white" );
+	}
 
 	if (0)	// フロアマトリクス
 	{
@@ -2872,6 +2917,22 @@ function main_update()
 				g_scr_rot = to;
 			}
 		}
+	}
+
+	if(1)
+	{// 宇宙
+		ctx.save();
+		circle_col( html_canvas.width/2,html_canvas.height/2,255-14,g_flgNight?"#000":"#FFF" );
+		ctx.clip();
+		cls( !g_flgNight?"#000":"#FFF");
+		ctx.restore();
+	}
+	else
+	{// 宇宙
+		ctx.save();
+		circle_col( html_canvas.width/2,html_canvas.height/2,255-15,"#000" );
+		ctx.clip();
+		ctx.restore();
 	}
 
 	
@@ -2969,7 +3030,7 @@ function main_update()
 
 					let px = x*c - y*s;
 					let py = x*s + y*c;
-					scr_print( px+u1.size, py-u1.size, u1.name );
+					scr_print( px+u1.size, py-u1.size, u1.name, g_flgNight?"#FFF":"#000" );
 
 					// シーケンスのセリフ
 					if ( u1.oneTalk != null )
@@ -2983,7 +3044,7 @@ function main_update()
 							}
 							else
 							{
-								scr_print( px+u1.size+10, py-u1.size+16, u1.oneTalk.str );
+								scr_print( px+u1.size+10, py-u1.size+16, u1.oneTalk.str, g_flgNight?"#FFF":"#000" );
 							}
 
 						}
@@ -3012,7 +3073,7 @@ function main_update()
 							}
 							if ( u1.seqTalk < u1.tblTalk.length )
 							{
-								scr_print( px+u1.size, py-u1.size-16, u1.tblTalk[u1.seqTalk] );
+								scr_print( px+u1.size, py-u1.size-16, u1.tblTalk[u1.seqTalk], g_flgNight?"#FFF":"#000" );
 							}
 						}
 					}
@@ -3024,7 +3085,7 @@ function main_update()
 		ctx.restore();
 	}
 
-	scr_print( 0,8, "units:" + g_unit.tblUnit.length.toString() );
+	scr_print( 0,8, "units:" + g_unit.tblUnit.length.toString(), "black" );
 
 	if ( null != document.getElementById("html_canvas2") )
 	{	// 全体地形表示
@@ -3062,6 +3123,7 @@ function resetAll()
 	const sx = g_map_SZ/2*g_tile_SZ; 
 	const sy = g_map_SZ/2*g_tile_SZ; 
 	game_init(sx,sy);
+
 }
 
 //-----------------------------------------------------------------------------
@@ -3075,6 +3137,14 @@ window.onload = function( e )
 
 let g_flgNight = 0;	// 0:day 1:nighit
 //from GUI(HTML)
+//-----------------------------------------------------------------------------
+function html_set_backgroundColor( col )
+//-----------------------------------------------------------------------------
+{
+//	let element = document.getElementById("sample"); 
+	let element = document.body;
+	element.style.backgroundColor = col; 
+}
 //-----------------------------------------------------------------------------
 function html_radio_click()
 //-----------------------------------------------------------------------------
