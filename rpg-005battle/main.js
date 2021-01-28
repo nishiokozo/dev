@@ -1,13 +1,10 @@
-
 //-----------------------------------------------------------------------------
 function html_getValue_checkboxname( name ) // チェックボックス用
 //-----------------------------------------------------------------------------
 {
 	const list = document.getElementsByName( name );
-//console.log(list);
 	for ( let l of list )
 	{
-		//if ( l.checked) 
 		return l.value;
 	}
 }
@@ -82,7 +79,7 @@ class map_GRA
 		this.ctx.stroke();
 	}
 	//-----------------------------------------------------------------------------
-	circle( x,y,r, col="#000"  )
+	scr_circle( x,y,r, col="#000"  )
 	//-----------------------------------------------------------------------------
 	{
 		this.ctx.beginPath();
@@ -104,16 +101,16 @@ class map_GRA
 
 	}
 	//-----------------------------------------------------------------------------
-	cls()
+	cls( val = 0)
 	//-----------------------------------------------------------------------------
 	{
 		for (let x=0; x<this.img.width ; x++ )
 		for (let y=0; y<this.img.height ; y++ )
 		{
 			let adr = (y*this.img.width+x)*4;
-			this.img.data[ adr +0 ] = 0;
-			this.img.data[ adr +1 ] = 0;
-			this.img.data[ adr +2 ] = 0;
+			this.img.data[ adr +0 ] = val;
+			this.img.data[ adr +1 ] = val;
+			this.img.data[ adr +2 ] = val;
 			this.img.data[ adr +3 ] = 0xff;
 		}
 	}
@@ -327,6 +324,7 @@ function calc_negative( buf, SZ )
 
 let g_map_SZ;
 let g_map_buf0;
+//let g_map_buf3;
 //-----------------------------------------------------------------------------
 function map_genSeed( SZ )
 //-----------------------------------------------------------------------------
@@ -417,31 +415,36 @@ function map_gen( SZ )
 function map_hotstart()
 //-----------------------------------------------------------------------------
 {
-	g_map_buf = map_gen( g_map_SZ );
+	g_map_buf2 = map_gen( g_map_SZ );
 
 	if ( null != document.getElementById("html_canvas2") )
 	{
 		// キャンバスに描画
 		// 画面作成
-		g_map_gra = new map_GRA( g_map_SZ, g_map_SZ, html_canvas2 );
+		g_map_gra2 = new map_GRA( g_map_SZ, g_map_SZ, html_canvas2 );
 		// 画面クリア
-		g_map_gra.cls();
+		g_map_gra2.cls(255);
 		// 画面描画
-		g_map_gra.draw_buf( g_map_buf );
+		if(0)
+		{//全マップ開示
+			g_map_gra2.draw_buf( g_map_buf2 );
+		}
 		// 画面をキャンバスへ転送
-		g_map_gra.streach();
+		g_map_gra2.streach();
 
 		// canvasのID表示
-		g_map_gra.print(0,html_canvas2.height, html_canvas2.id );
+		g_map_gra2.print(0,html_canvas2.height, html_canvas2.id );
 
 	}
 }
 //-----------------------------------------------------------------------------
-function map_init()
+function map_create()
 //-----------------------------------------------------------------------------
 {
 	g_map_SZ = html_getValue_comboid( "html_reso" );
 	g_map_buf0 = new Array( g_map_SZ*g_map_SZ );
+//	g_map_buf3 = new Array( g_map_SZ*g_map_SZ );
+//	g_map_buf3.fill(0);
 
 	map_genSeed( g_map_SZ );
 	map_hotstart();
@@ -449,6 +452,7 @@ function map_init()
 
 ////////////////////////////
 let ctx=html_canvas.getContext('2d');
+
 //-----------------------------------------------------------------------------
 function streachImage2Canvas( img )
 //-----------------------------------------------------------------------------
@@ -499,7 +503,7 @@ let box = function( sx,sy, ex,ey )
 //-----------------------------------------------------------------------------
 {
 	ctx.beginPath();
-	ctx.strokeStyle = "#000000";
+	ctx.strokeStyle = "#000";
     ctx.rect(sx,sy,ex-sx,ey-sy);
 	ctx.closePath();
 	ctx.stroke();
@@ -554,13 +558,12 @@ let fill= function( sx,sy, ex,ey )
 	ctx.stroke();
 
 }
-
 //-----------------------------------------------------------------------------
-let line = function( sx,sy, ex,ey )
+let line_black = function( sx,sy, ex,ey )
 //-----------------------------------------------------------------------------
 {
 	ctx.beginPath();
-	ctx.strokeStyle = "#000000";
+	ctx.strokeStyle = "#000";
 	ctx.lineWidth = 1.0;
 	ctx.moveTo( sx, sy );
 	ctx.lineTo( ex, ey );
@@ -568,12 +571,25 @@ let line = function( sx,sy, ex,ey )
 	ctx.stroke();
 
 }
+
+//-----------------------------------------------------------------------------
+let line = function( sx,sy, ex,ey )
+//-----------------------------------------------------------------------------
+{
+	ctx.beginPath();
+	ctx.strokeStyle = g_flgNight?"#FFF":"#000";
+	ctx.lineWidth = 1.0;
+	ctx.moveTo( sx, sy );
+	ctx.lineTo( ex, ey );
+	ctx.closePath();
+	ctx.stroke();
+}
 //-----------------------------------------------------------------------------
 let line_bold = function( sx,sy, ex,ey )
 //-----------------------------------------------------------------------------
 {
 	ctx.beginPath();
-	ctx.strokeStyle = "#000000";
+	ctx.strokeStyle = g_flgNight?"#FFF":"#000";
 	ctx.lineWidth = 3.0;
 	ctx.moveTo( sx, sy );
 	ctx.lineTo( ex, ey );
@@ -583,27 +599,38 @@ let line_bold = function( sx,sy, ex,ey )
 }
 
 //-----------------------------------------------------------------------------
-function print( tx, ty, str )
+function scr_print( tx, ty, str )
 //-----------------------------------------------------------------------------
 {
 	ctx.beginPath();
 	ctx.font = "10px monospace";
-	ctx.fillStyle = "#ffffff";
-	ctx.fillText( str, tx+1, ty+1 );
-	ctx.fillStyle = "#000000";
-//	ctx.lineWidth = 0.5;
-	ctx.closePath();
+//	ctx.fillStyle =  g_flgNight?"#000":"#FFF";
+//	ctx.fillText( str, tx+1, ty+1 );
+	ctx.fillStyle = g_flgNight?"#FFF":"#000";
 	ctx.fillText( str, tx, ty );
-//	ctx.strokeText( str, tx, ty );	// 輪郭描画
+	ctx.closePath();
 
 }
 
+
 //-----------------------------------------------------------------------------
-let circle = function( x,y,r )
+let scr_circle = function( x,y,r )
 //-----------------------------------------------------------------------------
 {
 	ctx.beginPath();
 	ctx.lineWidth = 1.0;
+	ctx.strokeStyle = g_flgNight?"#FFF":"#000";
+	ctx.arc(x, y, r, 0, Math.PI * 2, true);
+	ctx.closePath();
+	ctx.stroke();
+}
+//-----------------------------------------------------------------------------
+let circle_black = function( x,y,r )
+//-----------------------------------------------------------------------------
+{
+	ctx.beginPath();
+	ctx.lineWidth = 1.0;
+	ctx.strokeStyle = "#000";
 	ctx.arc(x, y, r, 0, Math.PI * 2, true);
 	ctx.closePath();
 	ctx.stroke();
@@ -620,12 +647,21 @@ function circle_red( x,y,r )
 	ctx.stroke();
 }
 
+let g_col = "#000";
+let g_back = "#FFF";
 //-----------------------------------------------------------------------------
 function cls()
 //-----------------------------------------------------------------------------
 {
-	ctx.fillStyle = "#ffffff";
+	ctx.fillStyle = "#FFF";
 	ctx.fillRect( 0, 0, html_canvas.width, html_canvas.height );
+}
+//-----------------------------------------------------------------------------
+function scr_cls()
+//-----------------------------------------------------------------------------
+{
+	ctx.fillStyle = g_flgNight?"#000":"#FFF"; //バックの色はラインと反対
+	ctx.fillRect( -html_canvas.width/2, -html_canvas.height/2, html_canvas.width, html_canvas.height );
 }
 
 //-----------------------------------------------------------------------------
@@ -666,7 +702,13 @@ class Effect
 	//-----------------------------------------------------------------------------
 	{
 		this.tblEffect = Array( max );
-		for ( let i = 0 ; i < max ; i++ )
+		this.effect_reset();
+	}
+	//-----------------------------------------------------------------------------
+	effect_reset()
+	//-----------------------------------------------------------------------------
+	{
+		for ( let i = 0 ; i < this.tblEffect.length ; i++ )
 		{
 			this.tblEffect[i] = {lim:0};
 		}
@@ -721,20 +763,11 @@ class Effect
 	}
 };
 
-let unit_tblString=[];
-function unit_print( x, y, str )
-{
-	let cx = g_scr_cx;
-	let cy = g_scr_cy;
-	//print( x-cx, y-cy, str );
-	unit_tblString.push( {x:x-cx, y:y-cy, str:str} );
-
-}
 function unit_circle( x, y, r )
 {
 	let cx = g_scr_cx;
 	let cy = g_scr_cy;
-	circle( x-cx, y-cy, r );
+	scr_circle( x-cx, y-cy, r );
 }
 function unit_circle_red( x, y, r )
 {
@@ -817,7 +850,7 @@ class ActSummon
 			{
 				let px = this.x1;
 				let py = this.y1;
-				g_unit.unit_create( 0, 2, px, py, this.cast.size, u1_dir, this.cast.tblThink, this.cast.name, this.cast.talk );
+				g_unit.unit_create( 0, 2, px, py, this.cast.size, u1_dir, this.cast.tblThink, this.cast.name, this.cast.tblTalk );
 			}
 		}
 	}
@@ -1257,7 +1290,6 @@ class ActValkan	// バルカン砲え
 		{
 			this.lim--;
 			this.time++
-//			if ( (this.time % this.freq ) == 0 )
 			if( rand(1) > 0.1 ) 
 			{
 				for ( let i = 0 ; i <1 ; i++ )
@@ -1433,8 +1465,6 @@ const THINK_ATTACK_BREATH	= 12;	// ブレス攻撃
 const THINK_ATTACK_BITE		= 13;	// 噛付き攻撃
 */
 
-//	let g_x1=0;
-//	let g_y1=0;
 
 
 class Cast
@@ -1494,8 +1524,7 @@ class Unit
 	constructor()
 	//-----------------------------------------------------------------------------
 	{
-		//this.tblUnit =[];
-		this.unit_init();//
+		this.unit_init();
 	}
 	//-----------------------------------------------------------------------------
 	unit_init()
@@ -1504,7 +1533,7 @@ class Unit
 		this.tblUnit =[];
 	}
 	//-----------------------------------------------------------------------------
-	unit_create( boss, gid, x, y, size, dir, tblThink, name, talk )
+	unit_create( boss, gid, x, y, size, dir, tblThink, name, tblTalk )
 	//-----------------------------------------------------------------------------
 	{
 		this.tblUnit.push(
@@ -1512,15 +1541,19 @@ class Unit
 				boss		: boss,
 				gid			: gid,	// グループID , 1:Player
 				stat		: 0,	// 0:nomal 1:衝突中
+				flgCol		: false,	// 衝突発生フラグ
 				x			: x,
 				y			: y,
 				add_x		: 0,
 				add_y		: 0,
+				req_x		: 0,	// 移動先リクエスト座標
+				req_y		: 0,	// 移動先リクエスト座標 
 				size		: size,
 				dir			: dir,
 				tblThink	: tblThink,
 				name		: name,
-				tblTalk		: talk,
+				oneTalk		: null,	// 一回限りのセリフバッファ
+				tblTalk		: tblTalk,
 				seqTalk		: 0,
 				limTalk		: 10,
 				time		: 0,
@@ -1561,7 +1594,6 @@ class Unit
 	unit_update( u1 )
 	//-----------------------------------------------------------------------------
 	{
-
 		////////////////
 		// 表示
 		////////////////
@@ -1580,46 +1612,12 @@ class Unit
 			dy = u1.size * Math.sin( u1.dir ) + u1.y;
 			unit_line( u1.x, u1.y, dx, dy );	// 本体方向表示
 		}
-		unit_print( u1.x+u1.size, u1.y-u1.size, u1.name );
-		
-		if ( u1.tblTalk != undefined )
-		{
-			if ( u1.limTalk > 0 )
-			{
-				u1.limTalk--;
-				if ( u1.limTalk == 0 )
-				{
-					while( u1.seqTalk < u1.tblTalk.length )
-					{
-						u1.seqTalk++;
-						let d = u1.tblTalk[u1.seqTalk];
-						if ( Number.isFinite(d) ) 
-						{
-							u1.limTalk = d;
-						}
-						else
-						{
-							break;	
-						}
-					}
-				}
-				if ( u1.seqTalk < u1.tblTalk.length )
-				{
-					unit_print( u1.x+u1.size, u1.y-u1.size-16, u1.tblTalk[u1.seqTalk] );
-				}
-			}
-		}
-		{
-		}
-
-//		let ux = u1.x;
-//		let uy = u1.y;
 
 		u1.time+=1;
 
 		if ( u1.breath.lim > 0 )
 		{
-			unit_print( u1.x+u1.size+8, u1.y-u1.size+16, "くらえ！焦熱のブレス" );
+			u1.oneTalk = {lim:30, str:"くらえ！焦熱のブレス" };
 			unit_circle( u1.x, u1.y, er+u1.size );	// 本体表示
 			unit_circle( dx,dy,(u1.size*0.2) );		// 口、目表示
 
@@ -1627,7 +1625,7 @@ class Unit
 		else
 		if ( u1.punch.lim > 0 )
 		{
-			unit_print( u1.x+u1.size+8, u1.y-u1.size+16, "パンチ～" );
+			u1.oneTalk = {lim:30,str:"パンチ～" };
 			unit_circle( u1.x, u1.y, er+u1.size );	// 本体表示
 			unit_circle( dx,dy,(u1.size*0.2) );		// 口、目表示
 
@@ -1635,7 +1633,7 @@ class Unit
 		else
 		if ( u1.bite.lim > 0 )
 		{
-			unit_print( u1.x+u1.size+8, u1.y-u1.size+16, "咬み咬み" );
+			u1.oneTalk = {lim:30,str:"咬み咬み" };
 			unit_circle( u1.x, u1.y, er+u1.size );	// 本体表示
 			unit_circle( dx,dy,(u1.size*0.2) );		// 口、目表示
 
@@ -1643,7 +1641,7 @@ class Unit
 		else
 		if ( u1.bow.lim > 0 )
 		{
-			unit_print( u1.x+u1.size+8, u1.y-u1.size+16, "攻撃" );
+			u1.oneTalk = {lim:30,str:"攻撃" };
 			
 			let r = u1.bow.time*4;
 			let tx = dx + r * Math.cos( u1.dir );
@@ -1657,7 +1655,7 @@ class Unit
 		else
 		if ( u1.long.lim > 0 )
 		{
-			unit_print( u1.x+u1.size+8, u1.y-u1.size+16, "ロング攻撃" );
+			u1.oneTalk = {lim:30,str:"ロング攻撃" };
 			unit_circle( u1.x, u1.y, er+u1.size );	// 本体表示
 			unit_circle( dx,dy,(u1.size*0.2) );		// 口、目表示
 
@@ -1665,7 +1663,7 @@ class Unit
 		else
 		if ( u1.quick.lim > 0 ) 					// 高速移動
 		{
-			unit_print( u1.x+u1.size+8, u1.y-u1.size+16, "フフッ" );
+			u1.oneTalk = {lim:30,str:"フフッ" };
 			u1.add_x += u1.quick.ax;	
 			u1.add_y += u1.quick.ay;	
 			unit_circle( u1.x, u1.y, er+u1.size );	// 本体表示
@@ -1675,7 +1673,7 @@ class Unit
 		else
 		if ( u1.summon.lim > 0 ) 					// 電撃
 		{
-			unit_print( u1.x+u1.size+8, u1.y-u1.size+16, "召喚～" );
+			u1.oneTalk = {lim:30,str:"召喚～" };
 
 			if(0)
 			{
@@ -1730,7 +1728,7 @@ class Unit
 		else
 		if ( u1.volt.lim > 0 ) 					// 電撃
 		{
-			unit_print( u1.x+u1.size+8, u1.y-u1.size+16, "電撃アターック！" );
+			u1.oneTalk = {lim:30,str:"電撃アターック！" };
 			{
 				let th = 0;
 				let x0 = 0;
@@ -1763,7 +1761,7 @@ class Unit
 		else
 		if ( u1.dying.lim > 0 ) 					// 瀕死
 		{
-			unit_print( u1.x+u1.size+8, u1.y-u1.size+16, "瀕死ぴえん" );
+			u1.oneTalk = {lim:30,str:"瀕死ぴえん" };
 			for ( let i = 0 ; i < u1.dying.lim/2 ; i++ )
 			{
 				const sz = u1.dying.lim*u1.size/32;
@@ -1775,7 +1773,7 @@ class Unit
 		else
 		if ( u1.sleep.lim > 0 ) 					// 睡眠
 		{
-			unit_print( u1.x+u1.size+8, u1.y-u1.size+16, "Zzz..." );
+			u1.oneTalk = {lim:30,str:"Zzz..." };
 
 			er = Math.cos(rad(u1.sleep.time*5))*1.8+er;
 			let r = u1.size*0.8 + er;
@@ -1801,7 +1799,7 @@ class Unit
 		else
 		if ( u1.kiai.lim > 0 ) 					// 気合
 		{
-			unit_print( u1.x+u1.size+8, u1.y-u1.size+16, "フンッ！" );
+			u1.oneTalk = {lim:30,str:"フンッ！" };
 			if ( u1.kiai.time == 1 )
 			{
 				let th = 0;
@@ -1864,7 +1862,7 @@ class Unit
 		else
 		if ( u1.twincle.lim > 0 )
 		{
-			unit_print( u1.x+u1.size+8, u1.y-u1.size+16, "見えないよ～ん" );
+			u1.oneTalk = {lim:30,str:"見えないよ～ん" };
 			{
 				let th = 0;
 				let x0 = 0;
@@ -1931,234 +1929,145 @@ class Unit
 		u1.run.tst_update( u1.x, u1.y, u1.size, u1.dir );	
 
 
-		if ( u1.gid == 0 ) return;	// グループID=0 はNONE
-		if ( u1.gid == 1 ) return;	// グループID=1 はPlayer
+	}
 
+	//-----------------------------------------------------------------------------
+	unit_think( u1 )
+	//-----------------------------------------------------------------------------
+	{
 		////////////////
 		// 思考
 		////////////////
-		{	// 狙いを決める
+		{// 狙いを決める
+			let tar_x = 0;
+			let tar_y = 0;
 			{
-				let tar_x = 0;
-				let tar_y = 0;
+				let cnt = 0;
+				for ( let u1 of g_unit.tblUnit )
 				{
-					let cnt = 0;
-					for ( let u1 of g_unit.tblUnit )
+					if ( u1.gid == 1 ) 
 					{
-						if ( u1.gid == 1 ) 
+						tar_x += u1.x;
+						tar_y += u1.y;
+						cnt++;
+					}
+				}
+
+				tar_x /= cnt;
+				tar_y /= cnt;
+
+			}
+			{	// 方向を求める
+				let x0	= tar_x;
+				let y0	= tar_y;
+				u1.to_dir = Math.atan2( (y0-u1.y), (x0-u1.x) );
+			}
+		}
+
+		{
+			let act	= u1.tblThink[ u1.think_type ];
+
+			{	// アクション発動
+				let num = act.act_no;
+				if ( num == ACT_TWINCLE	) 	u1.twincle.twn_set( 60 );
+				if ( num == ACT_PUNCH	) 	u1.punch.punch_set();
+				if ( num == ACT_BREATH	)	u1.breath.breath_set();
+				if ( num == ACT_VALKAN	)	u1.valkan.valkan_set();
+				if ( num == ACT_BITE	)	u1.bite.bite_set();
+				if ( num == ACT_BOW		)	u1.bow.bow_set();
+				if ( num == ACT_LONG	)	u1.long.long_set( u1.size/8 );
+				if ( num == ACT_SWORD	)	u1.sword.swd_set( 1 );
+
+				if ( num == ACT_VOLT	)	u1.volt.volt_set( 32 );	// 電撃	ダメージ＆一定時間動けなくなる。また近くに連鎖する
+				if ( num == ACT_DYING	)	u1.dying.dying_set();
+				if ( num == ACT_SLEEP	)	u1.sleep.sleep_set();
+				if ( num == ACT_KIAI	)	u1.kiai.kiai_set();	// 気合	噛付いて投げ飛ばす
+				if ( num == ACT_QUICK	)	
+				{
+					if ( u1.quick.lim == 0 )
+					{
+						// 攻撃対象との相対角度を求める
+						let th = u1.to_dir - u1.dir;
+						if ( th < -Math.PI ) th += Math.PI*2;
+						if ( th >  Math.PI ) th -= Math.PI*2;
+						
+						// 右にいるか左にいるかを判断し、移動方向を決める
+						if ( th > 0 )
 						{
-							tar_x += u1.x;
-							tar_y += u1.y;
-							cnt++;
+							th = rad(60);
+						}
+						else
+						{
+							th = rad(-60);
+						}
+						// 移動先座標を決める
+						{
+							let dir = u1.dir+th;
+							let r = 80;	
+							let x = r*Math.cos(dir)+u1.x;
+							let y = r*Math.sin(dir)+u1.y;
+							u1.quick.quick_set( x, y, u1.x, u1.y, u1.dir);
 						}
 					}
-
-					tar_x /= cnt;
-					tar_y /= cnt;
+			
 
 				}
-				{	// 方向を求める
-					let x0	= tar_x;
-					let y0	= tar_y;
-					u1.to_dir = Math.atan2( (y0-u1.y), (x0-u1.x) );
-				}
+
+				if ( num == ACT_SHOT	)	u1.shot.shot_set(2,6);	// 投げる	岩を投げるようなイメージ
+				if ( num == ACT_SUMMON	)	u1.summon.summon_set("ZOMBIE", u1.x, u1.y, u1.dir, u1.size );	// 召喚
+				if ( num == ACT_ALPHA	)	u1.alpha.tst_set();	// 半透明	薄くなって移動。薄い間は攻撃できないがダメージも食らわない
+				if ( num == ACT_WARP	)	u1.warp.tst_set();	// ワープ	フェードアウトし、別のところからフェードインして現れる
+				if ( num == ACT_PUSH	)	u1.push.tst_set();	// 押す	弾き飛ばすけ
+				if ( num == ACT_JUMP	)	u1.jump.tst_set();	// ジャンプ	踏付け
+				if ( num == ACT_GUID	)	u1.guid.tst_set();	// 誘導	誘導属性がある。追尾モンスター生成でも良いかも
+				if ( num == ACT_RUN		)	u1.run.tst_set();	// 遁走	ボスが倒されたり
 			}
 
-			{
-				let act	= u1.tblThink[ u1.think_type ];
+			{// 方向を変える
+				// 相対角を求める
+				let s = u1.to_dir - u1.dir;
+				if ( s < -Math.PI ) s += Math.PI*2;
+				if ( s >  Math.PI ) s -= Math.PI*2;
 
-				{	// アクション発動
-					let num = act.act_no;
-					if ( num == ACT_TWINCLE	) 	u1.twincle.twn_set( 60 );
-					if ( num == ACT_PUNCH	) 	u1.punch.punch_set();
-					if ( num == ACT_BREATH	)	u1.breath.breath_set();
-					if ( num == ACT_VALKAN	)	u1.valkan.valkan_set();
-					if ( num == ACT_BITE	)	u1.bite.bite_set();
-					if ( num == ACT_BOW		)	u1.bow.bow_set();
-					if ( num == ACT_LONG	)	u1.long.long_set( u1.size/8 );
-					if ( num == ACT_SWORD	)	u1.sword.swd_set( 1 );
-
-					if ( num == ACT_VOLT	)	u1.volt.volt_set( 32 );	// 電撃	ダメージ＆一定時間動けなくなる。また近くに連鎖する
-					if ( num == ACT_DYING	)	u1.dying.dying_set();
-					if ( num == ACT_SLEEP	)	u1.sleep.sleep_set();
-					if ( num == ACT_KIAI	)	u1.kiai.kiai_set();	// 気合	噛付いて投げ飛ばす
-					if ( num == ACT_QUICK	)	
-					{
-						if ( u1.quick.lim == 0 )
-						{
-							// 攻撃対象との相対角度を求める
-							let th = u1.to_dir - u1.dir;
-							if ( th < -Math.PI ) th += Math.PI*2;
-							if ( th >  Math.PI ) th -= Math.PI*2;
-							
-							// 右にいるか左にいるかを判断し、移動方向を決める
-							if ( th > 0 )
-							{
-								th = rad(60);
-							}
-							else
-							{
-								th = rad(-60);
-							}
-							// 移動先座標を決める
-							{
-								let dir = u1.dir+th;
-								let r = 80;	
-								let x = r*Math.cos(dir)+u1.x;
-								let y = r*Math.sin(dir)+u1.y;
-								u1.quick.quick_set( x, y, u1.x, u1.y, u1.dir);
-							}
-						}
-				
-
-					}
-
-					if ( num == ACT_SHOT	)	u1.shot.shot_set(2,6);	// 投げる	岩を投げるようなイメージ
-					if ( num == ACT_SUMMON	)	u1.summon.summon_set("ZOMBIE", u1.x, u1.y, u1.dir, u1.size );	// 召喚
-					if ( num == ACT_ALPHA	)	u1.alpha.tst_set();	// 半透明	薄くなって移動。薄い間は攻撃できないがダメージも食らわない
-					if ( num == ACT_WARP	)	u1.warp.tst_set();	// ワープ	フェードアウトし、別のところからフェードインして現れる
-					if ( num == ACT_PUSH	)	u1.push.tst_set();	// 押す	弾き飛ばすけ
-					if ( num == ACT_JUMP	)	u1.jump.tst_set();	// ジャンプ	踏付け
-					if ( num == ACT_GUID	)	u1.guid.tst_set();	// 誘導	誘導属性がある。追尾モンスター生成でも良いかも
-					if ( num == ACT_RUN		)	u1.run.tst_set();	// 遁走	ボスが倒されたり
-				}
-
-				{// 方向を変える
-					// 相対角を求める
-					let s = u1.to_dir - u1.dir;
-					if ( s < -Math.PI ) s += Math.PI*2;
-					if ( s >  Math.PI ) s -= Math.PI*2;
-
-					let r = 0;
-					if ( s > 0 ) 
-					{
-						r =  Math.min(s,act.rot_spd);
-					}
-					if ( s < 0 ) 
-					{
-						r =  -Math.min(-s,act.rot_spd);
-					}
-					u1.dir += r;
-				}
-
-				{	//MOVE
-
-					let th = u1.dir+act.mov_dir;
-					u1.add_x += Math.cos( th )*act.mov_spd;
-					u1.add_y += Math.sin( th )*act.mov_spd;
-				}
-
-			}
-
-			u1.think_lim--;
-			if ( u1.think_lim <= 0 )	// 思考パターン抽選
-			{
-				u1.think_type = 0;
-				let r = Math.random();
-				for ( let i = 0 ; i < u1.tblThink.length ; i++ )
+				let r = 0;
+				if ( s > 0 ) 
 				{
-					let tnk = u1.tblThink[i];
-					if ( r < tnk.ratio ) 
-					{
-						u1.think_type = i;
-						u1.think_lim = Math.floor( rand(tnk.num)*tnk.quant )+1;
-						break;
-					}
+					r =  Math.min(s,act.rot_spd);
 				}
-				if ( u1.think_type == 0 ) console.log("抽選失敗");			
+				if ( s < 0 ) 
+				{
+					r =  -Math.min(-s,act.rot_spd);
+				}
+				u1.dir += r;
 			}
+
+			{	//MOVE
+
+				let th = u1.dir+act.mov_dir;
+				u1.add_x += Math.cos( th )*act.mov_spd;
+				u1.add_y += Math.sin( th )*act.mov_spd;
+			}
+
+		}
+
+		u1.think_lim--;
+		if ( u1.think_lim <= 0 )	// 思考パターン抽選
+		{
+			u1.think_type = 0;
+			let r = Math.random();
+			for ( let i = 0 ; i < u1.tblThink.length ; i++ )
+			{
+				let tnk = u1.tblThink[i];
+				if ( r < tnk.ratio ) 
+				{
+					u1.think_type = i;
+					u1.think_lim = Math.floor( rand(tnk.num)*tnk.quant )+1;
+					break;
+				}
+			}
+			if ( u1.think_type == 0 ) console.log("抽選失敗");			
 		}
 	}
-
-	//-----------------------------------------------------------------------------
-	unit_collition( u1 )
-	//-----------------------------------------------------------------------------
-	{
-		let ux = u1.x + u1.add_x;
-		let uy = u1.y + u1.add_y;
-		u1.add_x = 0;
-		u1.add_y = 0;
-
-		let isCol = function() //衝突判定
-		{
-			let flg = false; 
-
-			//	壁との衝突
-			for ( let y = 0 ; y < g_scr_h ; y++ )
-			{
-				for ( let x = 0 ; x < g_scr_w ; x++ )
-				{
-					let x0 = x*g_tile_SZ+g_scr_sx;
-					let y0 = y*g_tile_SZ+g_scr_sy;
-					let x1 = x0-g_tile_SZ/2;
-					let y1 = y0-g_tile_SZ/2;
-					let x2 = x0+g_tile_SZ/2;
-					let y2 = y0+g_tile_SZ/2;
-					let sz = u1.size;
-					if ( 
-						( (ux > x1-sz) && (ux < x2+sz) )
-					&&	( (uy > y1-sz) && (uy < y2+sz) )
-					)
-					{
-						return true;
-					}
-				}
-			}
-
-			// ユニット同士の衝突
-
-			if ( 1 == html_getValue_textid("nohit") ) return false;
-
-			u1.stat = 0;
-
-			for ( let u2 of g_unit.tblUnit )
-			{
-				if ( u2 == u1 )
-				{
-					continue;
-				}
-				let x2	= u2.x;
-				let y2	= u2.y;
-				let size	= u2.size + u1.size;
-				let far = Math.sqrt( (x2-ux)*(x2-ux) + (y2-uy)*(y2-uy) );			
-				if ( size > far ) 
-				{
-					let far = Math.sqrt( (x2-u1.x)*(x2-u1.x) + (y2-u1.y)*(y2-u1.y) );			
-					if ( size > far ) 
-					{
-						// 移動前から既に衝突してる状態なら、次回に離れるように移動するように設定。
-						let dir = Math.atan2( (y2-u1.y), (x2-u1.x) );
-						let r = far-size+ 10;
-						u1.add_x = -r * Math.cos( dir );
-						u1.add_y = -r * Math.sin( dir );
-						u2.add_x = r * Math.cos( dir );
-						u2.add_y = r * Math.sin( dir );
-						u1.stat = 1;
-					}
-					else
-					{
-						// 移動前には衝突していないのなら書き戻すような処理
-					}
-					return true;
-				}
-			}
-			return flg
-		}
-		
-		if ( isCol() == false )
-		{
-			u1.x = ux;
-			u1.y = uy;
-			const sz = g_map_SZ * g_tile_SZ;
-			if ( u1.x < 0 	) u1.x = sz-1;
-			if ( u1.x >= sz ) u1.x = 0;
-			if ( u1.y < 0 	) u1.y = sz-1;
-			if ( u1.y >= sz ) u1.y = 0;
-		}
-		
-	}
-
-		
 	//-----------------------------------------------------------------------------
 	unit_allupdate()
 	//-----------------------------------------------------------------------------
@@ -2168,8 +2077,75 @@ class Unit
 			this.unit_update( u1 );
 		}
 		for ( let u1 of g_unit.tblUnit ) 
+		{// 思考ルーチン
+			if ( u1.gid == 0 ) continue;	// グループID=0 はNONE
+			if ( u1.gid == 1 ) continue;	// グループID=1 はPlayer
+			this.unit_think( u1 );
+		}
+		for ( let u1 of g_unit.tblUnit ) 
+		{ // 移動準備
+			let ux = u1.x + u1.add_x;
+			let uy = u1.y + u1.add_y;
+			{
+				const sz = g_map_SZ * g_tile_SZ;
+				if ( ux < 0		) ux += sz;
+				if ( ux >= sz	) ux -= sz;
+				if ( uy < 0		) uy += sz;
+				if ( uy >= sz	) uy -= sz;
+			}
+			u1.add_x = 0;
+			u1.add_y = 0;
+			u1.req_x = ux;
+			u1.req_y = uy;
+		}
+		{ // ユニット同士の衝突
+			for ( let i = 0 ; i < g_unit.tblUnit.length ; i++ )
+			{
+				for ( let j = i+1 ; j < g_unit.tblUnit.length ; j++ )
+				{
+					let u1 = g_unit.tblUnit[i];
+					let u2 = g_unit.tblUnit[j];
+
+					u1.stat = 0;
+					u2.stat = 0;
+					let flg = false; 
+					let size	= u2.size + u1.size;
+					let far 	= Math.sqrt( (u2.req_x-u1.req_x)*(u2.req_x-u1.req_x) + (u2.req_y-u1.req_y)*(u2.req_y-u1.req_y) );			
+					if ( size > far ) 
+					{
+						let far = Math.sqrt( (u2.x-u1.x)*(u2.x-u1.x) + (u2.y-u1.y)*(u2.y-u1.y) );			
+						if ( size > far ) 
+						{
+							// 移動前から既に衝突してる状態なら、次回に離れるように移動するように設定。
+							// ※移動前には衝突していないのなら変更しない
+							let dir = Math.atan2( (u2.y-u1.y), (u2.x-u1.x) );
+							let r = (size-far)/2;
+							u1.add_x += -r * Math.cos( dir );
+							u1.add_y += -r * Math.sin( dir );
+							u2.add_x += r * Math.cos( dir );
+							u2.add_y += r * Math.sin( dir );
+							u1.stat = 1;
+							u2.stat = 1;
+						}
+						flg = true;
+					}
+					u1.flgCol = flg;
+					u1.flgCol = flg;
+				}
+			}
+		}
+		
+		for ( let u1 of g_unit.tblUnit ) 
 		{
-			this.unit_collition( u1 );
+			if ( u1.flgCol == false )
+			{
+				// 衝突が起きてなければ移動
+				u1.x = u1.req_x;
+				u1.y = u1.req_y;
+			}
+			u1.req_x = 0;
+			u1.req_y = 0;
+			u1.flgCol = false;
 		}
 	}
 	
@@ -2304,7 +2280,7 @@ let g_json_cast =
 	{
 		name		:"テストマン"	,
 		size		: 16,
-		talk		:["",50,"やぁやぁ我こそはテストマン",30,"いざ尋常に！"],
+		tblTalk		:["",50,"やぁやぁ我こそはテストマン",30,"いざ尋常に！"],
 		tblThink	:
 		[
 			{name:""		,act_no:0			,mov_dir:rad(   0)	,mov_spd:0		, rot_spd:rad(1)	,rate: 0, quant:  0, num:3 },
@@ -2337,7 +2313,7 @@ let g_json_cast =
 	{
 		name		:"忍者"	,
 		size		: 16,
-		talk		:["",70,"某がお相手いたそう",30,"いざッ"],
+		tblTalk		:["",70,"某がお相手いたそう",30,"いざッ"],
 		tblThink	:
 		[
 			{name:""		,act_no:0			,mov_dir:rad(   0)	,mov_spd:0		, rot_spd:rad(1)	,rate: 0, quant:  0, num:3 },
@@ -2374,7 +2350,7 @@ let g_json_cast =
 			{name:"B"		,act_no:0			,mov_dir:rad(  90)	,mov_spd:1.25	, rot_spd:rad(0.8)	,rate:20, quant: 36, num:3 },
 			{name:"R"		,act_no:0			,mov_dir:rad( 60)	,mov_spd:1.0	, rot_spd:rad(0.8)	,rate:20, quant:36, num:3 },
 			{name:"L"		,act_no:0			,mov_dir:rad( 160)	,mov_spd:0.5	, rot_spd:rad(0.8)	,rate:20, quant:8, num:3 },
-			{name:"召喚"	,act_no:ACT_VOLT	,mov_dir:rad(  0)	,mov_spd:0.25	, rot_spd:rad(0.3)	,rate:4, quant:0, num:3 },
+			{name:"召喚"	,act_no:ACT_SUMMON	,mov_dir:rad(  0)	,mov_spd:0.25	, rot_spd:rad(0.3)	,rate:4, quant:0, num:3 },
 		]
 	},
 	"ORC":	// 人型	オーク
@@ -2498,12 +2474,11 @@ window.onkeydown = function( ev )
 				{ // MOVE
 					u1.x += Math.cos( dir )*spd;
 					u1.y += Math.sin( dir )*spd;
-
 					const sz = g_map_SZ * g_tile_SZ;
-					if ( u1.x < 0 	) u1.x = sz-1;
-					if ( u1.x >= sz ) u1.x = 0;
-					if ( u1.y < 0 	) u1.y = sz-1;
-					if ( u1.y >= sz ) u1.y = 0;
+					if ( u1.x < 0 	) u1.x += sz;
+					if ( u1.x >= sz ) u1.x -= sz;
+					if ( u1.y < 0 	) u1.y += sz;
+					if ( u1.y >= sz ) u1.y -= sz;
 				}
 			}
 
@@ -2630,12 +2605,33 @@ function game_init( start_x, start_y )
 			}
 		}
 	}
+
+	if (0)
+	{	// テスト用
+		{
+			const cast = g_tblCast.tbl[ "PLAYER1" ];
+			g_unit.unit_create( 0, 1, 1000, 1000, cast.size, rad(-90), cast.tblThink, cast.name, cast.tblTalk );
+		}
+		{
+			const cast = g_tblCast.tbl[ "DRAGON" ];
+			g_unit.unit_create( 0, 0, 1000-52+20, 900, cast.size, rad(-90), cast.tblThink, cast.name, cast.tblTalk );
+		}
+		{
+			const cast = g_tblCast.tbl[ "DRAGON" ];
+			g_unit.unit_create( 0, 0, 1000+52-20, 900, cast.size, rad(-90), cast.tblThink, cast.name, cast.tblTalk );
+		}
+	}
+	else
 	{
 		let tblEnemy =
 		[
+
+			["SUMMON",],
+			["SUMMON",],
+			["SUMMON",],
+
 			["WOLF","GHOST","ZOMBIE","NINJA","ORC","ARCHER",],
 			["GHOST","WIBARN","MINO","NINJA","SUMMON","SWORDMAN",],
-//			["SUMMON",],
 			["DRAGON","MINO","SWORDMAN","TSTMAN","NINJA","WIBARN"],
 		];
 		let e0 = Math.floor(tblEnemy[0].length*rand(1))
@@ -2661,7 +2657,7 @@ function game_init( start_x, start_y )
 						if ( cntPlayer == 0 ) cast = g_tblCast.tbl[ "PLAYER1" ];
 						if ( cntPlayer == 1 ) cast = g_tblCast.tbl[ "PLAYER2" ];
 						if ( cntPlayer == 2 ) cast = g_tblCast.tbl[ "PLAYER3" ];
-						g_unit.unit_create( 0, 1, px, py, cast.size, rad(-90), cast.tblThink, cast.name, cast.talk );
+						g_unit.unit_create( 0, 1, px, py, cast.size, rad(-90), cast.tblThink, cast.name, cast.tblTalk );
 						cntPlayer++;
 					}
 					break;
@@ -2670,7 +2666,7 @@ function game_init( start_x, start_y )
 //break;
 					{
 							let cast = g_tblCast.tbl[ tblEnemy[0][ e0 ]];
-							g_unit.unit_create( 0, 2, px, py, cast.size, rad(90), cast.tblThink, cast.name, cast.talk );
+							g_unit.unit_create( 0, 2, px, py, cast.size, rad(90), cast.tblThink, cast.name, cast.tblTalk );
 					}
 					break;
 
@@ -2678,14 +2674,14 @@ function game_init( start_x, start_y )
 //break;
 					{
 							let cast = g_tblCast.tbl[ tblEnemy[1][ e1 ]];
-							g_unit.unit_create( 0, 2, px, py, cast.size, rad(90), cast.tblThink, cast.name, cast.talk );
+							g_unit.unit_create( 0, 2, px, py, cast.size, rad(90), cast.tblThink, cast.name, cast.tblTalk );
 					}
 					break;
 
 				case 3: // ボス
 					{
 							let cast = g_tblCast.tbl[ tblEnemy[2][ e2 ]];
-							g_unit.unit_create( 0, 2, px, py, cast.size, rad(90), cast.tblThink, cast.name, cast.talk );
+							g_unit.unit_create( 0, 2, px, py, cast.size, rad(90), cast.tblThink, cast.name, cast.tblTalk );
 					}
 					break;
 
@@ -2700,6 +2696,119 @@ function game_init( start_x, start_y )
 function main_update()
 //-----------------------------------------------------------------------------
 {
+	function unit_pad( u1 )
+	{
+		if(navigator.getGamepads)
+		{
+			let list = navigator.getGamepads();
+			for ( pad of list )
+			{
+				if ( pad != null )		
+				{
+					let lx = pad.axes[0];
+					let ly = pad.axes[1];
+					let rx = pad.axes[2];
+					let ry = pad.axes[3];
+					for ( let i = 0 ; i < pad.buttons.length ; i++ )
+					{
+						//scr_print( 0,20+10*i, ""+i+":"+pad.buttons[i].value );
+					}
+					let a = pad.buttons[0].value;
+					let b = pad.buttons[1].value;
+					let x = pad.buttons[2].value;
+					let y = pad.buttons[3].value;
+					let se = pad.buttons[8].value;
+					let st = pad.buttons[9].value;
+					if ( a ) u1.shot.shot_set(1,2);
+					if ( b ) u1.breath.breath_set();
+					if ( x ) u1.bow.bow_set(1,2);
+					if ( y ) u1.valkan.valkan_set();
+					if ( st ) 
+					{
+						map_genSeed( g_map_SZ );
+						resetAll();
+					}
+
+					{// 左レバー制御
+						let spd = Math.sqrt(ly*ly+lx*lx);
+						let dir = u1.dir+Math.atan2(lx,-ly);
+						if ( Math.abs(spd) > 0.2 )
+						{
+							u1.add_x += Math.cos( dir )*spd*2;
+							u1.add_y += Math.sin( dir )*spd*2;
+						}
+					}
+
+					{// 右レバー制御
+						let spd = 0;
+						let dir = u1.dir;
+						if ( Math.abs(rx) > 0.2 ) dir = u1.dir += rad(rx);
+						if ( Math.abs(ry) > 0.2 ) spd += -ry;
+						if ( Math.abs(spd) > 0.2 )
+						{
+							u1.add_x += Math.cos( dir )*spd*2;
+							u1.add_y += Math.sin( dir )*spd*2;
+						}
+
+					}
+				}
+			}
+		}
+	}
+	function draw_pole_luna_sun()
+	{// 月と太陽と北極星
+		function draw_sun( px, py, r0, r1, r2 ) 
+		{ // 太陽
+			circle_black( px, py, r0 );
+			for ( let th = 0 ; th < Math.PI*2 ; th += rad(30) )
+			{
+				let x1 = r1*Math.cos(th) + px;
+				let y1 = r1*Math.sin(th) + py;
+				let x2 = r2*Math.cos(th) + px;
+				let y2 = r2*Math.sin(th) + py;
+				line_black( x1, y1, x2, y2 );
+			}
+		}
+		draw_sun( 80, 80, 7, 11, 15 );
+
+		// ☆北極星
+		function draw_pole( pr, rot, r )
+		{
+			let px = pr * Math.cos( rot );
+			let py = pr * Math.sin( rot );
+		
+			let st = rad(360*2/5);
+			for ( let th = rad(-90) ; th <= Math.PI*4 ; th += st )
+			{
+				let x1 = r*Math.cos(th) + px;
+				let y1 = r*Math.sin(th) + py;
+				let x2 = r*Math.cos(th-st) + px;
+				let y2 = r*Math.sin(th-st) + py;
+				line_black( x1, y1, x2, y2 );
+			}
+		}
+
+		function draw_moon( px, py, r0 ) 
+		{ // 月 29.5日周期で満ち欠け
+			for ( let i = 0 ; i < r0 ; i+=0.5 )
+			{
+				circle_black( px, py, i );
+			}
+		}
+		draw_moon( 185, 20, 8 );
+
+
+		{
+			ctx.save();
+			ctx.translate(html_canvas.width/2,html_canvas.height/2);
+			{
+				let r = Math.floor( html_canvas.width/2-10 );
+				draw_pole( r, rad(-90)+g_scr_rot, 5 );
+			}
+			ctx.restore();
+		}
+	}
+	
 	cls();
 
 	if (0)	// フロアマトリクス
@@ -2715,7 +2824,7 @@ function main_update()
 		{
 			for ( let y = 0 ; y < g_scr_h ; y++ )
 			{
-				circle( x*size+sx, y*size+sy, 16+8,1 );
+				scr_circle( x*size+sx, y*size+sy, 16+8,1 );
 				let s = size-0;
 				let x0 = x*size+sx;
 				let y0 = y*size+sy;
@@ -2723,59 +2832,30 @@ function main_update()
 				let y1 = y0-s/2;
 				let x2 = x0+s/2;
 				let y2 = y0+s/2;
-				box( x1,y1,x2,y2, 13 );
+				box( x1,y1,x2,y2 );
 			}
 		}
 	}
 
 
-	{	// 画面中心座標を求める	プレイヤー１を画面の中心
+	{ // コントローラ入力
 		for ( let u1 of g_unit.tblUnit ) 
 		{
 			if ( u1.gid == 1 )	// グループID=1 はPlayer
 			{
-				if(navigator.getGamepads)
-				{
-					let list = navigator.getGamepads();
-					for ( pad of list )
-					{
-						if ( pad != null )		
-						{
-							let lx = pad.axes[0];
-							let ly = pad.axes[1];
-							let rx = pad.axes[2];
-							let ry = pad.axes[3];
+				unit_pad( u1 );
+				break;
+			}
+		}
+	}
 
-							{// 左レバー制御
-								let spd = Math.sqrt(ly*ly+lx*lx);
-								let dir = u1.dir+Math.atan2(lx,-ly);
-								if ( Math.abs(spd) > 0.2 )
-								{
-									u1.add_x += Math.cos( dir )*spd*2;
-									u1.add_y += Math.sin( dir )*spd*2;
-								}
-							}
-
-							{// 右レバー制御
-								let spd = 0;
-								let dir = u1.dir;
-								if ( Math.abs(rx) > 0.2 ) dir = u1.dir += rad(rx);
-								if ( Math.abs(ry) > 0.2 ) spd += -ry;
-								if ( Math.abs(spd) > 0.2 )
-								{
-									u1.add_x += Math.cos( dir )*spd*2;
-									u1.add_y += Math.sin( dir )*spd*2;
-								}
-
-							}
-						}
-					}
-				}
-
-
+	{// カメラ更新
+		for ( let u1 of g_unit.tblUnit ) 
+		{
+			if ( u1.gid == 1 )	// グループID=1 はPlayer
+			{
 				g_scr_cx = u1.x;
 				g_scr_cy = u1.y;
-				
 				let to = rad(-90)-u1.dir;
 				let s = to - g_scr_rot;
 				if ( s < -Math.PI ) s += Math.PI*2;
@@ -2789,185 +2869,225 @@ function main_update()
 				{
 					r =  -Math.min(-s,rad(2));
 				}
-//				g_scr_rot += r;
-//				g_scr_rot = (g_scr_rot*2+to)/3;
 				g_scr_rot = to;
-				break;
 			}
 		}
 	}
 
-	if ( null != document.getElementById("html_canvas2") )
-	{	// 全体地形表示
-		g_map_gra.streach();
-
-		// カーソル表示
-		let sc = html_canvas2.height/g_map_SZ;
-		let x = g_scr_cx/g_tile_SZ*sc;
-		let y = g_scr_cy/g_tile_SZ*sc;
-		let r = (g_scr_h/2)*sc;
-		g_map_gra.circle( x, y, r, "#fff" );
-		let ax = r*Math.cos(rad(-90)-g_scr_rot)+x;
-		let ay = r*Math.sin(rad(-90)-g_scr_rot)+y;
-		g_map_gra.line( x, y, ax,ay, "#fff" );
+	
+	{// 月と太陽と北極星
+		draw_pole_luna_sun();
 	}
 
-	print( 0,8, "units:" + g_unit.tblUnit.length.toString() );
 
-	{ // マップ描画
-
-		{// 月と太陽と北極星
-			function draw_sun( px, py, r0, r1, r2 ) 
-			{ // 太陽
-				circle( px, py, r0 );
-				for ( let th = 0 ; th < Math.PI*2 ; th += rad(30) )
-				{
-					let x1 = r1*Math.cos(th) + px;
-					let y1 = r1*Math.sin(th) + py;
-					let x2 = r2*Math.cos(th) + px;
-					let y2 = r2*Math.sin(th) + py;
-					line( x1, y1, x2, y2 );
-				}
-			}
-			draw_sun( 80, 80, 7, 11, 15 );
-
-			// ☆北極星
-			function draw_pole( pr, rot, r )
-			{
-				let px = pr * Math.cos( rot );
-				let py = pr * Math.sin( rot );
-			
-				let st = rad(360*2/5);
-				for ( let th = rad(-90) ; th <= Math.PI*4 ; th += st )
-				{
-					let x1 = r*Math.cos(th) + px;
-					let y1 = r*Math.sin(th) + py;
-					let x2 = r*Math.cos(th-st) + px;
-					let y2 = r*Math.sin(th-st) + py;
-					line( x1, y1, x2, y2 );
-				}
-			}
-
-			function draw_moon( px, py, r0 ) 
-			{ // 月 29.5日周期で満ち欠け
-				for ( let i = 0 ; i < r0 ; i+=0.5 )
-				{
-					circle( px, py, i );
-				}
-			}
-			draw_moon( 185, 20, 8 );
-		}
-
+	{ // メイン画面表示
+		ctx.save();
+		ctx.translate(html_canvas.width/2,html_canvas.height/2);
 		{
-			ctx.save();
-			ctx.translate(html_canvas.width/2,html_canvas.height/2);
-			{
-				draw_pole( 245, rad(-90)+g_scr_rot, 5 );
 
-				{ // クリッピング
-					circle( 0,0, (g_scr_w)*g_tile_SZ/2 );
-					ctx.clip();
+			{ // クリッピング
+				scr_circle( 0,0, (g_scr_w)*g_tile_SZ/2 );
+				ctx.clip();
+				scr_cls();
+			}
+
+			ctx.save();
+			{
+				ctx.rotate( g_scr_rot ) ;
+
+				const ofx = -html_canvas.width/2;	//canvas 左上オフセットx
+				const ofy = -html_canvas.height/2;	//canvas 左上オフセットy
+
+				// 表示エリア確認用
+				box( 
+											g_scr_sx-g_tile_SZ/2	+ofx -0.5,
+											g_scr_sy-g_tile_SZ/2	+ofy -0.5,
+					(g_scr_w-1)*g_tile_SZ+	g_scr_sx+g_tile_SZ/2	+ofx +0.5,
+					(g_scr_h-1)*g_tile_SZ+	g_scr_sy+g_tile_SZ/2	+ofy +0.5	
+				);
+
+				{ // 画面表示
+					let mx = Math.floor( g_scr_cx / g_tile_SZ );
+					let my = Math.floor( g_scr_cy / g_tile_SZ );
+					let nx = (g_scr_cx)%g_tile_SZ;
+					let ny = (g_scr_cy)%g_tile_SZ;
+
+					let wh = Math.floor( html_canvas.width/g_tile_SZ/2 );
+					for ( let y = -wh ; y <= wh+1 ; y++ )
+					{
+						for ( let x = -wh ; x <= wh+1 ; x++ )
+						{
+							let ax = (mx+x);
+							let ay = (my+y);
+							if ( ax >= g_map_SZ	) ax -= g_map_SZ;
+							if ( ay >= g_map_SZ	) ay -= g_map_SZ;
+							if ( ax < 0 		) ax += g_map_SZ;
+							if ( ay < 0 		) ay += g_map_SZ;
+
+							let a = g_map_buf2[ g_map_SZ*ay + ax ];
+
+							g_map_gra2.pseta( ax, ay, a );
+							
+							if ( a > 0 )
+							{
+								let x0 = x*g_tile_SZ -nx;
+								let y0 = y*g_tile_SZ -ny;
+								let x1 = x0-g_tile_SZ/2;
+								let y1 = y0-g_tile_SZ/2;
+								let x2 = x0+g_tile_SZ/2;
+								let y2 = y0+g_tile_SZ/2;
+								if ( a > 0.7 )
+								{
+									fill_hach( x1,y1,x2,y2, 13 );
+								}
+								else
+								{
+									fill_hach( x1,y1,x2,y2, 26 );
+								}
+
+							}
+						}
+					}
 				}
 
-				ctx.save();
+				// エフェクト更新
+				g_effect.effect_update();
+
+				// ユニット更新
+				g_unit.unit_allupdate();
+
+			}
+			ctx.restore();
+
+			{// ユニットセリフ表示
+				for ( let u1 of g_unit.tblUnit ) 
 				{
-					ctx.rotate( g_scr_rot ) ;
+					let c = Math.cos( g_scr_rot );
+					let s = Math.sin( g_scr_rot );
+					let x = u1.x-g_scr_cx;
+					let y = u1.y-g_scr_cy;
 
-					const ofx = -html_canvas.width/2;	//canvas 左上オフセットx
-					const ofy = -html_canvas.height/2;	//canvas 左上オフセットy
+					let px = x*c - y*s;
+					let py = x*s + y*c;
+					scr_print( px+u1.size, py-u1.size, u1.name );
 
-					// 表示エリア確認用
-					box( 
-												g_scr_sx-g_tile_SZ/2	+ofx +0.5,
-												g_scr_sy-g_tile_SZ/2	+ofy +0.5,
-						(g_scr_w-1)*g_tile_SZ+	g_scr_sx+g_tile_SZ/2	+ofx +0.5,
-						(g_scr_h-1)*g_tile_SZ+	g_scr_sy+g_tile_SZ/2	+ofy +0.5	
-					);
-
-					if(1)
+					// シーケンスのセリフ
+					if ( u1.oneTalk != null )
 					{
-						let mx = Math.floor( g_scr_cx / g_tile_SZ );
-						let my = Math.floor( g_scr_cy / g_tile_SZ );
-						let nx = (g_scr_cx)%g_tile_SZ;
-						let ny = (g_scr_cy)%g_tile_SZ;
-
-						let wh = 4;
-						for ( let y = -wh ; y <= wh+1 ; y++ )
+						if ( u1.oneTalk.lim > 0 )
 						{
-							for ( let x = -wh ; x <= wh+1 ; x++ )
+							u1.oneTalk.lim--;
+							if ( u1.oneTalk.lim == 0 )
 							{
-								let ax = (mx+x);
-								let ay = (my+y);
-								if ( ax >= g_map_SZ	) ax -= g_map_SZ;
-								if ( ay >= g_map_SZ	) ay -= g_map_SZ;
-								if ( ax < 0 		) ax += g_map_SZ;
-								if ( ay < 0 		) ay += g_map_SZ;
-							
-								let a = g_map_buf[ g_map_SZ*ay + ax ];
-								if ( a > 0 )
-								{
-									let x0 = x*g_tile_SZ -nx;
-									let y0 = y*g_tile_SZ -ny;
-									let x1 = x0-g_tile_SZ/2;
-									let y1 = y0-g_tile_SZ/2;
-									let x2 = x0+g_tile_SZ/2;
-									let y2 = y0+g_tile_SZ/2;
-									fill_hach( x1,y1,x2,y2, 13 );
+								u1.oneTalk = null;
+							}
+							else
+							{
+								scr_print( px+u1.size+10, py-u1.size+16, u1.oneTalk.str );
+							}
 
+						}
+					}
+					else
+					if ( u1.tblTalk != undefined )
+					{
+						if ( u1.limTalk > 0 )
+						{
+							u1.limTalk--;
+							if ( u1.limTalk == 0 )
+							{
+								while( u1.seqTalk < u1.tblTalk.length )
+								{
+									u1.seqTalk++;
+									let d = u1.tblTalk[u1.seqTalk];
+									if ( Number.isFinite(d) ) 
+									{
+										u1.limTalk = d;
+									}
+									else
+									{
+										break;	
+									}
 								}
+							}
+							if ( u1.seqTalk < u1.tblTalk.length )
+							{
+								scr_print( px+u1.size, py-u1.size-16, u1.tblTalk[u1.seqTalk] );
 							}
 						}
 					}
 
-					// エフェクト更新
-					g_effect.effect_update();
-
-					// ユニット更新
-					g_unit.unit_allupdate();
 				}
-				ctx.restore();
-
-				{// 文字列表示
-					for ( let u1 of g_unit.tblUnit ) 
-					{
-						let c = Math.cos( g_scr_rot );
-						let s = Math.sin( g_scr_rot );
-						let x = u1.x-g_scr_cx;
-						let y = u1.y-g_scr_cy;
-
-						let px = x*c - y*s;
-						let py = x*s + y*c;
-						print( px+u1.size, py-u1.size, u1.name );
-					}
-				}
-			
 			}
-			ctx.restore();
-
+		
 		}
+		ctx.restore();
+	}
+
+	scr_print( 0,8, "units:" + g_unit.tblUnit.length.toString() );
+
+	if ( null != document.getElementById("html_canvas2") )
+	{	// 全体地形表示
+		g_map_gra2.streach();
+
+		// カーソル表示
+		let sc = html_canvas2.height/g_map_SZ;
+		let x = g_scr_cx/g_tile_SZ*sc+1.5;
+		let y = g_scr_cy/g_tile_SZ*sc+1.5;
+		let r = (g_scr_h/2)*sc;
+		g_map_gra2.scr_circle( x, y, r, "#fff" );
+		let ax = r*Math.cos(rad(-90)-g_scr_rot)+x;
+		let ay = r*Math.sin(rad(-90)-g_scr_rot)+y;
+		g_map_gra2.line( x, y, ax,ay, "#fff" );
 	}
 
 	requestAnimationFrame( main_update );
 }
-let g_scr_cx = 0;
-let g_scr_cy = 0;
-let g_map_buf;
-let g_map_gra;
+let g_scr_cx = 1664;
+let g_scr_cy = 1664;
+let g_map_buf2;
+let g_map_gra2;
+g_effect = new Effect(100);
 //-----------------------------------------------------------------------------
-window.onload = function( e )
+function resetAll()
 //-----------------------------------------------------------------------------
 {
+	map_create();
 
-	g_effect = new Effect(100);
+	g_effect.effect_reset();
 
 	g_unit.unit_init();
 
-	map_init();
 
 	const sx = g_map_SZ/2*g_tile_SZ; 
 	const sy = g_map_SZ/2*g_tile_SZ; 
 	game_init(sx,sy);
+}
+
+//-----------------------------------------------------------------------------
+window.onload = function( e )
+//-----------------------------------------------------------------------------
+{
+	resetAll();
 
 	requestAnimationFrame( main_update );
 }
 
+let g_flgNight = 0;	// 0:day 1:nighit
+//from GUI(HTML)
+//-----------------------------------------------------------------------------
+function html_radio_click()
+//-----------------------------------------------------------------------------
+{
+	var list = document.getElementsByName( "html_radio" ) ;
+
+	for ( let l of list )
+	{
+		if ( l.checked ) 
+		{
+		console.log(l.value);
+			g_flgNight = l.value*1;
+			break;
+		}
+	}
+}
