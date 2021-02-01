@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>ray</title>
+		<style>
+			.test
+			{
+				//width: 100%;
+			//	height: 20%;
+				border:1px solid #aaa;
+				margin:0;
+				text-align:left;
+				align=:left;
+			}
+			html,body
+			{
+			///	text-align:center;
+			//	border:solid 1px #dd8;
+			//	height: 100%;
+//				margin:0;
+
+			}
+			.buttons
+			{
+				display:inline-block; 
+				padding: 6px; 
+				border-radius: 7px; 
+				border:1px solid #aaa;
+				text-align:right;
+			}
+
+		</style>
+	</head>
+	<body align="center" style="font-family:monospace">
+		<H2>javascript レイトレーシング</H2>
+
+		<canvas id="html_canvas" class="test" ></canvas>
+
+		<br>
+
+		<div class="buttons">
+			<input type="radio" name="html_scene" value="refract" onchange="html_scene_click();update_scene();" 	checked>refract
+			<input type="radio" name="html_scene" value="colorballs" onchange="html_scene_click();update_scene();" 			>colorballs
+			<input type="radio" name="html_scene" value="rasen" onchange="html_scene_click();update_scene();" 			>rasen
+			<input type="radio" name="html_scene" value="smile" onchange="html_scene_click();update_scene();" 			>smile
+			<input type="radio" name="html_scene" value="3metals" onchange="html_scene_click();update_scene();" 			>3metals
+			<input type="radio" name="html_scene" value="4balls" onchange="html_scene_click();update_scene();" 			>4balls
+
+
+
+		</div>
+		<div class="buttons">
+			解像度
+			<input type="radio" name="html_reso" value="1" onchange="html_reso_click();update_scene();" 	>1/1
+			<input type="radio" name="html_reso" value="0.5" onchange="html_reso_click();update_scene();" 	checked>1/2
+			<input type="radio" name="html_reso" value="0.25" onchange="html_reso_click();update_scene();" 	>1/4
+		</div>
+
+			<input type="button" value="描画" onClick="update_scene()" >
+
+		<br>
+
+
+		<div style="display:inline-block" >
+
+			<div class="buttons">
+				幅 <input type="text" id="html_size_x" value="480" size="3" ><br>
+				高さ <input type="text" id="html_size_y" value="240" size="3" ><br>
+			    反射 <input type="text" id="html_maxreflect" value="5" size="3" ><br>
+			</div>
+
+			<div class="buttons">
+			  視点 <br>
+				x <input type="text" id="html_eye_x" value="0.0" size="3" ><br>
+				y <input type="text" id="html_eye_y" value="1.0" size="3" ><br>
+				z <input type="text" id="html_eye_z" value="-9.0" size="3" ><br>
+			</div>
+			
+			<div class="buttons">
+			 注視点 <br>
+				x <input type="text" id="html_at_x" value="0.0" size="3" ><br>
+				y <input type="text" id="html_at_y" value="1.0" size="3" ><br>
+				z <input type="text" id="html_at_z" value="0.0" size="3" ><br>
+			</div>
+
+			<div class="buttons">
+			 画角 <input type="text" id="html_fovy" value="28.0" size="3" ><br>
+			 回転 <input type="text" id="html_rz" value="0.0" size="3" ><br>
+			</div>
+
+		</div>
+
+		
+		<br>
+		<br>
+	    <p>～概要～</p>
+	    <p>javascriptのみによるレイトレーシングプログラム</p>
+	    <p>CPUのみの描画</p>
+		<br>
+	    <p>～リアルタイム操作～</p>
+	    <p>角度を変えて4カットレンダリング</p>
+	    <p>WASD : 前後左右移動</p>
+	    <p>RF : 上下移動</p>
+	    <p>↑↓←→：上下左右を見る</p>
+	    <p>QE : 画面回転</p>
+
+
+		<script src="main.js"></script>
+
+			
+	</body>
+</html>

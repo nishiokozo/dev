@@ -1,3 +1,4 @@
+"use strict";
 //-----------------------------------------------------------------------------
 function html_getValue_checkboxname( name ) // チェックボックス用
 //-----------------------------------------------------------------------------
@@ -679,7 +680,7 @@ function rand( n ) // n=3以上が正規分布
 //-----------------------------------------------------------------------------
 {
 	let r = 0;
-	for ( j = 0 ; j < n ; j++ ) r += Math.random();
+	for ( let j = 0 ; j < n ; j++ ) r += Math.random();
 	return r/n;
 }
 //-----------------------------------------------------------------------------
@@ -1887,16 +1888,16 @@ class Unit
 		}
 		else
 		{
-			if( u1.stat == 0 )
+//			if( u1.stat == 0 )
 			{
 				unit_circle( u1.x, u1.y, er+u1.size );	// 本体表示
 				unit_circle( dx,dy,(u1.size*0.2) );		// 口、目表示
 			}
-			else
-			{
-				unit_circle_red( u1.x, u1.y, er+u1.size );	// 本体表示
-				unit_circle_red( dx,dy,(u1.size*0.2) );		// 口、目表示
-			}
+//			else
+//			{
+//				unit_circle_red( u1.x, u1.y, er+u1.size );	// 本体表示
+//				unit_circle_red( dx,dy,(u1.size*0.2) );		// 口、目表示
+//			}
 			
 		}
 		
@@ -2706,7 +2707,7 @@ function main_update()
 		if(navigator.getGamepads)
 		{
 			let list = navigator.getGamepads();
-			for ( pad of list )
+			for ( let pad of list )
 			{
 				if ( pad != null )		
 				{
@@ -2719,28 +2720,47 @@ function main_update()
 					{
 						//scr_print( 0,20+10*i, ""+i+":"+pad.buttons[i].value, g_flgNight?"#FFF":"#000" );
 					}
-					let a  = pad.buttons[ 0].value;
-					let b  = pad.buttons[ 1].value;
-					let x  = pad.buttons[ 2].value;
-					let y  = pad.buttons[ 3].value;
+					let a  = pad.buttons[ 0].value && !g_prevButtons[ 0].value;
+					let b  = pad.buttons[ 1].value && !g_prevButtons[ 1].value;
+					let x  = pad.buttons[ 2].value && !g_prevButtons[ 2].value;
+					let y  = pad.buttons[ 3].value && !g_prevButtons[ 3].value;
 					let l1 = pad.buttons[ 4].value && !g_prevButtons[ 4].value;
 					let r1 = pad.buttons[ 5].value && !g_prevButtons[ 5].value;
 					let se = pad.buttons[ 8].value && !g_prevButtons[ 8].value;
 					let st = pad.buttons[ 9].value && !g_prevButtons[ 9].value;
-					let u = pad.buttons[12].value && !g_prevButtons[12].value;
-					let d = pad.buttons[13].value && !g_prevButtons[13].value;
-					let l = pad.buttons[14].value && !g_prevButtons[14].value;
-					let r = pad.buttons[15].value && !g_prevButtons[15].value;
-					if ( a ) u1.shot.shot_set(1,2);
+					let u = pad.buttons[12].value
+					let d = pad.buttons[13].value
+					let l = pad.buttons[14].value
+					let r = pad.buttons[15].value
+					if ( a ) 
+					{
+						switch( Math.floor(rand(1)*8) )
+						{
+							case 0:u1.shot.shot_set(1,2);break;
+							case 1:u1.breath.breath_set();break;
+							case 2:u1.bow.bow_set(1,2);break;
+							case 3:u1.valkan.valkan_set();break;
+							case 4:u1.volt.volt_set(32);break;
+							case 5:u1.long.long_set( u1.size/8 );break;
+							case 6:u1.dying.dying_set();	break;
+							case 7:u1.twincle.twn_set( 32 );break;
+						}
+					}
 					if ( b ) u1.breath.breath_set();
 					if ( x ) u1.bow.bow_set(1,2);
 					if ( y ) u1.valkan.valkan_set();
-					if ( r ) g_map_gra2.draw_buf( g_map_buf2 );
 					if ( se ) g_flgNight = !g_flgNight;
 					if ( st ) 
 					{
-						map_genSeed( g_map_SZ );
-						resetAll();
+						if ( r ) 
+						{
+							g_map_gra2.draw_buf( g_map_buf2 );
+						}
+						else
+						{
+							map_genSeed( g_map_SZ );
+							resetAll();
+						}
 					}
 
 					{// 左レバー制御
@@ -3141,7 +3161,6 @@ let g_flgNight = 0;	// 0:day 1:nighit
 function html_set_backgroundColor( col )
 //-----------------------------------------------------------------------------
 {
-//	let element = document.getElementById("sample"); 
 	let element = document.body;
 	element.style.backgroundColor = col; 
 }
