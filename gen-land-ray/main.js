@@ -1,3 +1,517 @@
+"use strict";
+//let g2=html_canvas2.getContext('2d');
+
+//-----------------------------------------------------------------------------
+function rand( n ) // n=3以上が正規分布
+//-----------------------------------------------------------------------------
+{
+	let r = 0;
+	for ( let j = 0 ; j < n ; j++ ) r += Math.random();
+	return r/n;
+}
+
+class Gra
+{
+	//-----------------------------------------------------------------------------
+	constructor( w, h, canvas )
+	//-----------------------------------------------------------------------------
+	{
+		this.canvas = canvas;
+		this.g = canvas.getContext('2d');
+		this.img = this.g.createImageData( w, h );
+	}
+	//-----------------------------------------------------------------------------
+	print( tx, ty, str )
+	//-----------------------------------------------------------------------------
+	{
+		this.g.font = "12px monospace";
+		this.g.fillStyle = "#000000";
+		this.g.fillText( str, tx+1, ty+1 );
+		this.g.fillStyle = "#ffffff";
+		this.g.fillText( str, tx, ty );
+	}
+	//-----------------------------------------------------------------------------
+	cls( val )
+	//-----------------------------------------------------------------------------
+	{
+		for (let x=0; x<this.img.width ; x++ )
+		for (let y=0; y<this.img.height ; y++ )
+		{
+			let adr = (y*this.img.width+x)*4;
+			this.img.data[ adr +0 ] = val?0xff:0;
+			this.img.data[ adr +1 ] = val?0xff:0;
+			this.img.data[ adr +2 ] = val?0xff:0;
+			this.img.data[ adr +3 ] = 0xff;
+		}
+	}
+	//-----------------------------------------------------------------------------
+	pseta( x, y, val )
+	//-----------------------------------------------------------------------------
+	{
+		if ( val > 1 ) val = 1;
+		if ( val < 0 ) val = 0;
+		val = (val*255)&0xff;
+		let adr = (y*this.img.width+x)*4;
+		this.img.data[ adr+0 ] = val;
+		this.img.data[ adr+1 ] = val;
+		this.img.data[ adr+2 ] = val;
+	}
+	//-----------------------------------------------------------------------------
+	streach()
+	//-----------------------------------------------------------------------------
+	{
+		// -----------------------------------------
+		// ImageDataをcanvasに合成
+		// -----------------------------------------
+		// g   : html_canvas_ray.getContext('2d')
+		// img : g.createImageData( width, height )
+
+		this.g.imageSmoothingEnabled = this.g.msImageSmoothingEnabled = 0; // スムージングOFF
+		{
+		// 引き伸ばして表示
+		    let cv=document.createElement('canvas');				// 新たに<canvas>タグを生成
+		    cv.width = this.img.width;
+		    cv.height = this.img.height;
+			cv.getContext("2d").putImageData( this.img,0,0);				// 作成したcanvasにImageDataをコピー
+			{
+				let sx = 0;
+				let sy = 0;
+				let sw = this.img.width;
+				let sh = this.img.height;
+				let dx = 0;
+				let dy = 0;
+				let dw = this.canvas.width;
+				let dh = this.canvas.height;
+				this.g.drawImage( cv,sx,sy,sw,sh,dx,dy,dw,dh);	// ImageDataは引き延ばせないけど、Imageは引き延ばせる
+			}
+			
+		}
+	}
+}
+//-----------------------------------------------------------------------------
+function pat_normalize( pat )
+//-----------------------------------------------------------------------------
+{
+	let amt = 0;
+	for ( let m = 0 ; m < pat.length ; m++ )
+	{
+		for ( let n = 0 ; n < pat[m].length ; n++ )
+		{
+			amt += pat[m][n];
+		}
+	}
+	for ( let m = 0 ; m < pat.length ; m++ )
+	{
+		for ( let n = 0 ; n < pat[m].length ; n++ )
+		{
+			pat[m][n] /= amt;
+		}
+	}
+	return pat;
+}
+
+//-----------------------------------------------------------------------------
+function calc_blur( buf1, pat, w, h )
+//-----------------------------------------------------------------------------
+{
+	// patで乗算
+	let buf2 = new Array( buf1.length );
+	let edge = Math.floor(pat.length/2);
+
+	for ( let y = 0 ; y < h ; y++ )
+	{
+		for ( let x = 0 ; x < w ; x++ )
+		{
+			let adr = (w*y + x); 
+
+			let v = 0;
+			for ( let m = 0 ; m < pat.length ; m++ )
+			{
+				for ( let n = 0 ; n < pat[m].length ; n++ )
+				{
+					// ラウンドする
+					let px = x+(m-edge);
+					let py = y+(n-edge);
+		
+					if ( px < 0   ) px = w-1;
+					else
+					if ( px >= w ) px = 0;
+
+					if ( py < 0   ) py = h-1;
+					else
+					if ( py >= h ) py = 0;
+
+					let a = (w*py + px); 
+
+					v += buf1[ a ] * pat[m][n];
+				}
+			}
+			buf2[ adr ] = v;
+		}
+	}
+	return buf2;
+}
+//-----------------------------------------------------------------------------
+function pat_calc_rain( buf1, pat, w, h, rate )
+//-----------------------------------------------------------------------------
+{
+	// patで水流シミュレーション
+	let buf2 = new Array( buf1.length );
+	let edge = Math.floor(pat.length/2);
+
+	for ( let y = 0 ; y < h ; y++ )
+	{
+		for ( let x = 0 ; x < w ; x++ )
+		{
+			let adr = (w*y + x); 
+
+			let base_high = buf1[ w*y+x ]; // 基準となる中心の高さ
+/*			
+			let cntRain = 0;
+			let cntAll = 0;
+			for ( let m = 0 ; m < pat.length ; m++ )
+			{
+				for ( let n = 0 ; n < pat[m].length ; n++ )
+				{
+					// ラウンドする
+					let px = x+(m-edge);
+					let py = y+(n-edge);
+		
+					if ( px < 0   ) px = w-1;
+					else
+					if ( px >= w ) px = 0;
+
+					if ( py < 0   ) py = h-1;
+					else
+					if ( py >= h ) py = 0;
+
+					let adr = (w*py + px); 
+
+					if ( base_high < buf1[ adr ] )
+					{
+						// 高いところには流れない
+					}
+					else
+					{
+						// その分低いところに集まる
+						cntRain++;
+					}
+					cntAll++;
+
+				}
+			}
+			let mizu = cntRain/cntAll;//（均等配分）
+mizu*=rate;
+*/
+let v = 0;
+			for ( let m = 0 ; m < pat.length ; m++ )
+			{
+				for ( let n = 0 ; n < pat[m].length ; n++ )
+				{
+					// ラウンドする
+					let px = x+(m-edge);
+					let py = y+(n-edge);
+		
+					if ( px < 0   ) px = w-1;
+					else
+					if ( px >= w ) px = 0;
+
+					if ( py < 0   ) py = h-1;
+					else
+					if ( py >= h ) py = 0;
+
+					let adr = (w*py + px); 
+
+					let a = buf1[ adr ];
+					if ( base_high < a )
+					{
+						// 高いところには流れない
+					}
+					else
+					{
+						// 流れ込んだ分削られる
+						v = - rate;
+					}
+
+				}
+			}
+			buf2[ adr ] = buf1[ adr ] + v;
+		}
+	}
+	return buf2;
+}
+//-----------------------------------------------------------------------------
+function draw_buf( gra, buf )
+//-----------------------------------------------------------------------------
+{
+	let h = gra.img.height;
+	let w = gra.img.width
+	for ( let y = 0 ; y < h ; y++ )
+	{
+		for ( let x = 0 ; x < w ; x++ )
+		{
+			let v = buf[ w*y + x ];
+			gra.pseta( x, y, v );
+		}
+	}
+}
+//-----------------------------------------------------------------------------
+function pat_gauss2d( size, sigma )
+//-----------------------------------------------------------------------------
+{
+	//-----------------------------------------------------------------------------
+	function gauss( x,s )
+	//-----------------------------------------------------------------------------
+	{
+		let u = 0; 
+		// u: μミュー	平均
+		// s: σシグマ	標準偏差
+		return 	1/(Math.sqrt(2*Math.PI*s))*Math.exp( -((x-u)*(x-u)) / (2*s*s) );
+	}
+	// size  :マトリクスの一辺の大きさ
+	// sigma :
+	const c = Math.floor(size/2);
+	let pat = new Array(size);
+	for ( let i = 0 ; i < pat.length ; i++ ) pat[i] = new Array(size);
+	for ( let m = 0 ; m < pat.length ; m++ )
+	{
+		for ( let n = 0 ; n < pat[m].length ; n++ )
+		{
+			let x = (m-c);
+			let y = (n-c);
+			let l = Math.sqrt(x*x+y*y);
+			pat[m][n] = gauss( l, sigma );
+		}
+	}
+	return pat;
+
+}	
+// 自動レベル調整 0～1.0の範囲に正規化
+//-----------------------------------------------------------------------------
+function calc_autolevel( buf0, size, mode="full" )
+//-----------------------------------------------------------------------------
+{
+	let buf = Array.from(buf0);
+
+	let max = Number.MIN_SAFE_INTEGER;
+	let min = Number.MAX_SAFE_INTEGER;
+
+	for ( let i = 0 ; i < size ; i++ )
+	{
+		let a = buf[i];
+		max = Math.max( max, a );
+		min = Math.min( min, a );
+	}
+	if ( mode == "full" )
+	{
+		let rate = 1.0/(max-min);
+		for ( let i = 0 ; i < size ; i++ )
+		{
+			buf[i] = (buf[i] - min)*rate;
+		}
+	}
+	if ( mode == "up" )
+	{
+		let base = 1.0-max;
+		for ( let i = 0 ; i < size ; i++ )
+		{
+			buf[i] = buf[i] + base;
+		}
+	}
+	return buf;
+}
+
+// ローパスフィルタ
+//-----------------------------------------------------------------------------
+function calc_lowpass( buf0, size )
+//-----------------------------------------------------------------------------
+{
+	let buf = [];
+	let val =  html_getValue_textid("low");
+	for ( let i = 0 ; i < size ; i++ )
+	{
+		if ( buf0[i] < val ) 
+		{
+			buf[i] = val;
+		}
+		else
+		{
+			buf[i] = buf0[i];
+		}
+	}
+	return buf;
+}
+
+// パラポライズ
+//-----------------------------------------------------------------------------
+function calc_parapolize( buf0, n, SZ )
+//-----------------------------------------------------------------------------
+{
+	let buf = [];
+	for ( let i = 0 ; i < SZ*SZ ; i++ )
+	{
+		let a = buf0[i];
+		for ( let i = 0 ; i < n ; i++ )
+		{
+			let b = (1.0/n)*(i+1);
+			let c = (1.0/(n-1))*i;
+			if ( a < b ) 
+			{
+				a = c;
+				break;
+			}
+		}
+		
+		buf[i] =a;
+	}
+	return buf;
+}
+
+let g_SZ_2d;
+let g_bufA_2d = [];
+let g_bufB_2d = [];
+let g_bufC_2d = [];
+
+	let g_buf_2d= [];
+
+//-----------------------------------------------------------------------------
+function update_paint_2d( SZ )
+//-----------------------------------------------------------------------------
+{
+	// 3x3ブラーフィルタ作成
+	let pat33 = pat_normalize(
+	[
+		[1,2,1],
+		[2,4,2],
+		[1,2,1],
+	]);
+	// 5x5ガウスブラーフィルタ作成
+//	let pat55 = pat_normalize( pat_gauss2d( 5, 1 ) );
+	// 9x9ガウスブラーフィルタ作成
+	let pat99 = pat_normalize(pat_gauss2d( 9, 2 ) );
+
+	function drawCanvas( canvas, buf, str=null )
+	{
+		// 画面作成
+		let gra = new Gra( SZ, SZ, canvas );
+		// 画面クリア
+		gra.cls(0);
+		// 画面描画
+		draw_buf( gra, buf );
+		// 画面をキャンバスへ転送
+		gra.streach();
+
+		// canvasのID表示
+		if ( str == null ) str = canvas.id;
+		gra.print(1,gra.canvas.height-1, str );
+	}
+	
+	//--
+	
+	// ランダムの種をコピー
+	let buf1 = Array.from(g_bufA_2d);
+	let buf2 = Array.from(g_bufB_2d);
+	let buf3 = Array.from(g_bufC_2d);
+
+	// 鞣し
+	// ブラーフィルタn回適用
+	let num1 = document.getElementById( "html_blur1" ).value*1;
+	for ( let i = 0 ; i < num1 ; i++ ) buf1 = calc_blur( buf1, pat33, SZ, SZ, num1 );
+	buf1 = calc_autolevel(buf1, SZ*SZ);
+	//drawCanvas( html_canvas1, buf1, "A" );
+
+	let num2 = document.getElementById( "html_blur2" ).value*1;
+	for ( let i = 0 ; i < num2 ; i++ ) buf2 = calc_blur( buf2, pat33, SZ, SZ, num2 );
+	buf2 = calc_autolevel(buf2, SZ*SZ);
+	//drawCanvas( html_canvas2, buf2, "B" );
+
+	let num3 = document.getElementById( "html_blur3" ).value*1;
+	for ( let i = 0 ; i < num3 ; i++ ) buf3 = calc_blur( buf3, pat33, SZ, SZ, num3 );
+	buf3 = calc_autolevel(buf3, SZ*SZ);
+	//drawCanvas( html_canvas3, buf3, "C" );
+
+	
+	{//合成
+		let p1 = document.getElementById( "html_bp1" ).value*1;
+		let p2 = document.getElementById( "html_bp2" ).value*1;
+		let p3 = document.getElementById( "html_bp3" ).value*1;
+		for ( let x = 0 ; x < SZ*SZ ; x++ )
+		{
+			g_buf_2d[x] =(buf1[x]*p1+buf2[x]*p2+buf3[x]*p3)/(p1+p2+p3);
+		}
+	}
+
+	// 自動レベル調整
+	g_buf_2d = calc_autolevel(g_buf_2d, SZ*SZ);
+	//drawCanvas( html_canvas5, g_buf_2d, "合成" );
+
+
+	// ローパスフィルタ
+	g_buf_2d = calc_lowpass( g_buf_2d, SZ*SZ );
+	// 自動レベル調整
+	g_buf_2d = calc_autolevel(g_buf_2d, SZ*SZ);
+
+
+	// パラポライズ
+	let val =  html_getValue_textid("col");
+	g_buf_2d = calc_parapolize( g_buf_2d, val, SZ );
+	drawCanvas( html_canvas_2d, g_buf_2d,"等高線" );
+
+}
+
+//-----------------------------------------------------------------------------
+function html_getValue_radioname( name ) // ラジオボタン用
+//-----------------------------------------------------------------------------
+{
+	var list = document.getElementsByName( name ); // listを得るときに使うのが name
+	for ( let l of list ) 
+	{
+		if ( l.checked ) return l.value;	
+	}
+	return undefined;
+}
+//-----------------------------------------------------------------------------
+function html_getValue_textid( id )	// input type="text" id="xxx" 用
+//-----------------------------------------------------------------------------
+{
+	return document.getElementById( id ).value * 1;
+}
+
+//-----------------------------------------------------------------------------
+function html_getValue_comboid( id )	// select id="xxx" ..option  用
+//-----------------------------------------------------------------------------
+{
+	return document.getElementById( id ).value * 1;
+}
+
+//-----------------------------------------------------------------------------
+function hotstart_2d()
+//-----------------------------------------------------------------------------
+{
+	update_paint_2d( g_SZ_2d );
+}
+
+//-----------------------------------------------------------------------------
+function main_2d()
+//-----------------------------------------------------------------------------
+{
+	g_SZ_2d = html_getValue_comboid( "html_size" );
+
+	for ( let i = 0 ; i < g_SZ_2d*g_SZ_2d ; i++ )
+	{
+		g_bufA_2d[i] = rand(1);
+		g_bufB_2d[i] = rand(1);
+		g_bufC_2d[i] = rand(1);
+	}
+
+
+
+	hotstart_2d();
+}
+
+
+/////////////////////
+
 // 2017/07/07 ver 1.1 
 // 2021/01/29 c++ to javascript
 "use strict";
@@ -6,7 +520,7 @@
 
 const	INFINIT = Number.MAX_VALUE;
 
-class GRA
+class GRA_RAY
 {
 	//-----------------------------------------------------------------------------
 	constructor( w, h, canvas )
@@ -57,7 +571,7 @@ class GRA
 		// -----------------------------------------
 		// ImageDataをcanvasに合成
 		// -----------------------------------------
-		// ctx   : html_canvas.getContext('2d')
+		// ctx   : html_canvas_ray.getContext('2d')
 		// img : ctx.createImageData( width, height )
 
 		this.ctx.imageSmoothingEnabled = this.ctx.msImageSmoothingEnabled = 0; // スムージングOFF
@@ -158,7 +672,7 @@ class Sphere
 };
 
 //------------------------------------------------------------------------------
-function normalize( v )
+function vnormalize( v )
 //------------------------------------------------------------------------------
 {
 	let s = 1/Math.sqrt( v.x*v.x + v.y*v.y + v.z*v.z );
@@ -229,16 +743,17 @@ function vmin( a, b )
 	);
 }
 //------------------------------------------------------------------------------
-function reflect( I, N )
+function vreflect( I, N )
 //------------------------------------------------------------------------------
 {
 	let a = 2*dot(I,N);
  	return vsub( I , vmul( new vec3(a,a,a), N ) );
 }
 //------------------------------------------------------------------------------
-function refract( I, N, eta )
+function vrefract( I, N, eta )
 //------------------------------------------------------------------------------
 {
+
 	let R = new vec3(0,0,0);
 	let k = 1.0 - eta * eta * (1.0 - dot(N, I) * dot(N, I));
 	if ( k < 0.0 )
@@ -247,12 +762,17 @@ function refract( I, N, eta )
 	}
 	else
 	{
+//		R = eta * I - (eta * dot(N, I) + sqrt(k)) * N;
+
 		let ve = new vec3(eta,eta,eta);
 		let a = vmul( ve , I ); 
 		let b = eta * dot(N, I);
 		let c = b + Math.sqrt(k);
 		let d = vmul( new vec3(c,c,c) , N);
 		R = vsub(a , d);
+
+//console.log(11, I,ve,a,b,c,d,R);
+
 	}
 	return R;
 }
@@ -277,6 +797,11 @@ function Raycast( P, I )
 	sur.t  = INFINIT;
 	sur.stat  = 0;//Surface::STAT_NONE;
 
+	// g_buf_2d
+	// 山岳
+	{
+		
+	}
 
 	//	球
 	for ( let obj of g_tblSphere )
@@ -312,27 +837,20 @@ function Raycast( P, I )
 
 				if ( stat == 3 )//Surface::STAT_BACK )
 				{
-					sur.N = vsub( new vec3(0,0,0), normalize( vsub( sur.Q , O ) ) );
+					sur.N = vsub( new vec3(0,0,0), vnormalize( vsub( sur.Q , O ) ) );
 				}
 				else
 				{
-					sur.N = normalize( vsub( sur.Q , O ) );
+					sur.N = vnormalize( vsub( sur.Q , O ) );
 				}
 
 				sur.C					= obj.C;
 
-				sur.R					= reflect( I, sur.N );
+				sur.R					= vreflect( I, sur.N );
 
 				sur.valReflectance		= obj.valReflectance;
 
-				if ( stat == 3 )//Surface::STAT_BACK )
-				{
-					sur.valRefractive		= 1.0; // 球の外は空気（屈折率1.0)と想定
-				}
-				else
-				{
-					sur.valRefractive		= obj.valRefractive;
-				}
+				sur.valRefractive		= obj.valRefractive;
 
 				sur.valPower			= obj.valPower;
 
@@ -374,7 +892,7 @@ function Raycast( P, I )
 					sur.C = vmul( obj.C , new vec3(0.5,0.5,0.5) );
 				}
 	
-				sur.R = reflect( I, obj.N );
+				sur.R = vreflect( I, obj.N );
 	
 				sur.valReflectance = obj.valReflectance;
 
@@ -397,20 +915,20 @@ function Raycast( P, I )
 }
 
 //------------------------------------------------------------------------------
-function Raytrace( P, I, nest , lgt )
+function Raytrace( P, I )
 //------------------------------------------------------------------------------
 {
 	let ret = new vec3(0,0,0);
 
-	if ( nest > g_MaxReflect ) return ret;
-//	if ( g_cntRay > g_MaxReflect ) return ret;
-//	g_cntRay++;
+	if ( g_cntRay > g_MaxReflect ) return ret;
+	g_cntRay++;
 	
 	let sur = Raycast( P, I );
 	if ( sur.flg )
 	{
+		for ( let lgt of g_tblLight )
 		{
-			let mL	= normalize( vsub( lgt.P, sur.Q ) );	// -L
+			let mL	= vnormalize( vsub( lgt.P, sur.Q ) );	// -L
 			let l = dot( vsub( sur.Q , lgt.P) , vsub( sur.Q , lgt.P) ) ;
 			let Lc	= vdiv( lgt.C , new vec3(l,l,l) );
 			let r	= sur.valReflectance;
@@ -424,7 +942,7 @@ function Raytrace( P, I, nest , lgt )
 				}
 			}
 
-			ret	 =	vadd( ret , vmul( new vec3(r,r,r) , vmul( vadd( Raytrace( sur.Q, sur.R, nest+1, lgt ), new vec3(s,s,s) ) , Lc ) ) );
+			ret	 =	vadd( ret , vmul( new vec3(r,r,r) , vmul( vadd( Raytrace( sur.Q, sur.R ), new vec3(s,s,s) ) , Lc ) ) );
 
 
 			{// 遮蔽物判定＆デフューズ計算
@@ -441,17 +959,16 @@ function Raytrace( P, I, nest , lgt )
 			}
 			else
 			{
-				{
-					let I2 = refract( I, sur.N, sur.valRefractive/1.0 ); // 空気の屈折率は1.0（=真空）とみなしてる。
-					let surR = Raycast( sur.Q, I2 );
+				I = vrefract( I, sur.N, sur.valRefractive/1.0 ); // 空気の屈折率は1.0とみなしてる。
+				sur = Raycast( sur.Q, I );
 
-					let I3 = refract( I2, surR.N, 1.0/(sur.valRefractive) );// 球体の外は空気（=真空）とみなしている。
-					let C = Raytrace( surR.Q, I3, nest+1, lgt ); 
+				let tm = sur.valTransmittance;
 
-					let a = (1-r)*Math.pow( sur.valTransmittance, surR.t); // 減衰率
-					ret = vadd( ret, vmul( new vec3(a,a,a) , C ) );
-//					ret = vadd( ret, C );
-				}
+				I = vrefract( I, sur.N, 1.0/(sur.valRefractive+0.001) );// 空気の屈折率は1.0とみなしてる。
+				let c = vadd( ret, vmul( new vec3(1-r,1-r,1-r) , Raytrace( sur.Q, I ) ) ); 
+
+				let a = Math.pow(tm,sur.t); // 透明率と球体の中を光のとおった距離で累乗する。
+				ret = vmul( new vec3(a,a,a) , c );
 
 			}
 		}
@@ -466,7 +983,7 @@ function Raytrace( P, I, nest , lgt )
 }
 
 //------------------------------------------------------------------------------
-function initScene( n )
+function initScene()
 //------------------------------------------------------------------------------
 {
 	g_tblLight = [];
@@ -475,193 +992,16 @@ function initScene( n )
 
 	let P,C,N,rl,rr,pw,e,tm,r,l;
 
-	switch(n)
 	{
-	case "spot":
-		{
-		//	X,Y,Z,CR,CG,CB,R,RF,KF,OW,KV
-		// _P, _r, _C, _valReflection, _valRefractive, _valPower, _valEmissive, _valTransmittance )
-			g_tblPlate.push( new Plate( P=new vec3( 0  ,  0 ,0.0),N=new vec3(0,1,0),C=new vec3(0.8,0.8,0.8),rl=0.5,rr=1.0 ,pw=20,e= 0.0,tm=0.0 ) );
-
-			let sphere =
-			[
-				{x: 0.0	,y:0.5	,z:-0.58	,cr:0.0 ,cg:0.1 ,cb:1.0 ,r:0.5	,rf:0.5 ,kf:0.0 ,pw:116 ,kv:1.4},
-				{x:-0.5	,y:0.5	,z: 0.29	,cr:0.0 ,cg:1.0 ,cb:0.1 ,r:0.5	,rf:0.5 ,kf:0.0 ,pw:116 ,kv:1.4},
-				{x: 0.5	,y:0.5	,z: 0.29	,cr:1.0 ,cg:0.1 ,cb:0.1 ,r:0.5	,rf:0.5 ,kf:0.0 ,pw:116 ,kv:1.4},
-				{x: 0.0	,y:1.32	,z: 0.0		,cr:1.0 ,cg:1.0 ,cb:1.0 ,r:0.5	,rf:0.8 ,kf:0.0 ,pw:116 ,kv:1.4},
-			];
-			for ( let a of sphere )
-			{
-				g_tblSphere.push( new Sphere(
-					 P=new vec3( a.x , a.y , a.z )
-					,r=a.r 
-					,C=new vec3( a.cr, a.cg,  a.cb) 
-					,rl=a.rf
-					,rr=0.0 
-					,pw=a.pw
-					,e= 0.0
-					,tm=0.0 
-				) );
-			}
-
-			let light =
-			[
-				{x: 0.2	,y:3.0	,z:0.2	,r:1.0 ,g:1.0 ,b:1.0 ,w:20}
-			];
-			for ( let a of light )
-			{
-				g_tblLight.push( new Light( 
-					 P=new vec3( a.x ,a.y ,a.z )
-					,C=new vec3( a.r*a.w ,a.g*a.w ,a.b*a.w ) 
-				));
-			
-			}
-		}
-		break;
-
-	case "4balls":
-		{
-			g_tblPlate.push( new Plate( P=new vec3( 0  ,  0 ,0.0),N=new vec3(0,1,0),C=new vec3(0.8,0.8,0.8),rl=0.5,rr=1.0 ,pw=20,e= 0.0,tm=0.0 ) );
-			g_tblSphere.push( new Sphere(new vec3( 0.0 , 1.25, 0       ),   0.5 , new vec3(1  , 0.2, 0.2), 0.5, 1.0, 40, 0.0, 0.0 ) );
-			g_tblSphere.push( new Sphere(new vec3( 0.0 , 0.5 , -0.433 ),   0.5 , new vec3(0.0, 0.0, 0.0), 1.0, 1.0, 40, 0.0, 0.0 ) );
-			g_tblSphere.push( new Sphere(new vec3( 0.5 , 0.5 , +0.433 ),   0.5 , new vec3(0.2, 0.2, 1.0), 0.5, 1.0, 40, 0.0, 0.0 ) );
-			g_tblSphere.push( new Sphere(new vec3(-0.5 , 0.5 , +0.433 ),   0.5 , new vec3(0.0, 1.0, 0.0), 0.5, 1.0, 40, 0.0, 0.0 ) );
-			l=40;g_tblLight.push( new Light( new vec3( 4   ,  2 , -1 ), new vec3(0.6*l, 0.8*l, 1.0*l) ) );
-			l=10;g_tblLight.push( new Light( new vec3( -1  ,  2 ,  -3 ), new vec3(1.0*l, 0.8*l, 0.6*l) ) );
-		}
-		break;
-
-	case "5metals":
-		{
-			g_tblPlate.push( new Plate( P=new vec3( 0  ,  0 ,0.0),N=new vec3(0,1,0),C=new vec3(0.8,0.8,0.8),rl=0.5,rr=1.0 ,pw=120,e= 0.0,tm=0.0 ) );
-			g_tblSphere.push( new Sphere(new vec3(-2.0 , 0.5 , 0 ),   0.5 , new vec3(0.0, 0.0, 0.0), 1.0 , 1.0, 120, 0.0, 0.0 ) );
-			g_tblSphere.push( new Sphere(new vec3(-1.0 , 0.5 , 0 ),   0.5 , new vec3(0.0, 0.0, 0.0), 0.75, 1.0, 120, 0.0, 0.0 ) );
-			g_tblSphere.push( new Sphere(new vec3( 0.0 , 0.5 , 0 ),   0.5 , new vec3(0.0, 0.0, 0.0), 0.5 , 1.0, 120, 0.0, 0.0 ) );
-			g_tblSphere.push( new Sphere(new vec3( 1.0 , 0.5 , 0 ),   0.5 , new vec3(0.0, 0.0, 0.0), 0.25, 1.0, 120, 0.0, 0.0 ) );
-			g_tblSphere.push( new Sphere(new vec3( 2.0 , 0.5 , 0 ),   0.5 , new vec3(0.0, 0.0, 0.0), 0.05, 1.0, 120, 0.0, 0.0 ) );
-			g_tblLight.push( new Light( new vec3( 0   ,  20 ,  0 ), new vec3(800,800,800) ) );
-
-			//	g_tblLight.push( new Light( new vec3(-20   ,  40 , 10 ), new vec3(   0,   0,400) )  );
-			//	g_tblLight.push( new Light( new vec3( 30   ,  40 ,  0 ), new vec3(   0,400,   0) )  );
-			//	g_tblLight.push( new Light( new vec3( 10   ,  40 , 20 ), new vec3(400,   0,   0) )  );
-		}
-		break;
-
-	case "rasen":
-		{ 
-			g_tblPlate.push( new Plate( P=new vec3( 0  ,  0 ,0.0),N=new vec3(0,1,0),C=new vec3(0.8,0.8,0.8),rl=0.5,rr=1.0 ,pw=20,e= 0.0,tm=0.0 ) );
-			g_tblSphere.push( new Sphere(  new vec3( 0 , 1.0 , 0 ),   0.5 ,  new vec3(0.0, 0.0, 0.0),   0.5,   1.0 ,  120,  0.0,  0.0 ) );
-			let	max = 16*3;
-			for ( let i = 0 ; i < max ; i++ )
-			{
-				let	th  = i *(Math.PI/360)*16 * 3;
-				let	th2 = i *(Math.PI/360)*16 * 0.5;
-				let	x = Math.cos(th);
-				let	z = Math.sin(th) ;
-				let	y = Math.cos(th2) +1.2;
-				g_tblSphere.push( new Sphere(P=new vec3( x , y , z ),r=0.2 ,C=new vec3( x, y,  z) ,rl=0.2,rr=0.0 ,pw=60,e= 0.0,tm=0.0 ) );
-			}
-
-
-			if (1)
-			{
-				g_tblLight.push( new Light( new vec3( 5   ,  30 ,  -5 ), new vec3(1800,1800,1800) ) );
-//				g_tblLight.push( new Light( new vec3(-30   ,  30 ,  0 ), new vec3( 900,1800,1800) )  );
-//				g_tblLight.push( new Light( new vec3(60   ,  80 ,  0 ), new vec3(4800,4800,2400) )  );
-//				g_tblLight.push( new Light( new vec3(-60   ,  80 , 0 ), new vec3(4800,2400,4800) )  );
-			}
-			else
-			{
-				g_tblLight.push( new Light( new vec3(  0   ,  30 ,  0 ), new vec3(1600,1600,1600) ) );
-				g_tblLight.push( new Light( new vec3(-20   ,  40 ,  0 ), new vec3(   0,   0,4000) )  );
-				g_tblLight.push( new Light( new vec3( 30   ,  40 ,  0 ), new vec3(   0,4000,   0) )  );
-				g_tblLight.push( new Light( new vec3( 10   ,  40 ,  0 ), new vec3(4000,   0,   0) )  );
-			}
-		}
-		break;
-
-	case "twinballs":
-		{
-			g_tblPlate.push( new Plate( new vec3( 0   ,  0 ,  0    ), normalize(new vec3(0, 1,0))  , new vec3(0.8, 0.8, 0.8), 0.5, 1.0, 20, 0.0, 0.0 ) );
-			g_tblSphere.push( new Sphere(new vec3(-1.0 , 1.0 , 0 ),   1.0 , new vec3(1.0, 0.5, 0.5), 0.2, 1.0, 20, 0.0, 0.0 ) );
-			g_tblSphere.push( new Sphere(new vec3( 1.0 , 1.0 , 0 ),   1.0 , new vec3(0.0, 0.0, 0.0), 0.2, 1.0, 20, 0.0, 0.0 ) );
-			g_tblLight.push( new Light( new vec3( 0   ,  20 ,  0 ), new vec3(800, 800, 800) ) );
-		}
-		break;
-
-	case "refract2":
-		{
-			g_tblPlate.push( new Plate( new vec3( 0   ,  0 ,  0    ), normalize(new vec3(0, 1,0))  , new vec3(0.8, 0.8, 0.8), 0.5, 1.0, 20, 0.0, 0.0 ) );
-//	constructor( _P, _r, _C, _valReflection, _valRefractive, _valPower, _valEmissive, _valTransmittance )
-
-			g_tblSphere.push( new Sphere(new vec3(-6.0 , 1.0 , 8 ),   1.0 , new vec3(1.0, 0.1, 1.0) , 0.0, 0.0, 20, 0.0, 0.0 ) );
-			g_tblSphere.push( new Sphere(new vec3(-4.0 , 1.0 , 8 ),   1.0 , new vec3(1.0, 1.0, 0.1) , 0.0, 0.0, 20, 0.0, 0.0 ) );
-			g_tblSphere.push( new Sphere(new vec3(-2.0 , 1.0 , 8 ),   1.0 , new vec3(1.0, 0.1, 0.1) , 0.0, 0.0, 20, 0.0, 0.0 ) );
-			g_tblSphere.push( new Sphere(new vec3(-0.0 , 1.0 , 8 ),   1.0 , new vec3(0.1, 1.0, 0.1) , 0.0, 0.0, 20, 0.0, 0.0 ) );
-			g_tblSphere.push( new Sphere(new vec3( 2.0 , 1.0 , 8 ),   1.0 , new vec3(0.1, 0.1, 1.0) , 0.0, 0.0, 20, 0.0, 0.0 ) );
-			g_tblSphere.push( new Sphere(new vec3( 4.0 , 1.0 , 8 ),   1.0 , new vec3(0.1, 1.0, 1.0) , 0.0, 0.0, 20, 0.0, 0.0 ) );
-			g_tblSphere.push( new Sphere(new vec3( 6.0 , 1.0 , 8 ),   1.0 , new vec3(1.0, 1.0, 1.0) , 0.0, 0.0, 20, 0.0, 0.0 ) );
-
-			g_tblSphere.push( new Sphere(new vec3(-5.0 , 1.0 , 4),   1.0 , new vec3(0.7, 0.7, 0.7), 0.0, 0.9, 20, 0.0, 1.0 ) );
-			g_tblSphere.push( new Sphere(new vec3(-3.0 , 1.0 , 4),   1.0 , new vec3(0.7, 0.7, 0.7), 0.0, 0.8, 20, 0.0, 1.0 ) );
-			g_tblSphere.push( new Sphere(new vec3(-1.0 , 1.0 , 4),   1.0 , new vec3(0.7, 0.7, 0.7), 0.0, 0.6, 20, 0.0, 1.0 ) );
-			g_tblSphere.push( new Sphere(new vec3( 1.0 , 1.0 , 4),   1.0 , new vec3(0.7, 0.7, 0.7), 0.0, 0.4, 20, 0.0, 1.0 ) );
-			g_tblSphere.push( new Sphere(new vec3( 3.0 , 1.0 , 4),   1.0 , new vec3(0.7, 0.7, 0.7), 0.0, 0.2, 20, 0.0, 1.0 ) );
-			g_tblSphere.push( new Sphere(new vec3( 5.0 , 1.0 , 4),   1.0 , new vec3(0.7, 0.7, 0.7), 0.0, 0.1, 20, 0.0, 1.0 ) );
-			g_tblLight.push( new Light( new vec3( 0   ,  20 ,  0 ), new vec3(800, 800, 800) ) );
-		}
-		break;
-
-	case "refract":
-		{
-			g_tblPlate.push( new Plate( new vec3( 0   ,  0 ,  0    ), normalize(new vec3(0, 1,0))  , new vec3(0.8, 0.8, 0.8), 0.5, 1.0, 20, 0.0, 0.0 ) );
-			g_tblSphere.push( new Sphere(new vec3( 0.0 , 1.25, 0      +0),   0.5 , new vec3(1  , 0.2, 0.2), 0.2, 1.0, 60, 0.0, 0.0 ) );
-			g_tblSphere.push( new Sphere(new vec3( 0.0 , 0.5 , -0.433 +0),   0.5 , new vec3(1.0, 1.0, 0.2), 0.2, 1.0, 60, 0.0, 0.0 ) );
-			g_tblSphere.push( new Sphere(new vec3( 0.5 , 0.5 , +0.433 +0),   0.5 , new vec3(0.2, 0.2, 1.0), 0.2, 1.0, 60, 0.0, 0.0 ) );
-			g_tblSphere.push( new Sphere(new vec3(-0.5 , 0.5 , +0.433 +0),   0.5 , new vec3(0.0, 1.0, 0.0), 0.2, 1.0, 60, 0.0, 0.0 ) );
-
-
-			g_tblSphere.push( new Sphere(new vec3(-1.0 , 1.0 ,-2),   1.0 , new vec3(0.0, 0.0, 0.0), rl=0.1, rr=0.96, pw=200, 0.0, tm=0.75 ) );
-			g_tblSphere.push( new Sphere(new vec3( 1.0 , 1.0 ,+2),   1.0 , new vec3(0.0, 0.0, 0.0), rl=0.1, rr=0.5, pw=200, 0.0, tm=0.75) );
-			g_tblLight.push( new Light( new vec3( 0   ,  20 ,  0 ), new vec3(800, 800, 800) ) );
-
-//				g_tblLight.push( new Light( new vec3( 11   ,  20 ,  13 ), new vec3(   0,   0,800) )  );
-//				g_tblLight.push( new Light( new vec3( 12   ,  20 ,  12 ), new vec3(   0,800, 0) )  );
-//				g_tblLight.push( new Light( new vec3( 13   ,  20 ,  11 ), new vec3(800,   0,   0) )  );
-
-		}
-
-		
-		break;
-
-	case "grassball":
-		{
-			g_tblPlate.push( new Plate( new vec3( 0   ,  0 ,  0    ), normalize(new vec3(0, 1,0))  , new vec3(0.8, 0.8, 0.8), 0.0, 1.0, 20, 0.0, 0.0 ) );
-			g_tblSphere.push( new Sphere(new vec3( 2.0 , 1.0 ,2),   1.0 , new vec3(0.7, 0.7, 0.7), rl=0.1, rr=0.96, pw=200, 0.0, tm=0.5 ) );
-
-			g_tblLight.push( new Light( new vec3( 20   ,  12 ,  20 ), new vec3(1800, 1800, 1800) ) );
-
-		}
-		break;
-		
-	case "colorballs":
-		{
-			g_tblPlate.push( new Plate( P=new vec3(0  , 0 ,0.0),N=new vec3(0,1,0),C=new vec3(0.8,0.8,0.8),rl=0.3,rr=1.0 ,pw=70,e= 0.0,tm=0.0 ) );
-			g_tblSphere.push( new Sphere(P=new vec3( 0.5,1.0,0.0)	,r=0.5  ,C=new vec3(0.0,0.0,1.0),rl=0.3,rr=1.0 ,pw=70,e=10.0,tm=0.0 ) );
-			g_tblSphere.push( new Sphere(P=new vec3(-0.5,1.0,0.0)	,r=0.5  ,C=new vec3(0.0,1.0,0.0),rl=0.3,rr=1.0 ,pw=70,e=10.0,tm=0.0 ) );
-			g_tblSphere.push( new Sphere(P=new vec3( 0.0,1.5,0.0)	,r=0.5  ,C=new vec3(1.0,0.0,0.0),rl=0.3,rr=1.0 ,pw=70,e=10.0,tm=0.0 ) );
-			g_tblSphere.push( new Sphere(P=new vec3( 0.0,0.5,0.0)	,r=0.5  ,C=new vec3(1.0,1.0,0.0),rl=0.3,rr=1.0 ,pw=70,e=10.0,tm=0.0 ) );
-			g_tblSphere.push( new Sphere(P=new vec3( 0.0,1.0,0.0)	,r=0.5 ,C=new vec3(1.0,1.0,1.0),rl=0.1,rr=1.0 ,pw=70,e=10.0,tm=0.0 ) );
-			g_tblLight.push( new Light( P=new vec3( 1.0 ,15, 0 ) ,C=new vec3(360,360,360) )  );
-				g_tblLight.push( new Light( new vec3(-20   ,  40 , 10 ), new vec3(   0,   0,400) )  );
-				g_tblLight.push( new Light( new vec3( 30   ,  40 ,  0 ), new vec3(   0,400,   0) )  );
-				g_tblLight.push( new Light( new vec3( 10   ,  40 , 20 ), new vec3(400,   0,   0) )  );
-//				g_tblLight.push( new Light( new vec3(-20   ,  20 , 10 ), new vec3(   0,   0,1800) )  );
-//				g_tblLight.push( new Light( new vec3( 30   ,  20 ,  0 ), new vec3(   0,1800,   0) )  );
-//				g_tblLight.push( new Light( new vec3( 10   ,  20 , 20 ), new vec3(1800,   0,   0) )  );
-		}
-		break;
+		g_tblPlate.push( new Plate( P=new vec3( 0  ,  0 ,0.0),N=new vec3(0,1,0),C=new vec3(0.8,0.8,0.8),rl=0.5,rr=1.0 ,pw=20,e= 0.0,tm=0.0 ) );
+		g_tblSphere.push( new Sphere(new vec3( 0.0 , 1.25, 0       ),   0.5 , new vec3(1  , 0.2, 0.2), 0.5, 1.0, 40, 0.0, 0.0 ) );
+		g_tblSphere.push( new Sphere(new vec3( 0.0 , 0.5 , -0.433 ),   0.5 , new vec3(0.0, 0.0, 0.0), 1.0, 1.0, 40, 0.0, 0.0 ) );
+		g_tblSphere.push( new Sphere(new vec3( 0.5 , 0.5 , +0.433 ),   0.5 , new vec3(0.2, 0.2, 1.0), 0.5, 1.0, 40, 0.0, 0.0 ) );
+		g_tblSphere.push( new Sphere(new vec3(-0.5 , 0.5 , +0.433 ),   0.5 , new vec3(0.0, 1.0, 0.0), 0.5, 1.0, 40, 0.0, 0.0 ) );
+		l=40;g_tblLight.push( new Light( new vec3( 4   ,  2 , -1 ), new vec3(0.6*l, 0.8*l, 1.0*l) ) );
+		l=10;g_tblLight.push( new Light( new vec3( -1  ,  2 ,  -3 ), new vec3(1.0*l, 0.8*l, 0.6*l) ) );
 	}
+
 }
 
 //------------------------------------------------------------------------------
@@ -711,7 +1051,7 @@ function rotRoll( v, th )
 }
 
 //------------------------------------------------------------------------------
-function paint( gra, rot )
+function paint_ray( gra, rot )
 //------------------------------------------------------------------------------
 {
 	let	posEye = new vec3(0,1.0,-17+8);
@@ -738,7 +1078,7 @@ function paint( gra, rot )
 	}
 	let [rx,ry] = a( vsub(posAt, posEye) ); 
 
-	let aspect = html_canvas.width/html_canvas.height;
+	let aspect = html_canvas_ray.width/html_canvas_ray.height;
 	for( let py = 0 ; py < gra.img.height ; py++ )
 	{
 		for( let px = 0 ; px < gra.img.width ; px++ )
@@ -749,41 +1089,36 @@ function paint( gra, rot )
 			let y = (py / gra.img.height) *2.0-1.0;
 
 			let P = posEye;
-			let I =  normalize( new vec3( x, y, sz ) );
+			let I =  vnormalize( new vec3( x, y, sz ) );
 			
 
 			I = rotRoll( I, rz );
 			I = rotPitch( I, rx );
 			I = rotYaw( I, ry );
 
-			let nest = 0;
-			let C = new vec3(0,0,0);
-			for ( let lgt of g_tblLight )
-			{
-		 		C = vadd( C, Raytrace( P, I, nest+1, lgt ) );
-			}
+	 		let C = Raytrace( P, I );
 			gra.pset( px, gra.img.height-py, C );
 		}
 	}
 }
 
 //------------------------------------------------------------------------------
-function update_paint()
+function update_paint_ray()
 //------------------------------------------------------------------------------
 {
 
-	let	SIZwidth =  Math.floor(html_canvas.width*g_numReso);		// レンダリングバッファの解像度
-	let	SIZheight =  Math.floor(html_canvas.height*g_numReso);	// レンダリングバッファの解像度
+	let	SIZwidth =  Math.floor(html_canvas_ray.width*g_numReso);		// レンダリングバッファの解像度
+	let	SIZheight =  Math.floor(html_canvas_ray.height*g_numReso);	// レンダリングバッファの解像度
 
 
 
 	let time = 0;
 	{
-		let gra = new GRA( SIZwidth, SIZheight, html_canvas );
+		let gra = new GRA_RAY( SIZwidth, SIZheight, html_canvas_ray );
 		gra.cls( new vec3(0,0,0) );
 		gra.streach();
 		const st = performance.now();
-		paint( gra, (0)*Math.PI/18 );
+		paint_ray( gra, (0)*Math.PI/18 );
 		const en = performance.now();
 		time = en-st;
 		gra.streach();
@@ -796,48 +1131,35 @@ function update_paint()
 
 
 //------------------------------------------------------------------------------
-function update_scene()
+function update_scene_ray()
 //------------------------------------------------------------------------------
 {
 
 	g_MaxReflect = document.getElementById( "html_maxreflect" ).value*1;
 	{
-		html_canvas.width = document.getElementById( "html_size_x" ).value;
-		html_canvas.height = document.getElementById( "html_size_y" ).value;
+		html_canvas_ray.width = document.getElementById( "html_size_x" ).value;
+		html_canvas_ray.height = document.getElementById( "html_size_y" ).value;
 	}
 
-	initScene( g_strScene );
+	initScene();
 
-	update_paint();
+	update_paint_ray();
 }
 //------------------------------------------------------------------------------
-function update_start()
+function update_start_ray()
 //------------------------------------------------------------------------------
 {
 	// レイトレ結果以外の更新を促すために１フレーム開ける。
-	requestAnimationFrame( update_scene );
+	requestAnimationFrame( update_scene_ray );
 };
 //------------------------------------------------------------------------------
-window.onload = function( e )
+let main_ray = function()
 //------------------------------------------------------------------------------
 {
-	html_scene_click();
 	html_reso_click();
 
-	// javascript側で初期のキャンバスサイズを決める
-	{
-		html_canvas.width = window.innerWidth-40;
-		html_canvas.height = html_canvas.width*(9/16);
-
-		document.getElementById( "html_size_x" ).value = html_canvas.width;
-		document.getElementById( "html_size_y" ).value = html_canvas.height;
-	}
-
-
-
-
 	// レンダリング開始
-	requestAnimationFrame( update_start );
+	requestAnimationFrame( update_start_ray );
 
 }
 //-----------------------------------------------------------------------------
@@ -979,7 +1301,7 @@ window.onkeydown = function( ev )
 		document.getElementById( "html_rz" ).value = (rz * 180 /Math.PI).toFixed();
 	}
 
-	requestAnimationFrame( update_paint );
+	requestAnimationFrame( update_paint_ray );
 }
 
 
@@ -990,22 +1312,7 @@ let g_MaxReflect;
 
 let g_cntRay = 0;
 
-let g_strScene="";
 let g_numReso=1.0;
-//-----------------------------------------------------------------------------
-function html_scene_click()
-//-----------------------------------------------------------------------------
-{
-	var list = document.getElementsByName( "html_scene" ) ;
-	for ( let l of list )
-	{
-		if ( l.checked ) 
-		{
-			g_strScene = l.value;
-			break;
-		}
-	}
-}
 //-----------------------------------------------------------------------------
 function html_reso_click()
 //-----------------------------------------------------------------------------
@@ -1040,7 +1347,7 @@ function html_setValue_textid( id, val )	// input type="text" id="xxx" 用
 function html_setFullscreen()
 //-----------------------------------------------------------------
 {
-	const obj = document.querySelector("#html_canvas"); 
+	const obj = document.querySelector("#html_canvas_ray"); 
 
 	if( document.fullscreenEnabled )
 	{
@@ -1050,4 +1357,13 @@ function html_setFullscreen()
 	{
 		alert("フルスクリーンに対応していません");
 	}
+}
+
+
+//-----------------------------------------------------------------------------
+window.onload = function( e )
+//-----------------------------------------------------------------------------
+{
+	main_2d();
+	main_ray();
 }

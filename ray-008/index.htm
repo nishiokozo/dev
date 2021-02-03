@@ -21,7 +21,7 @@
 //				margin:0;
 
 			}
-			.buttons
+			.group
 			{
 				display:inline-block; 
 				padding: 6px; 
@@ -29,32 +29,43 @@
 				border:1px solid #aaa;
 				text-align:right;
 			}
+			.readme
+			{
+				display:inline-block; 
+//				border-radius: 7px; 
+//				border:1px solid #aaa;
+				text-align:center;
+				font-size:12px;
+			}
+
 
 		</style>
 	</head>
 	<body align="center" style="font-family:monospace">
 		<H2>javascript レイトレーシング</H2>
 
-		<canvas id="html_canvas" class="test" ></canvas>
+		<canvas id="html_canvas" ></canvas>
 
 		<br>
-
-		<div class="buttons">
-			<input type="radio" name="html_scene" value="refract" onchange="html_scene_click();update_scene();" 	checked>refract
+		<div class="group">
+			<input type="radio" name="html_scene" value="grassball" onchange="html_scene_click();update_scene();" checked	>grassball
+			<input type="radio" name="html_scene" value="refract" onchange="html_scene_click();update_scene();" 	>refract
 			<input type="radio" name="html_scene" value="colorballs" onchange="html_scene_click();update_scene();" 			>colorballs
 			<input type="radio" name="html_scene" value="rasen" onchange="html_scene_click();update_scene();" 			>rasen
-			<input type="radio" name="html_scene" value="smile" onchange="html_scene_click();update_scene();" 			>smile
-			<input type="radio" name="html_scene" value="3metals" onchange="html_scene_click();update_scene();" 			>3metals
+			<input type="radio" name="html_scene" value="spot" onchange="html_scene_click();update_scene();" 			>spot
+			<input type="radio" name="html_scene" value="5metals" onchange="html_scene_click();update_scene();" 			>5metals
 			<input type="radio" name="html_scene" value="4balls" onchange="html_scene_click();update_scene();" 			>4balls
 
 
 
 		</div>
-		<div class="buttons">
+		<div class="group">
 			解像度
 			<input type="radio" name="html_reso" value="1" onchange="html_reso_click();update_scene();" 	>1/1
-			<input type="radio" name="html_reso" value="0.5" onchange="html_reso_click();update_scene();" 	checked>1/2
-			<input type="radio" name="html_reso" value="0.25" onchange="html_reso_click();update_scene();" 	>1/4
+			<input type="radio" name="html_reso" value="0.5" onchange="html_reso_click();update_scene();" 	>1/2
+			<input type="radio" name="html_reso" value="0.25" onchange="html_reso_click();update_scene();" 	checked>1/4
+			<input type="radio" name="html_reso" value="0.125" onchange="html_reso_click();update_scene();" 	>1/8
+			<input type="radio" name="html_reso" value="0.0625" onchange="html_reso_click();update_scene();" 	>1/16
 		</div>
 
 			<input type="button" value="描画" onClick="update_scene()" >
@@ -62,49 +73,62 @@
 		<br>
 
 
-		<div style="display:inline-block" >
+		<div style="display:inline-block; " >
 
-			<div class="buttons">
+
+			<div class="group">
+				表示画面<br>
 				幅 <input type="text" id="html_size_x" value="480" size="3" ><br>
 				高さ <input type="text" id="html_size_y" value="240" size="3" ><br>
-			    反射 <input type="text" id="html_maxreflect" value="5" size="3" ><br>
+		    	反射 <input type="text" id="html_maxreflect" value="3" size="3" ><br>
 			</div>
 
-			<div class="buttons">
+			<div class="group">
 			  視点 <br>
 				x <input type="text" id="html_eye_x" value="0.0" size="3" ><br>
-				y <input type="text" id="html_eye_y" value="1.0" size="3" ><br>
+				y <input type="text" id="html_eye_y" value="4.5" size="3" ><br>
 				z <input type="text" id="html_eye_z" value="-9.0" size="3" ><br>
 			</div>
 			
-			<div class="buttons">
+			<div class="group">
 			 注視点 <br>
 				x <input type="text" id="html_at_x" value="0.0" size="3" ><br>
 				y <input type="text" id="html_at_y" value="1.0" size="3" ><br>
 				z <input type="text" id="html_at_z" value="0.0" size="3" ><br>
 			</div>
 
-			<div class="buttons">
+			<div class="group">
 			 画角 <input type="text" id="html_fovy" value="28.0" size="3" ><br>
 			 回転 <input type="text" id="html_rz" value="0.0" size="3" ><br>
 			</div>
 
+			
+			<div class="group">
+			描画時間<br>
+			    <a id="html_msec" ></a><br>
+			    <a id="html_fps" ></a>
+			</div>
+
+			<input type="button" value="フルスクリーン" onClick="html_setFullscreen()" >
 		</div>
 
-		
-		<br>
-		<br>
-	    <p>～概要～</p>
-	    <p>javascriptのみによるレイトレーシングプログラム</p>
-	    <p>CPUのみの描画</p>
-		<br>
-	    <p>～リアルタイム操作～</p>
-	    <p>角度を変えて4カットレンダリング</p>
-	    <p>WASD : 前後左右移動</p>
-	    <p>RF : 上下移動</p>
-	    <p>↑↓←→：上下左右を見る</p>
-	    <p>QE : 画面回転</p>
 
+			<br>
+		<div class="readme">
+		    <p>～概要～</p>
+		    <p>javascriptによるレイトレーシングプログラム</p>
+		    <p>javascriptの性能を探るための実験</p>
+			<br>
+		    <p>～リアルタイム操作～</p>
+		    <p>視点</p>
+		    <p>W S : 視点、上下移動</p>
+		    <p>A D : 視点、左右移動</p>
+		    <p>R F : 視点、前後移動</p>
+		    <p>Q E : 視点、Ｚ軸回転</p>
+		    <p>注視点</p>
+		    <p>↑↓：注視点、上下移動</p>
+		    <p>←→：注視点、左右移動</p>
+		</div>
 
 		<script src="main.js"></script>
 

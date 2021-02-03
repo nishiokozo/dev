@@ -1,3 +1,4 @@
+"use strict";
 //let g2=html_canvas2.getContext('2d');
 
 //-----------------------------------------------------------------------------
@@ -5,7 +6,7 @@ function rand( n ) // n=3以上が正規分布
 //-----------------------------------------------------------------------------
 {
 	let r = 0;
-	for ( j = 0 ; j < n ; j++ ) r += Math.random();
+	for ( let j = 0 ; j < n ; j++ ) r += Math.random();
 	return r/n;
 }
 
@@ -110,9 +111,10 @@ function pat_normalize( pat )
 }
 
 //-----------------------------------------------------------------------------
-function pat_calc( buf1, pat, w, h )
+function calc_blur( buf1, pat, w, h )
 //-----------------------------------------------------------------------------
 {
+	// patで乗算
 	let buf2 = new Array( buf1.length );
 	let edge = Math.floor(pat.length/2);
 
@@ -145,6 +147,95 @@ function pat_calc( buf1, pat, w, h )
 				}
 			}
 			buf2[ adr ] = v;
+		}
+	}
+	return buf2;
+}
+//-----------------------------------------------------------------------------
+function pat_calc_rain( buf1, pat, w, h, rate )
+//-----------------------------------------------------------------------------
+{
+	// patで水流シミュレーション
+	let buf2 = new Array( buf1.length );
+	let edge = Math.floor(pat.length/2);
+
+	for ( let y = 0 ; y < h ; y++ )
+	{
+		for ( let x = 0 ; x < w ; x++ )
+		{
+			let adr = (w*y + x); 
+
+			let base_high = buf1[ w*y+x ]; // 基準となる中心の高さ
+/*			
+			let cntRain = 0;
+			let cntAll = 0;
+			for ( let m = 0 ; m < pat.length ; m++ )
+			{
+				for ( let n = 0 ; n < pat[m].length ; n++ )
+				{
+					// ラウンドする
+					let px = x+(m-edge);
+					let py = y+(n-edge);
+		
+					if ( px < 0   ) px = w-1;
+					else
+					if ( px >= w ) px = 0;
+
+					if ( py < 0   ) py = h-1;
+					else
+					if ( py >= h ) py = 0;
+
+					let adr = (w*py + px); 
+
+					if ( base_high < buf1[ adr ] )
+					{
+						// 高いところには流れない
+					}
+					else
+					{
+						// その分低いところに集まる
+						cntRain++;
+					}
+					cntAll++;
+
+				}
+			}
+			let mizu = cntRain/cntAll;//（均等配分）
+mizu*=rate;
+*/
+let v = 0;
+			for ( let m = 0 ; m < pat.length ; m++ )
+			{
+				for ( let n = 0 ; n < pat[m].length ; n++ )
+				{
+					// ラウンドする
+					let px = x+(m-edge);
+					let py = y+(n-edge);
+		
+					if ( px < 0   ) px = w-1;
+					else
+					if ( px >= w ) px = 0;
+
+					if ( py < 0   ) py = h-1;
+					else
+					if ( py >= h ) py = 0;
+
+					let adr = (w*py + px); 
+
+					let a = buf1[ adr ];
+					if ( base_high < a )
+					{
+						// 高いところには流れない
+					}
+					else
+					{
+						// 流れ込んだ分削られる
+						v = - rate;
+					}
+
+				}
+			}
+			buf2[ adr ] = buf1[ adr ] + v;
 		}
 	}
 	return buf2;
@@ -197,33 +288,69 @@ function pat_gauss2d( size, sigma )
 }	
 // 自動レベル調整 0～1.0の範囲に正規化
 //-----------------------------------------------------------------------------
-function calc_autolevel( buf, SZ )
+function calc_autolevel( buf0, size, mode="full" )
 //-----------------------------------------------------------------------------
 {
+	let buf = Array.from(buf0);
+
 	let max = Number.MIN_SAFE_INTEGER;
 	let min = Number.MAX_SAFE_INTEGER;
 
-	for ( let i = 0 ; i < SZ*SZ ; i++ )
+	for ( let i = 0 ; i < size ; i++ )
 	{
 		let a = buf[i];
 		max = Math.max( max, a );
 		min = Math.min( min, a );
 	}
-	let rate = 1.0/(max-min);
-	for ( let i = 0 ; i < SZ*SZ ; i++ )
+	if ( mode == "full" )
 	{
-		buf[i] = (buf[i] - min)*rate;
+		let rate = 1.0/(max-min);
+		for ( let i = 0 ; i < size ; i++ )
+		{
+			buf[i] = (buf[i] - min)*rate;
+		}
 	}
+	if ( mode == "up" )
+	{
+		let base = 1.0-max;
+		for ( let i = 0 ; i < size ; i++ )
+		{
+			buf[i] = buf[i] + base;
+		}
+	}
+	return buf;
+}
+
+// ローパスフィルタ
+//-----------------------------------------------------------------------------
+function calc_lowpass( buf0, size )
+//-----------------------------------------------------------------------------
+{
+	let buf = [];
+	let val =  html_getValue_textid("low");
+	for ( let i = 0 ; i < size ; i++ )
+	{
+		if ( buf0[i] < val ) 
+		{
+			buf[i] = val;
+		}
+		else
+		{
+			buf[i] = buf0[i];
+		}
+	}
+	return buf;
 }
 
 // パラポライズ
 //-----------------------------------------------------------------------------
-function calc_parapolize( buf, n, SZ )
+function calc_parapolize( buf0, n, SZ )
 //-----------------------------------------------------------------------------
 {
+	let buf = [];
 	for ( let i = 0 ; i < SZ*SZ ; i++ )
 	{
-		let a = buf[i];
+		let a = buf0[i];
 		for ( let i = 0 ; i < n ; i++ )
 		{
 			let b = (1.0/n)*(i+1);
@@ -237,29 +364,15 @@ function calc_parapolize( buf, n, SZ )
 		
 		buf[i] =a;
 	}
+	return buf;
 }
 
 let g_SZ;
-let g_buf;
+let g_bufA = [];
+let g_bufB = [];
+let g_bufC = [];
 //-----------------------------------------------------------------------------
-function genSeed( SZ )
-//-----------------------------------------------------------------------------
-{
-	// ランダムの種作成
-	for ( let i = 0 ; i < SZ*SZ ; i++ )
-	{
-		g_buf[i] = rand(1);
-	}
-
-	function pset( x, y, val )
-	{
-		g_buf[ (y*SZ+x) ] = val;
-	}
-	
-	//	pset( 10,10,11);
-}
-//-----------------------------------------------------------------------------
-function main( SZ )
+function update_paint( SZ )
 //-----------------------------------------------------------------------------
 {
 	// 3x3ブラーフィルタ作成
@@ -274,7 +387,7 @@ function main( SZ )
 	// 9x9ガウスブラーフィルタ作成
 	let pat99 = pat_normalize(pat_gauss2d( 9, 2 ) );
 
-	function drawCanvas( canvas )
+	function drawCanvas( canvas, buf, str=null )
 	{
 		// 画面作成
 		let gra = new Gra( SZ, SZ, canvas );
@@ -286,46 +399,120 @@ function main( SZ )
 		gra.streach();
 
 		// canvasのID表示
-		gra.print(0,gra.canvas.height, canvas.id );
+		if ( str == null ) str = canvas.id;
+		gra.print(1,gra.canvas.height-1, str );
 	}
 	
 	//--
 	
 	// ランダムの種をコピー
-	let buf = Array.from(g_buf);
-	drawCanvas( html_canvas1 );
+	let buf1 = Array.from(g_bufA);
+	let buf2 = Array.from(g_bufB);
+	let buf3 = Array.from(g_bufC);
 
-	// ブラーフィルタ適用
-	{
-		let num = html_getValue_textid("blur");
-		for ( let i = 0 ; i < num ; i++ ) 	buf = pat_calc( buf, pat33, SZ, SZ );
+	// 鞣し
+	// ブラーフィルタn回適用
+	let num1 = document.getElementById( "html_blur1" ).value*1;
+	for ( let i = 0 ; i < num1 ; i++ ) buf1 = calc_blur( buf1, pat33, SZ, SZ, num1 );
+	buf1 = calc_autolevel(buf1, SZ*SZ);
+	drawCanvas( html_canvas1, buf1, "A" );
+
+	let num2 = document.getElementById( "html_blur2" ).value*1;
+	for ( let i = 0 ; i < num2 ; i++ ) buf2 = calc_blur( buf2, pat33, SZ, SZ, num2 );
+	buf2 = calc_autolevel(buf2, SZ*SZ);
+	drawCanvas( html_canvas2, buf2, "B" );
+
+	let num3 = document.getElementById( "html_blur3" ).value*1;
+	for ( let i = 0 ; i < num3 ; i++ ) buf3 = calc_blur( buf3, pat33, SZ, SZ, num3 );
+	buf3 = calc_autolevel(buf3, SZ*SZ);
+	drawCanvas( html_canvas3, buf3, "C" );
+
+
+	let buf9= [];
+	
+	{//合成
+		let p1 = document.getElementById( "html_bp1" ).value*1;
+		let p2 = document.getElementById( "html_bp2" ).value*1;
+		let p3 = document.getElementById( "html_bp3" ).value*1;
+		for ( let x = 0 ; x < SZ*SZ ; x++ )
+		{
+			buf9[x] =(buf1[x]*p1+buf2[x]*p2+buf3[x]*p3)/(p1+p2+p3);
+		}
 	}
-	drawCanvas( html_canvas2 );
 
-	// 自動レベル調整 0～1.0の範囲に正規化
-	calc_autolevel( buf, SZ );
-	drawCanvas( html_canvas3 );
+	// 自動レベル調整
+	buf9 = calc_autolevel(buf9, SZ*SZ);
+	drawCanvas( html_canvas5, buf9, "合成" );
+
+
+	// ローパスフィルタ
+	buf9 = calc_lowpass( buf9, SZ*SZ );
+	// 自動レベル調整
+	buf9 = calc_autolevel(buf9, SZ*SZ);
+
+
+	// パラポライズ
+	let val =  html_getValue_textid("col");
+	buf9 = calc_parapolize( buf9, val, SZ );
+	drawCanvas( html_canvas6, buf9,"等高線" );
+
+/*
+
+	// ブラーフィルタn回適用
+	{
+//		let num = html_getValue_textid("html_blur1");
+//		for ( let i = 0 ; i < num ; i++ ) 	buf1 = calc_blur( buf1, pat33, SZ, SZ );
+	}
+	drawCanvas( html_canvas2, buf1 );
+
+	// 自動レベル調整 fill:0～1.0の範囲に正規化 up:ハイレベルを1.0に合わせて底上げ
+	buf1 = calc_autolevel( buf1, SZ*SZ, "up" );
+	drawCanvas( html_canvas3, buf1 );
+
+	{// 参考 雨の降る前のひかく
+		let b = calc_autolevel( buf1, SZ*SZ );
+		drawCanvas( html_canvas5, b );
+	}
+
+	// 雨削られるシミュレーション
+	{
+		let rate = html_getValue_textid("rain");
+		let num  = html_getValue_textid("rain2");
+		for ( let i = 0 ; i < num ; i++ ) buf1 = pat_calc_rain( buf1, pat33, SZ, SZ, rate );
+
+		// 自動レベル調整 fill:0～1.0の範囲に正規化 up:ハイレベルを1.0に合わせて底上げ
+		buf1 = calc_autolevel( buf1, SZ*SZ );
+		drawCanvas( html_canvas6, buf1 );
+	}
+
 
 	// ローパスフィルタ
 	{
 		let val =  html_getValue_textid("low");
 		for ( let i = 0 ; i < SZ*SZ ; i++ )
 		{
-			if ( buf[i] < val ) buf[i] = val;
+			if ( buf1[i] < val ) buf1[i] = val;
 		}
 	}
-	drawCanvas( html_canvas4 );
+	drawCanvas( html_canvas4, buf1 );
 
-	// 自動レベル調整 0～1.0の範囲に正規化
-	calc_autolevel( buf, SZ );
-	drawCanvas( html_canvas5 );
+	// 自動レベル調整 fill:0～1.0の範囲に正規化 up:ハイレベルを1.0に合わせて底上げ
+	buf1 = calc_autolevel( buf1, SZ*SZ );
+	drawCanvas( html_canvas5, buf1 );
 
 	// パラポライズ
 	{
 		let val =  html_getValue_textid("col");
-		calc_parapolize( buf, val, SZ );
-		drawCanvas( html_canvas6 );
+		calc_parapolize( buf1, val, SZ );
+		drawCanvas( html_canvas6, buf1 );
 	}
+	// パラポライズ
+	{
+		let val =  html_getValue_textid("col");
+		calc_parapolize( buf1, val, SZ );
+		drawCanvas( html_canvas6, buf1 );
+	}
+*/
 
 }
 
@@ -358,16 +545,23 @@ function html_getValue_comboid( id )	// select id="xxx" ..option  用
 function hotstart()
 //-----------------------------------------------------------------------------
 {
-	main( g_SZ );
+	update_paint( g_SZ );
 }
 
 //-----------------------------------------------------------------------------
 window.onload = function( e )
 //-----------------------------------------------------------------------------
 {
-	g_SZ = html_getValue_comboid( "html_combo" );
-	g_buf = new Array( g_SZ*g_SZ );
+	g_SZ = html_getValue_comboid( "html_size" );
 
-	genSeed( g_SZ );
+	for ( let i = 0 ; i < g_SZ*g_SZ ; i++ )
+	{
+		g_bufA[i] = rand(1);
+		g_bufB[i] = rand(1);
+		g_bufC[i] = rand(1);
+	}
+
+
+
 	hotstart();
 }

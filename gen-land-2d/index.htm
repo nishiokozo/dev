@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>btl</title>
+		<style>
+			.group
+			{
+				display:inline-block; 
+				padding: 6px; 
+				border-radius: 7px; 
+				border:1px solid #aaa;
+				text-align:right;
+			}
+			.readme
+			{
+				display:inline-block; 
+				text-align:center;
+				font-size:12px;
+			}
+		</style>
+
+	</head>
+	<body align="center">
+		<h2>js 地形生成 2D</h2>
+
+		<canvas id="html_canvas"  width="512" height="384" style="border:1px solid" ></canvas>
+		<script src="main.js"></script>
+		<br>
+		<div class="group">
+		  blur
+			A:<input type="text" id="html_blur1" value="400" size="3" >
+			B:<input type="text" id="html_blur2" value="40" size="3" >
+			C:<input type="text" id="html_blur3" value="1" size="3" >
+		</div>
+		<div class="group">
+		 blur値
+			<input type="text" id="html_ap1" value="1" size="1" >
+			<input type="text" id="html_ap2" value="2" size="1" >
+			<input type="text" id="html_ap3" value="1" size="1" >
+		</div>
+
+		<div class="group">
+		合成比率
+			A:<input type="text" id="html_bp1" value="8" size="1" >
+			B:<input type="text" id="html_bp2" value="4" size="1" >
+			C:<input type="text" id="html_bp3" value="1" size="1" >
+		</div>
+
+		<div class="group">
+		高さ:<input type="text" id="html_hight" value="0.2" size="1" >
+		</div>
+	
+		<select id="html_size">
+			<option value="64" >64</option>
+			<option value="128"  >128</option>
+			<option value="256">256</option>
+			<option value="512" selected>512</option>
+		</select>
+<br>
+	
+		  <input type="button" value="param更新" onClick="hotstart()">
+		  <input type="button" value="seed更新" onClick="window.onload()">
+<br>
+		<div class="readme">
+			<p>～概要～</p>
+			<p>ランダムで生成し、ABC大中小の山を作って合成</p>
+			<p>山岳の断面図のようなものができるか2Dで確認する実験</p>
+		</div>
+
+
+	</body>
+</html>

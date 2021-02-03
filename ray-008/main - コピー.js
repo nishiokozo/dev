@@ -157,9 +157,6 @@ class Sphere
 	};
 };
 
-
-let test = {};
-
 //------------------------------------------------------------------------------
 function normalize( v )
 //------------------------------------------------------------------------------
@@ -242,20 +239,6 @@ function reflect( I, N )
 function refract( I, N, eta )
 //------------------------------------------------------------------------------
 {
-/*
-	let	n1 = 1.0;
-	let	n2 = nm;
-	let	d = dot(vsub(new vec3(0,0,0),I),N);
-
-	let a = Math.sqrt((n2/n1)*(n2/n1)-1+d*d)-d;
-	let b = (n1/n2);
-
-	let c = new vec3(b,b,b);
-	let d2 = vsub(I,N);
-	let e = vmul( d2 , new vec3(a,a,a) );
-console.log(a);
-	return vmul( c , e );
-*/
 	let R = new vec3(0,0,0);
 	let k = 1.0 - eta * eta * (1.0 - dot(N, I) * dot(N, I));
 	if ( k < 0.0 )
@@ -264,20 +247,16 @@ console.log(a);
 	}
 	else
 	{
-//		R = eta * I - (eta * dot(N, I) + sqrt(k)) * N;
-
 		let ve = new vec3(eta,eta,eta);
 		let a = vmul( ve , I ); 
 		let b = eta * dot(N, I);
 		let c = b + Math.sqrt(k);
 		let d = vmul( new vec3(c,c,c) , N);
 		R = vsub(a , d);
-
-//console.log(11, I,ve,a,b,c,d,R);
-
 	}
 	return R;
 }
+
 //------------------------------------------------------------------------------
 function dot( a, b )
 //------------------------------------------------------------------------------
@@ -377,8 +356,6 @@ function Raycast( P, I )
 
 				sur.N = obj.N;
 
-//				if (   ( (sur.Q.x+10e3 % 1.0) < 0.5 && (sur.Q.z+10e3 % 1.0) < 0.5 )
-//					|| ( (sur.Q.x+10e3 % 1.0) > 0.5 && (sur.Q.z+10e3 %  1.0) > 0.5 ) 
 				if (   ( ((sur.Q.x+10e3) % 1.0) < 0.5 && ((sur.Q.z+10e3) % 1.0) < 0.5 )
 					|| ( ((sur.Q.x+10e3) % 1.0) > 0.5 && ((sur.Q.z+10e3) % 1.0) > 0.5 ) 
 				)
@@ -402,7 +379,6 @@ function Raycast( P, I )
 
 				sur.valTransmittance = obj.valTransmittance;
 
-
 				sur.flg = true;
 			}
 			
@@ -413,7 +389,6 @@ function Raycast( P, I )
 	return sur;
 }
 
-let g_MaxReflect = 5;
 //------------------------------------------------------------------------------
 function Raytrace( P, I )
 //------------------------------------------------------------------------------
@@ -459,11 +434,37 @@ function Raytrace( P, I )
 			}
 			else
 			{
-				I = refract( I, sur.N, sur.valRefractive/1.0 ); // 空気の屈折率は1.0とみなしてる。
-				sur = Raycast( sur.Q, I );
+				if(1)
+				{
+					I = refract( I, sur.N, sur.valRefractive/1.0 ); // 空気の屈折率は1.0とみなしてる。
+					sur = Raycast( sur.Q, I );
 
-				I = refract( I, sur.N, 1.0/(sur.valRefractive+0.001) );
-				ret = vadd( ret, vmul( new vec3(1-r,1-r,1-r) , Raytrace( sur.Q, I ) ) );
+					let tm = sur.valTransmittance;
+
+					I = refract( I, sur.N, 1.0/(sur.valRefractive+0.001) );// 空気の屈折率は1.0とみなしてる。
+					let C = Raytrace( sur.Q, I ); 
+					let c = vadd( ret, vmul( new vec3(1-r,1-r,1-r) , C ) ); 
+					let a = Math.pow(tm,sur.t); // 透明率と球体の中を光のとおった距離で累乗する。
+					ret = vadd( ret, vmul( new vec3(a,a,a) , c ) );
+
+				}
+				else
+				{
+					I = refract( I, sur.N, sur.valRefractive/1.0 ); // 空気の屈折率は1.0とみなしてる。
+					sur = Raycast( sur.Q, I );
+
+					let tm = sur.valTransmittance;
+
+					I = refract( I, sur.N, 1.0/(sur.valRefractive+0.001) );// 空気の屈折率は1.0とみなしてる。
+					let C = Raytrace( sur.Q, I ); 
+					let c = vadd( ret, vmul( new vec3(1-r,1-r,1-r) , C ) ); 
+	c.x=1;
+	c.y=1;
+	c.z=1;
+					let a = Math.pow(tm,sur.t); // 透明率と球体の中を光のとおった距離で累乗する。
+	//				ret = vadd( ret, vmul( new vec3(a,a,a) , c ) );
+
+				}
 			}
 		}
 	}
@@ -475,12 +476,6 @@ function Raytrace( P, I )
 
 	return ret;
 }
-
-
-
-let g_tblLight = [];
-let g_tblSphere = [];
-let g_tblPlate = [];
 
 //------------------------------------------------------------------------------
 function initScene( n )
@@ -494,7 +489,7 @@ function initScene( n )
 
 	switch(n)
 	{
-	case "simple":
+	case "spot":
 		{
 		//	X,Y,Z,CR,CG,CB,R,RF,KF,OW,KV
 		// _P, _r, _C, _valReflection, _valRefractive, _valPower, _valEmissive, _valTransmittance )
@@ -502,10 +497,10 @@ function initScene( n )
 
 			let sphere =
 			[
-				{x: 0.0	,y:0.5	,z:-0.58	,cr:0.0 ,cg:0.1 ,cb:1.0 ,r:0.5	,rf:0.5 ,kf:0.0 ,pw:16 ,kv:1.4},
-				{x:-0.5	,y:0.5	,z: 0.29	,cr:0.0 ,cg:1.0 ,cb:0.1 ,r:0.5	,rf:0.5 ,kf:0.0 ,pw:16 ,kv:1.4},
-				{x: 0.5	,y:0.5	,z: 0.29	,cr:1.0 ,cg:0.1 ,cb:0.1 ,r:0.5	,rf:0.5 ,kf:0.0 ,pw:16 ,kv:1.4},
-				{x: 0.0	,y:1.32	,z: 0.0		,cr:1.0 ,cg:1.0 ,cb:1.0 ,r:0.5	,rf:0.8 ,kf:0.0 ,pw:16 ,kv:1.4},
+				{x: 0.0	,y:0.5	,z:-0.58	,cr:0.0 ,cg:0.1 ,cb:1.0 ,r:0.5	,rf:0.5 ,kf:0.0 ,pw:116 ,kv:1.4},
+				{x:-0.5	,y:0.5	,z: 0.29	,cr:0.0 ,cg:1.0 ,cb:0.1 ,r:0.5	,rf:0.5 ,kf:0.0 ,pw:116 ,kv:1.4},
+				{x: 0.5	,y:0.5	,z: 0.29	,cr:1.0 ,cg:0.1 ,cb:0.1 ,r:0.5	,rf:0.5 ,kf:0.0 ,pw:116 ,kv:1.4},
+				{x: 0.0	,y:1.32	,z: 0.0		,cr:1.0 ,cg:1.0 ,cb:1.0 ,r:0.5	,rf:0.8 ,kf:0.0 ,pw:116 ,kv:1.4},
 			];
 			for ( let a of sphere )
 			{
@@ -539,49 +534,53 @@ function initScene( n )
 	case "4balls":
 		{
 			g_tblPlate.push( new Plate( P=new vec3( 0  ,  0 ,0.0),N=new vec3(0,1,0),C=new vec3(0.8,0.8,0.8),rl=0.5,rr=1.0 ,pw=20,e= 0.0,tm=0.0 ) );
-			g_tblSphere.push( new Sphere(new vec3( 0.0 , 1.25, -2       ),   0.5 , new vec3(1  , 0.2, 0.2), 0.5, 1.0, 20, 0.0, 0.0 ) );
-			g_tblSphere.push( new Sphere(new vec3( 0.0 , 0.5 , -2-0.433 ),   0.5 , new vec3(0.0, 0.0, 0.0), 1.0, 1.0, 20, 0.0, 0.0 ) );
-			g_tblSphere.push( new Sphere(new vec3( 0.5 , 0.5 , -2+0.433 ),   0.5 , new vec3(0.2, 0.2, 1.0), 0.5, 1.0, 20, 0.0, 0.0 ) );
-			g_tblSphere.push( new Sphere(new vec3(-0.5 , 0.5 , -2+0.433 ),   0.5 , new vec3(0.0, 1.0, 0.0), 0.5, 1.0, 20, 0.0, 0.0 ) );
+			g_tblSphere.push( new Sphere(new vec3( 0.0 , 1.25, 0       ),   0.5 , new vec3(1  , 0.2, 0.2), 0.5, 1.0, 40, 0.0, 0.0 ) );
+			g_tblSphere.push( new Sphere(new vec3( 0.0 , 0.5 , -0.433 ),   0.5 , new vec3(0.0, 0.0, 0.0), 1.0, 1.0, 40, 0.0, 0.0 ) );
+			g_tblSphere.push( new Sphere(new vec3( 0.5 , 0.5 , +0.433 ),   0.5 , new vec3(0.2, 0.2, 1.0), 0.5, 1.0, 40, 0.0, 0.0 ) );
+			g_tblSphere.push( new Sphere(new vec3(-0.5 , 0.5 , +0.433 ),   0.5 , new vec3(0.0, 1.0, 0.0), 0.5, 1.0, 40, 0.0, 0.0 ) );
 			l=40;g_tblLight.push( new Light( new vec3( 4   ,  2 , -1 ), new vec3(0.6*l, 0.8*l, 1.0*l) ) );
 			l=10;g_tblLight.push( new Light( new vec3( -1  ,  2 ,  -3 ), new vec3(1.0*l, 0.8*l, 0.6*l) ) );
 		}
 		break;
 
-	case "3metals":
+	case "5metals":
 		{
-			g_tblPlate.push( new Plate( P=new vec3( 0  ,  0 ,0.0),N=new vec3(0,1,0),C=new vec3(0.8,0.8,0.8),rl=0.5,rr=1.0 ,pw=20,e= 0.0,tm=0.0 ) );
-			g_tblSphere.push( new Sphere(new vec3(-2.0 , 0.5 , -0 ),   0.5 , new vec3(0.0, 0.0, 0.0), 1.0 , 1.0, 20, 0.0, 0.0 ) );
-			g_tblSphere.push( new Sphere(new vec3(-1.0 , 0.5 , -0 ),   0.5 , new vec3(0.0, 0.0, 0.0), 0.75, 1.0, 20, 0.0, 0.0 ) );
-			g_tblSphere.push( new Sphere(new vec3( 0.0 , 0.5 , -0 ),   0.5 , new vec3(0.0, 0.0, 0.0), 0.5 , 1.0, 20, 0.0, 0.0 ) );
-			g_tblSphere.push( new Sphere(new vec3( 1.0 , 0.5 , -0 ),   0.5 , new vec3(0.0, 0.0, 0.0), 0.25, 1.0, 20, 0.0, 0.0 ) );
-			g_tblSphere.push( new Sphere(new vec3( 2.0 , 0.5 , -0 ),   0.5 , new vec3(0.0, 0.0, 0.0), 0.0 , 1.0, 20, 0.0, 0.0 ) );
-			g_tblLight.push( new Light( new vec3( 0   ,  20 ,  -0 ), new vec3(800,800,800) ) );
+			g_tblPlate.push( new Plate( P=new vec3( 0  ,  0 ,0.0),N=new vec3(0,1,0),C=new vec3(0.8,0.8,0.8),rl=0.5,rr=1.0 ,pw=120,e= 0.0,tm=0.0 ) );
+			g_tblSphere.push( new Sphere(new vec3(-2.0 , 0.5 , 0 ),   0.5 , new vec3(0.0, 0.0, 0.0), 1.0 , 1.0, 120, 0.0, 0.0 ) );
+			g_tblSphere.push( new Sphere(new vec3(-1.0 , 0.5 , 0 ),   0.5 , new vec3(0.0, 0.0, 0.0), 0.75, 1.0, 120, 0.0, 0.0 ) );
+			g_tblSphere.push( new Sphere(new vec3( 0.0 , 0.5 , 0 ),   0.5 , new vec3(0.0, 0.0, 0.0), 0.5 , 1.0, 120, 0.0, 0.0 ) );
+			g_tblSphere.push( new Sphere(new vec3( 1.0 , 0.5 , 0 ),   0.5 , new vec3(0.0, 0.0, 0.0), 0.25, 1.0, 120, 0.0, 0.0 ) );
+			g_tblSphere.push( new Sphere(new vec3( 2.0 , 0.5 , 0 ),   0.5 , new vec3(0.0, 0.0, 0.0), 0.05, 1.0, 120, 0.0, 0.0 ) );
+			g_tblLight.push( new Light( new vec3( 0   ,  20 ,  0 ), new vec3(800,800,800) ) );
+
+			//	g_tblLight.push( new Light( new vec3(-20   ,  40 , 10 ), new vec3(   0,   0,400) )  );
+			//	g_tblLight.push( new Light( new vec3( 30   ,  40 ,  0 ), new vec3(   0,400,   0) )  );
+			//	g_tblLight.push( new Light( new vec3( 10   ,  40 , 20 ), new vec3(400,   0,   0) )  );
 		}
 		break;
 
 	case "rasen":
 		{ 
 			g_tblPlate.push( new Plate( P=new vec3( 0  ,  0 ,0.0),N=new vec3(0,1,0),C=new vec3(0.8,0.8,0.8),rl=0.5,rr=1.0 ,pw=20,e= 0.0,tm=0.0 ) );
-			g_tblSphere.push( new Sphere(  new vec3( 0 , 1.0 , 0 ),   0.5 ,  new vec3(0.0, 0.0, 0.0),   0.5,   1.0 ,  100,  0.0,  0.0 ) );
-			let	max = 16*3*2;
+			g_tblSphere.push( new Sphere(  new vec3( 0 , 1.0 , 0 ),   0.5 ,  new vec3(0.0, 0.0, 0.0),   0.5,   1.0 ,  120,  0.0,  0.0 ) );
+			let	max = 16*3;
 			for ( let i = 0 ; i < max ; i++ )
 			{
-				let	th  = i *(Math.PI/360)*16/2 * 3;
-				let	th2 = i *(Math.PI/360)*16/2 * 0.5;
-				let	x = Math.cos(th)*2;
-				let	z = Math.sin(th)*2 ;
+				let	th  = i *(Math.PI/360)*16 * 3;
+				let	th2 = i *(Math.PI/360)*16 * 0.5;
+				let	x = Math.cos(th);
+				let	z = Math.sin(th) ;
 				let	y = Math.cos(th2) +1.2;
-				g_tblSphere.push( new Sphere(P=new vec3( x , y , z ),r=0.2 ,C=new vec3( x, y,  z) ,rl=0.2,rr=0.0 ,pw=100,e= 0.0,tm=0.0 ) );
+				g_tblSphere.push( new Sphere(P=new vec3( x , y , z ),r=0.2 ,C=new vec3( x, y,  z) ,rl=0.2,rr=0.0 ,pw=60,e= 0.0,tm=0.0 ) );
 			}
 
 
-			if (0)
+			if (1)
 			{
-				g_tblLight.push( new Light( new vec3( 0   ,  30 ,  0 ), new vec3(1800,1800,1800) ) );
-				g_tblLight.push( new Light( new vec3(-30   ,  30 ,  0 ), new vec3( 900,1800,1800) )  );
-				g_tblLight.push( new Light( new vec3(60   ,  80 ,  0 ), new vec3(4800,4800,2400) )  );
-				g_tblLight.push( new Light( new vec3(-60   ,  80 , 0 ), new vec3(4800,2400,4800) )  );
+				g_tblLight.push( new Light( new vec3( 5   ,  30 ,  -5 ), new vec3(1800,1800,1800) ) );
+//				g_tblLight.push( new Light( new vec3(-30   ,  30 ,  0 ), new vec3( 900,1800,1800) )  );
+//				g_tblLight.push( new Light( new vec3(60   ,  80 ,  0 ), new vec3(4800,4800,2400) )  );
+//				g_tblLight.push( new Light( new vec3(-60   ,  80 , 0 ), new vec3(4800,2400,4800) )  );
 			}
 			else
 			{
@@ -596,11 +595,12 @@ function initScene( n )
 	case "twinballs":
 		{
 			g_tblPlate.push( new Plate( new vec3( 0   ,  0 ,  0    ), normalize(new vec3(0, 1,0))  , new vec3(0.8, 0.8, 0.8), 0.5, 1.0, 20, 0.0, 0.0 ) );
-			g_tblSphere.push( new Sphere(new vec3(-1.0 , 1.0 , -2 ),   1.0 , new vec3(1.0, 0.5, 0.5), 0.2, 1.0, 20, 0.0, 0.0 ) );
-			g_tblSphere.push( new Sphere(new vec3( 1.0 , 1.0 , -2 ),   1.0 , new vec3(0.0, 0.0, 0.0), 0.2, 1.0, 20, 0.0, 0.0 ) );
-			g_tblLight.push( new Light( new vec3( 0   ,  20 ,  -2 ), new vec3(800, 800, 800) ) );
+			g_tblSphere.push( new Sphere(new vec3(-1.0 , 1.0 , 0 ),   1.0 , new vec3(1.0, 0.5, 0.5), 0.2, 1.0, 20, 0.0, 0.0 ) );
+			g_tblSphere.push( new Sphere(new vec3( 1.0 , 1.0 , 0 ),   1.0 , new vec3(0.0, 0.0, 0.0), 0.2, 1.0, 20, 0.0, 0.0 ) );
+			g_tblLight.push( new Light( new vec3( 0   ,  20 ,  0 ), new vec3(800, 800, 800) ) );
 		}
 		break;
+
 	case "refract2":
 		{
 			g_tblPlate.push( new Plate( new vec3( 0   ,  0 ,  0    ), normalize(new vec3(0, 1,0))  , new vec3(0.8, 0.8, 0.8), 0.5, 1.0, 20, 0.0, 0.0 ) );
@@ -623,70 +623,141 @@ function initScene( n )
 			g_tblLight.push( new Light( new vec3( 0   ,  20 ,  0 ), new vec3(800, 800, 800) ) );
 		}
 		break;
-
 	case "refract":
 		{
 			g_tblPlate.push( new Plate( new vec3( 0   ,  0 ,  0    ), normalize(new vec3(0, 1,0))  , new vec3(0.8, 0.8, 0.8), 0.5, 1.0, 20, 0.0, 0.0 ) );
 //	constructor( _P, _r, _C, _valReflection, _valRefractive, _valPower, _valEmissive, _valTransmittance )
+			// valTransmittance 長さ1辺りの減衰率。0.9なら距離1で90％の明るさになる
+//	let P,C,N,rl,rr,pw,e,tm,r,l;
 
 //			g_tblSphere.push( new Sphere(new vec3(-0.0 , 1.0 , 8 ),   1.0 , new vec3(0.1, 1.0, 0.1) , 0.0, 0.0, 20, 0.0, 0.0 ) );
-			g_tblSphere.push( new Sphere(new vec3( 0.0 , 1.25, 0      +0),   0.5 , new vec3(1  , 0.2, 0.2), 0.3, 1.0, 20, 0.0, 0.0 ) );
-			g_tblSphere.push( new Sphere(new vec3( 0.0 , 0.5 , -0.433 +0),   0.5 , new vec3(1.0, 1.0, 0.2), 0.3, 1.0, 20, 0.0, 0.0 ) );
-			g_tblSphere.push( new Sphere(new vec3( 0.5 , 0.5 , +0.433 +0),   0.5 , new vec3(0.2, 0.2, 1.0), 0.3, 1.0, 20, 0.0, 0.0 ) );
-			g_tblSphere.push( new Sphere(new vec3(-0.5 , 0.5 , +0.433 +0),   0.5 , new vec3(0.0, 1.0, 0.0), 0.3, 1.0, 20, 0.0, 0.0 ) );
+			g_tblSphere.push( new Sphere(new vec3( 0.0 , 1.25, 0      +0),   0.5 , new vec3(1  , 0.2, 0.2), 0.2, 1.0, 60, 0.0, 0.0 ) );
+			g_tblSphere.push( new Sphere(new vec3( 0.0 , 0.5 , -0.433 +0),   0.5 , new vec3(1.0, 1.0, 0.2), 0.2, 1.0, 60, 0.0, 0.0 ) );
+			g_tblSphere.push( new Sphere(new vec3( 0.5 , 0.5 , +0.433 +0),   0.5 , new vec3(0.2, 0.2, 1.0), 0.2, 1.0, 60, 0.0, 0.0 ) );
+			g_tblSphere.push( new Sphere(new vec3(-0.5 , 0.5 , +0.433 +0),   0.5 , new vec3(0.0, 1.0, 0.0), 0.2, 1.0, 60, 0.0, 0.0 ) );
 
 
-			g_tblSphere.push( new Sphere(new vec3(-1.0 , 1.0 ,-1.5),   1.0 , new vec3(0.7, 0.7, 0.7), 0.0, 0.96, 20, 0.0, 0.5 ) );
-			g_tblSphere.push( new Sphere(new vec3( 1.0 , 1.0 ,+1.5),   1.0 , new vec3(0.7, 0.7, 0.7), 0.0, 0.5, 20, 0.0, 0.5 ) );
+			g_tblSphere.push( new Sphere(new vec3(-1.0 , 1.0 ,-2),   1.0 , new vec3(0.0, 0.0, 0.0), rl=0.1, rr=0.96, pw=200, 0.0, tm=0.8 ) );
+			g_tblSphere.push( new Sphere(new vec3( 1.0 , 1.0 ,+2),   1.0 , new vec3(0.0, 0.0, 0.0), rl=0.1, rr=0.5, pw=200, 0.0, tm=0.8) );
+if(0)
+{
+				g_tblLight.push( new Light( new vec3( 0   ,  20 ,  0 ), new vec3(   0,   0,800) )  );
+				g_tblLight.push( new Light( new vec3( 0   ,  20 ,  0 ), new vec3(   0,800, 0) )  );
+				g_tblLight.push( new Light( new vec3( 0   ,  20 ,  0 ), new vec3(800,   0,   0) )  );
+}
+else
+{
+			g_tblLight.push( new Light( new vec3( 0   ,  20 ,  0 ), new vec3(800, 800, 800) ) );
+}
+
+		}
+		break;
+
+	case "grasslight":
+		{
+			g_tblPlate.push( new Plate( new vec3( 0   ,  0 ,  0    ), normalize(new vec3(0, 1,0))  , new vec3(0.8, 0.8, 0.8), 0.5, 1.0, 20, 0.0, 0.0 ) );
+			g_tblSphere.push( new Sphere(new vec3(-1.0 , 1.0 ,0),   1.0 , new vec3(0.7, 0.7, 0.7), rl=0.0, rr=0.96, pw=200, 0.0, tm=0.8 ) );
+			g_tblSphere.push( new Sphere(new vec3( 1.0 , 1.0 ,0),   1.0 , new vec3(0.7, 0.7, 0.7), rl=0.0, rr=0.5, pw=200, 0.0, tm=0.8) );
 
 //				g_tblLight.push( new Light( new vec3(-20   ,  40 ,  0 ), new vec3(   0,   0,400) )  );
 //				g_tblLight.push( new Light( new vec3( 30   ,  40 ,  0 ), new vec3(   0,400,   0) )  );
-//				g_tblLight.push( new Light( new vec3( 10   ,  40 ,  0 ), new vec3(400,   0,   0) )  );
+				g_tblLight.push( new Light( new vec3( 10   ,  40 ,  0 ), new vec3(400,   0,   0) )  );
 
 			g_tblLight.push( new Light( new vec3( 0   ,  20 ,  0 ), new vec3(800, 800, 800) ) );
 
 		}
 		break;
-
+		
 	case "colorballs":
 		{
-			g_tblPlate.push( new Plate( P=new vec3(0  , 0 ,0.0),N=new vec3(0,1,0),C=new vec3(0.8,0.8,0.8),rl=0.5,rr=1.0 ,pw=20,e= 0.0,tm=0.0 ) );
-			g_tblSphere.push( new Sphere(P=new vec3( 0.5,1.0,0.0)	,r=0.5  ,C=new vec3(0.0,0.0,1.0),rl=0.5,rr=1.0 ,pw=20,e=10.0,tm=0.0 ) );
-			g_tblSphere.push( new Sphere(P=new vec3(-0.5,1.0,0.0)	,r=0.5  ,C=new vec3(0.0,1.0,0.0),rl=0.5,rr=1.0 ,pw=20,e=10.0,tm=0.0 ) );
-			g_tblSphere.push( new Sphere(P=new vec3( 0.0,1.5,0.0)	,r=0.5  ,C=new vec3(1.0,0.0,0.0),rl=0.5,rr=1.0 ,pw=20,e=10.0,tm=0.0 ) );
-			g_tblSphere.push( new Sphere(P=new vec3( 0.0,0.5,0.0)	,r=0.5  ,C=new vec3(1.0,1.0,0.0),rl=0.5,rr=1.0 ,pw=20,e=10.0,tm=0.0 ) );
-			g_tblSphere.push( new Sphere(P=new vec3( 0.0,1.0,0.0)	,r=0.5 ,C=new vec3(1.0,1.0,1.0),rl=0.5,rr=1.0 ,pw=20,e=10.0,tm=0.0 ) );
+			g_tblPlate.push( new Plate( P=new vec3(0  , 0 ,0.0),N=new vec3(0,1,0),C=new vec3(0.8,0.8,0.8),rl=0.3,rr=1.0 ,pw=70,e= 0.0,tm=0.0 ) );
+			g_tblSphere.push( new Sphere(P=new vec3( 0.5,1.0,0.0)	,r=0.5  ,C=new vec3(0.0,0.0,1.0),rl=0.3,rr=1.0 ,pw=70,e=10.0,tm=0.0 ) );
+			g_tblSphere.push( new Sphere(P=new vec3(-0.5,1.0,0.0)	,r=0.5  ,C=new vec3(0.0,1.0,0.0),rl=0.3,rr=1.0 ,pw=70,e=10.0,tm=0.0 ) );
+			g_tblSphere.push( new Sphere(P=new vec3( 0.0,1.5,0.0)	,r=0.5  ,C=new vec3(1.0,0.0,0.0),rl=0.3,rr=1.0 ,pw=70,e=10.0,tm=0.0 ) );
+			g_tblSphere.push( new Sphere(P=new vec3( 0.0,0.5,0.0)	,r=0.5  ,C=new vec3(1.0,1.0,0.0),rl=0.3,rr=1.0 ,pw=70,e=10.0,tm=0.0 ) );
+			g_tblSphere.push( new Sphere(P=new vec3( 0.0,1.0,0.0)	,r=0.5 ,C=new vec3(1.0,1.0,1.0),rl=0.3,rr=1.0 ,pw=70,e=10.0,tm=0.0 ) );
 			g_tblLight.push( new Light( P=new vec3( 1.0 ,15, 0 ) ,C=new vec3(360,360,360) )  );
-				g_tblLight.push( new Light( new vec3(-20   ,  40 , 10 ), new vec3(   0,   0,1400) )  );
-				g_tblLight.push( new Light( new vec3( 30   ,  40 ,  0 ), new vec3(   0,1400,   0) )  );
-				g_tblLight.push( new Light( new vec3( 10   ,  40 , 20 ), new vec3(1400,   0,   0) )  );
+				g_tblLight.push( new Light( new vec3(-20   ,  40 , 10 ), new vec3(   0,   0,400) )  );
+				g_tblLight.push( new Light( new vec3( 30   ,  40 ,  0 ), new vec3(   0,400,   0) )  );
+				g_tblLight.push( new Light( new vec3( 10   ,  40 , 20 ), new vec3(400,   0,   0) )  );
 		}
 		break;
 	}
 }
 
-const	SIZwidth =  html_canvas.width;		// レンダリングバッファの解像度
-const	SIZheight =  html_canvas.height;	// レンダリングバッファの解像度
-let g_cntRay = 0;
+//------------------------------------------------------------------------------
+function rotYaw( v, th )
+//------------------------------------------------------------------------------
+{
+   	let s = Math.sin(th);
+	let c = Math.cos(th);
+	// c,  0, -s,
+	// 0,  1,  0,
+    // s,  0,  c
+	let nx = v.x*c			- v.z*s;
+	let ny =		 v.y;
+	let nz = v.x*s			+ v.z*c;
+
+	return new vec3( nx, v.y, nz );
+}
+//------------------------------------------------------------------------------
+function rotPitch( v, th )
+//------------------------------------------------------------------------------
+{
+	let s = Math.sin(th);
+	let c = Math.cos(th);
+	// 1,  0,  0,
+	// 0,  c,  s,
+	// 0, -s,  c
+	let nx = v.x;
+	let ny =	 v.y*c + v.z*s;
+	let nz =	-v.y*s + v.z*c;
+
+	return new vec3( nx, ny, nz );
+}
+//------------------------------------------------------------------------------
+function rotRoll( v, th )
+//------------------------------------------------------------------------------
+{
+	let s = Math.sin(th);
+	let c = Math.cos(th);
+	// c,  s,  0,
+	//-s,  c,  0,
+	// 0,  0,  1
+	let nx = v.x*c + v.y*s;
+	let ny =-v.x*s + v.y*c;
+	let nz = 				v.z;
+
+	return new vec3( nx, ny, nz );
+}
 
 //------------------------------------------------------------------------------
 function paint( gra, rot )
 //------------------------------------------------------------------------------
 {
-	let	posScr = new vec3(0,1.0,-12+8);
 	let	posEye = new vec3(0,1.0,-17+8);
+	let	posAt = new vec3(0,1.0,0);
+	
+	posEye.x = document.getElementById( "html_eye_x" ).value*1;
+	posEye.y = document.getElementById( "html_eye_y" ).value*1;
+	posEye.z = document.getElementById( "html_eye_z" ).value*1;
+	posAt.x = document.getElementById( "html_at_x" ).value*1;
+	posAt.y = document.getElementById( "html_at_y" ).value*1;
+	posAt.z = document.getElementById( "html_at_z" ).value*1;
+	let fovy = document.getElementById( "html_fovy" ).value*Math.PI/180.0;
+	let rz = document.getElementById( "html_rz" ).value*Math.PI/180.0;
+
+	let sz = 1.0/Math.tan(fovy/2);	// 視点から投影面までの距離
 
 
-	function rotY( v, th )
+	let a = function( v )
 	{
-		let s = Math.sin(th);
-		let c = Math.cos(th);
-
-		let nx = v.x*c- v.z*s;
-		let nz = v.x*s+ v.z*c;
-
-		return new vec3( nx, v.y, nz );
+		let yz = Math.sqrt(v.x*v.x+v.z*v.z);
+		let ry = -Math.atan2( v.x , v.z ); 
+		let rx = Math.atan2( v.y, yz ); 
+		return [rx,ry];
 	}
+	let [rx,ry] = a( vsub(posAt, posEye) ); 
 
 	let aspect = html_canvas.width/html_canvas.height;
 	for( let py = 0 ; py < gra.img.height ; py++ )
@@ -697,11 +768,14 @@ function paint( gra, rot )
 
 			let x = (px / gra.img.width)*aspect *2.0-1.0*aspect;
 			let y = (py / gra.img.height) *2.0-1.0;
-			let	P = vadd( new vec3( x, y, 0 ), posScr );
-			let I = normalize( vsub( P , posEye ));
 
-			P = rotY( P, rot );
-			I = rotY( I, rot );
+			let P = posEye;
+			let I =  normalize( new vec3( x, y, sz ) );
+			
+
+			I = rotRoll( I, rz );
+			I = rotPitch( I, rx );
+			I = rotYaw( I, ry );
 
 	 		let C = Raytrace( P, I );
 			gra.pset( px, gra.img.height-py, C );
@@ -709,35 +783,31 @@ function paint( gra, rot )
 	}
 }
 
-let g_step = 0;
-let g_totaltime = 0;
-let g_canvas = 
-[
-	html_canvas,
-	html_canvas2,
-	html_canvas3,
-	html_canvas4,
-]
 //------------------------------------------------------------------------------
 function update_paint()
 //------------------------------------------------------------------------------
 {
+
+	let	SIZwidth =  Math.floor(html_canvas.width*g_numReso);		// レンダリングバッファの解像度
+	let	SIZheight =  Math.floor(html_canvas.height*g_numReso);	// レンダリングバッファの解像度
+
+
+
+	let time = 0;
 	{
-		let gra = new GRA( SIZwidth, SIZheight, g_canvas[ g_step ] );
+		let gra = new GRA( SIZwidth, SIZheight, html_canvas );
 		gra.cls( new vec3(0,0,0) );
 		gra.streach();
 		const st = performance.now();
-		paint( gra, (g_step*20)*Math.PI/18 );
+		paint( gra, (0)*Math.PI/18 );
 		const en = performance.now();
+		time = en-st;
 		gra.streach();
-		
-		g_totaltime += en-st;
-		document.getElementById("message").innerHTML = ""+((g_totaltime)/1000).toFixed(2)+"秒";
 	}
 
-	g_step++;
+		document.getElementById("html_msec").innerHTML = ""+(time).toFixed()+"msec";
+		document.getElementById("html_fps").innerHTML = ""+(60/(time/(1000/60))).toFixed()+" fps";
 
-	if ( g_step < g_canvas.length ) requestAnimationFrame( update_paint );
 }
 
 
@@ -745,37 +815,199 @@ function update_paint()
 function update_scene()
 //------------------------------------------------------------------------------
 {
-	initScene( g_strScene);
 
-	g_step = 0;
-	g_totaltime = 0;
-	// レンダリング画面以外の更新を促すために１フレーム開ける。
-	requestAnimationFrame( update_paint );
+	g_MaxReflect = document.getElementById( "html_maxreflect" ).value*1;
+	{
+		html_canvas.width = document.getElementById( "html_size_x" ).value;
+		html_canvas.height = document.getElementById( "html_size_y" ).value;
+	}
+
+	initScene( g_strScene );
+
+	update_paint();
+}
+//------------------------------------------------------------------------------
+function update_start()
+//------------------------------------------------------------------------------
+{
+	// レイトレ結果以外の更新を促すために１フレーム開ける。
+	requestAnimationFrame( update_scene );
 };
 //------------------------------------------------------------------------------
 window.onload = function( e )
 //------------------------------------------------------------------------------
 {
 	html_scene_click();
-/*
-	initScene( "3metals");
-	initScene( "twinballs");
-	initScene( "colorballs");
-	initScene( "rasen");
-	initScene( "smile");
-	initScene( "4balls");
-*/
+	html_reso_click();
 
-	document.getElementById("message2").innerHTML = navigator.userAgent;
+	// javascript側で初期のキャンバスサイズを決める
+	{
+		html_canvas.width = window.innerWidth-40;
+		html_canvas.height = html_canvas.width*(9/16);
+
+		document.getElementById( "html_size_x" ).value = html_canvas.width;
+		document.getElementById( "html_size_y" ).value = html_canvas.height;
+	}
+
+
+
 
 	// レンダリング開始
-//	requestAnimationFrame( update_scene );
-
+	requestAnimationFrame( update_start );
 
 }
+//-----------------------------------------------------------------------------
+function rad( v )
+//-----------------------------------------------------------------------------
+{
+	return v/180*Math.PI;
+}
 
-//HTML
+//-----------------------------------------------------------------------------
+window.onkeydown = function( ev )
+//-----------------------------------------------------------------------------
+{
+	const	KEY_TAB	= 9;
+	const	KEY_CR	= 13;
+	const	KEY_0	= 48;	//0x30
+	const	KEY_1	= 49;	//0x31
+	const	KEY_2	= 50;	//0x32
+	const	KEY_3	= 51;	//0x33
+	const	KEY_4	= 52;	//0x34
+	const	KEY_5	= 53;	//0x35
+	const	KEY_6	= 54;	//0x36
+	const	KEY_7	= 55;	//0x37
+	const	KEY_8	= 56;	//0x38
+	const	KEY_9	= 57;	//0x39
+	const	KEY_A	= 65;	//0x41
+	const	KEY_B	= 66;	//0x42
+	const	KEY_C	= 67;	//0x43
+	const	KEY_D	= 68;	//0x44
+	const	KEY_E	= 69;	//0x45
+	const	KEY_F	= 70;	//0x46
+	const	KEY_G	= 71;	//0x47
+	const	KEY_H	= 72;	//0x48
+	const	KEY_I	= 73;	//0x49
+	const	KEY_J	= 74;	//0x4a
+	const	KEY_K	= 75;	//0x4b
+	const	KEY_L	= 76;	//0x4c
+	const	KEY_M	= 77;	//0x4d
+	const	KEY_N	= 78;	//0x4e
+	const	KEY_O	= 79;	//0x4f
+	const	KEY_P	= 80;	//0x50
+	const	KEY_Q	= 81;	//0x51
+	const	KEY_R	= 82;	//0x52
+	const	KEY_S	= 83;	//0x53
+	const	KEY_T	= 84;	//0x54
+	const	KEY_U	= 85;	//0x55
+	const	KEY_V	= 86;	//0x56
+	const	KEY_W	= 87;	//0x57
+	const	KEY_X	= 88;	//0x58
+	const	KEY_Y	= 89;	//0x59
+	const	KEY_Z	= 90;	//0x5a
+
+	const	KEY_LEFT	= 37;
+	const	KEY_UP		= 38;
+	const	KEY_RIGHT	= 39;
+	const	KEY_DOWN	= 40;
+
+
+	let	c = ev.keyCode;
+
+	if ( c >= KEY_0 && c <= KEY_9 ) return;
+	if ( c == KEY_CR || c == KEY_TAB ) return;
+
+	{
+		// get
+		let	posEye = new vec3(
+			document.getElementById( "html_eye_x" ).value*1,
+			document.getElementById( "html_eye_y" ).value*1,
+			document.getElementById( "html_eye_z" ).value*1
+		);
+		let	posAt = new vec3(
+			document.getElementById( "html_at_x" ).value*1,
+			document.getElementById( "html_at_y" ).value*1,
+			document.getElementById( "html_at_z" ).value*1
+		);
+		let fovy = document.getElementById( "html_fovy" ).value*Math.PI/180.0;
+		let rz = document.getElementById( "html_rz" ).value*Math.PI/180.0;
+
+		let a = function( v )
+		{
+			let yz = Math.sqrt(v.x*v.x+v.z*v.z);
+			let ry = -Math.atan2( v.x , v.z ); 
+			let rx = Math.atan2( v.y, yz ); 
+			return [rx,ry];
+		}
+		let [rx,ry] = a( vsub(posAt, posEye) ); 
+	
+		let V =	vsub(posAt, posEye); // 視線ベクトル
+		
+		{//move
+
+			let spdE = 0;
+			let dirE = 0;
+			let spdA = 0;
+			let dirA = 0;
+			let sE =1/2;
+			let sA =1/4;
+
+			{
+				// 注視点
+				if ( c == KEY_UP	) {posAt.y +=sA;}
+				if ( c == KEY_DOWN	) {posAt.y -=sA;}
+				if ( c == KEY_RIGHT	) {dirA=rad(0);spdA=sA;}
+				if ( c == KEY_LEFT	) {dirA=rad(180);spdA=sA;}
+
+				// 視点
+				if ( c == KEY_R	) {dirE=rad( 90);spdE=sE;	}
+				if ( c == KEY_F	) {dirE=rad(-90);spdE=sE;	}
+				if ( c == KEY_D	) {dirE=rad(  0);spdE=sE;	}
+				if ( c == KEY_A	) {dirE=rad(180);spdE=sE;	}
+				if ( c == KEY_W	) {posEye.y+=sE;}
+				if ( c == KEY_S	) {posEye.y-=sE;}
+				if ( c == KEY_Q	) {rz+=rad(2);}
+				if ( c == KEY_E	) {rz-=rad(2);}
+
+				if ( spdE > 0 )
+				{
+					posEye.x += Math.cos( ry+dirE )*spdE;
+					posEye.z += Math.sin( ry+dirE )*spdE;
+				}
+				
+				if ( spdA > 0 )
+				{
+					posAt.x += Math.cos( ry+dirA )*spdA;
+					posAt.z += Math.sin( ry+dirA )*spdA;
+				}
+			}
+
+		}
+		
+		// set
+		document.getElementById( "html_eye_x" ).value = posEye.x.toFixed(3);
+		document.getElementById( "html_eye_y" ).value = posEye.y.toFixed(3);
+		document.getElementById( "html_eye_z" ).value = posEye.z.toFixed(3);
+		document.getElementById( "html_at_x" ).value = posAt.x.toFixed(3);
+		document.getElementById( "html_at_y" ).value = posAt.y.toFixed(3);
+		document.getElementById( "html_at_z" ).value = posAt.z.toFixed(3);
+		document.getElementById( "html_fovy" ).value = (fovy * 180 /Math.PI).toFixed();
+		document.getElementById( "html_rz" ).value = (rz * 180 /Math.PI).toFixed();
+	}
+
+	requestAnimationFrame( update_paint );
+}
+
+
+let g_tblLight = [];
+let g_tblSphere = [];
+let g_tblPlate = [];
+let g_MaxReflect;
+
+let g_cntRay = 0;
+
 let g_strScene="";
+let g_numReso=1.0;
 //-----------------------------------------------------------------------------
 function html_scene_click()
 //-----------------------------------------------------------------------------
@@ -788,5 +1020,50 @@ function html_scene_click()
 			g_strScene = l.value;
 			break;
 		}
+	}
+}
+//-----------------------------------------------------------------------------
+function html_reso_click()
+//-----------------------------------------------------------------------------
+{
+	var list = document.getElementsByName( "html_reso" ) ;
+	for ( let l of list )
+	{
+		if ( l.checked ) 
+		{
+			g_numReso = l.value*1;
+			break;
+		}
+	}
+}
+
+
+//-----------------------------------------------------------------------------
+function html_getValue_textid( id )	// input type="text" id="xxx" 用
+//-----------------------------------------------------------------------------
+{
+	return document.getElementById( id ).value * 1;
+}
+//-----------------------------------------------------------------------------
+function html_setValue_textid( id, val )	// input type="text" id="xxx" 用
+//-----------------------------------------------------------------------------
+{
+	document.getElementById( id ).value = val;
+}
+
+
+//-----------------------------------------------------------------
+function html_setFullscreen()
+//-----------------------------------------------------------------
+{
+	const obj = document.querySelector("#html_canvas"); 
+
+	if( document.fullscreenEnabled )
+	{
+		obj.requestFullscreen.call(obj);
+	}
+	else
+	{
+		alert("フルスクリーンに対応していません");
 	}
 }

@@ -5,7 +5,17 @@
 		<title>ray</title>
 	</head>
 	<body align="center">
-		<H2>javascript レイトレ ベンチ</H2>
+		<H2>javascript レイトレーシング ベンチ</H2>
+		<div class="buttons">
+			<input type="radio" name="html_scene" value="refract" onchange="html_scene_click();" 	>refract
+			<input type="radio" name="html_scene" value="colorballs" onchange="html_scene_click();" 			>colorballs
+			<input type="radio" name="html_scene" value="rasen" onchange="html_scene_click();" 	checked		>rasen
+			<input type="radio" name="html_scene" value="simple" onchange="html_scene_click();" 			>simple
+			<input type="radio" name="html_scene" value="3metals" onchange="html_scene_click();" 			>3metals
+			<input type="radio" name="html_scene" value="4balls" onchange="html_scene_click();" 			>4balls
+			<input type="button" value="スタート" onClick="update_scene()" >
+		</div>
+
 		<canvas id="html_canvas"  width="400" height="240" style="border:1px solid" ></canvas>
 		<canvas id="html_canvas2"  width="400" height="240" style="border:1px solid" ></canvas>
 		<canvas id="html_canvas3"  width="400" height="240" style="border:1px solid" ></canvas>
@@ -13,9 +23,16 @@
 		<script src="main.js"></script>
 
 		<br>
+
 	    <H2 id="message">累計時間</h2>
 	    <p style="font-family:monospace" id="message2"></p>
 
-		
+
+		<br>
+	    <p>～概要～</p>
+	    <p>javascriptによるレイトレーシングプログラム</p>
+	    <p>角度を変えて4カットレンダリング</p>
+	    <p>CPUのみで描画</p>
+
 	</body>
 </html>

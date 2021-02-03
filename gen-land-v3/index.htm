@@ -3,21 +3,55 @@
 	<head>
 		<meta charset="UTF-8">
 		<title>wld</title>
+		<style>
+			.group
+			{
+				display:inline-block; 
+				padding: 6px; 
+				border-radius: 7px; 
+				border:1px solid #aaa;
+				text-align:right;
+			}
+			.readme
+			{
+				display:inline-block; 
+				text-align:center;
+				font-size:12px;
+			}
+		</style>
 	</head>
 	<body align="center">
 		<H2>js 地形生成v3</H2>
-	  blur
-		<input type="text" id="blur" value="20" size="3" maxlength="3">
+
+		<div class="group">
+		  blur
+			A:<input type="text" id="html_blur1" value="400" size="3" >
+			B:<input type="text" id="html_blur2" value="40" size="3" >
+			C:<input type="text" id="html_blur3" value="1" size="3" >
+		</div>
+		<div class="group">
+		合成比率
+			A:<input type="text" id="html_bp1" value="8" size="3" >
+			B:<input type="text" id="html_bp2" value="4" size="3" >
+			C:<input type="text" id="html_bp3" value="1" size="3" >
+		</div>
+<!--
+	  雨量
+		<input type="text" id="rain" value="0" size="3" >
+	  雨数
+		<input type="text" id="rain2" value="3" size="3" >
+-->
 	  low
-		<input type="text" id="low" value="0.5" size="3" maxlength="3">
+		<input type="text" id="low" value="0.5" size="3" >
 	  col
-		<input type="text" id="col" value="4" size="3" maxlength="3">
+		<input type="text" id="col" value="6" size="3" >
 		<input type="button" value="param更新" onClick="hotstart()">
-	reso
-		<select id="html_combo">
+
+		<select id="html_size">
 			<option value="64" >64x64</option>
-			<option value="128" selected >128x128</option>
-			<option value="256">256x256</option>
+			<option value="128"  >128x128</option>
+			<option value="256" selected>256x256</option>
+			<option value="512">512x512</option>
 		</select>
 
 	  <input type="button" value="seed更新" onClick="window.onload()">
@@ -26,14 +60,19 @@
 		<canvas id="html_canvas1"  width="256" height="256" style="border:1px solid" ></canvas>
 		<canvas id="html_canvas2"  width="256" height="256" style="border:1px solid" ></canvas>
 		<canvas id="html_canvas3"  width="256" height="256" style="border:1px solid" ></canvas>
-		<canvas id="html_canvas4"  width="256" height="256" style="border:1px solid" ></canvas>
-		<canvas id="html_canvas5"  width="256" height="256" style="border:1px solid" ></canvas>
-		<canvas id="html_canvas6"  width="256" height="256" style="border:1px solid" ></canvas>
+		<canvas id="html_canvas5"  width="512" height="512" style="border:1px solid" ></canvas>
+		<canvas id="html_canvas6"  width="512" height="512" style="border:1px solid" ></canvas>
 		<script src="main.js"></script>
 		<br>
 
 		<img src="D9T1E1zVUAAMiuO.png" >
 
+		<div class="readme">
+			<p>～概要～</p>
+			<p>ランダムで生成したデータを</p>
+			<p>ABC/大中小の周波数で凸凹を作り合成</p>
+			<p>周波数が違う三つの画像を重ねることで、高低差とディティールのある山岳っぽい画面を作る実験</p>
+		</div>
 
 	</body>
 </html>

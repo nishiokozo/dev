@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>wld</title>
+		<style>
+			.group
+			{
+				display:inline-block; 
+				padding: 6px; 
+				border-radius: 7px; 
+				border:1px solid #aaa;
+				text-align:right;
+			}
+			.readme
+			{
+				display:inline-block; 
+				text-align:center;
+				font-size:12px;
+			}
+		</style>
+	</head>
+	<body align="center">
+		<H2>js 地形生成 ray</H2>
+
+
+		<!--2D-->
+		<div class="group">
+			<div class="group">
+			  blur
+				A:<input type="text" id="html_blur1" value="400" size="3" >
+				B:<input type="text" id="html_blur2" value="40" size="3" >
+				C:<input type="text" id="html_blur3" value="1" size="3" >
+			</div>
+			<div class="group">
+			合成比率
+				A:<input type="text" id="html_bp1" value="8" size="3" >
+				B:<input type="text" id="html_bp2" value="4" size="3" >
+				C:<input type="text" id="html_bp3" value="1" size="3" >
+			</div>
+
+		  low
+			<input type="text" id="low" value="0.5" size="3" >
+		  col
+			<input type="text" id="col" value="6" size="3" >
+			<input type="button" value="param更新" onClick="hotstart_2d()">
+
+			<select id="html_size">
+				<option value="64" >64x64</option>
+				<option value="128"  selected>128x128</option>
+				<option value="256" >256x256</option>
+				<option value="512">512x512</option>
+			</select>
+
+		  <input type="button" value="seed更新" onClick="main_2d()">
+
+		</div>
+
+
+<br>
+		<!--2D-->
+
+
+		<canvas id="html_canvas_2d"  width="288" height="288" style="border:1px solid" ></canvas>
+		<canvas id="html_canvas_ray"  width="512" height="288" style="border:1px solid" ></canvas>
+		<script src="main.js"></script>
+		<br>
+
+
+
+
+		<!--Raytrace-->
+		<div class="group">
+
+			<div class="group">
+				解像度
+				<input type="radio" name="html_reso" value="1" onchange="html_reso_click();update_scene_ray();" 	>1/1
+				<input type="radio" name="html_reso" value="0.5" onchange="html_reso_click();update_scene_ray();" 	>1/2
+				<input type="radio" name="html_reso" value="0.25" onchange="html_reso_click();update_scene_ray();" 	checked>1/4
+				<input type="radio" name="html_reso" value="0.125" onchange="html_reso_click();update_scene_ray();" 	>1/8
+				<input type="radio" name="html_reso" value="0.0625" onchange="html_reso_click();update_scene_ray();" 	>1/16
+			</div>
+
+				<input type="button" value="描画" onClick="update_scene_ray()" >
+
+			<br>
+
+
+			<div class="group">
+				表示画面<br>
+				幅 <input type="text" id="html_size_x" value="512" size="3" ><br>
+				高さ <input type="text" id="html_size_y" value="288" size="3" ><br>
+		    	反射 <input type="text" id="html_maxreflect" value="5" size="3" ><br>
+			</div>
+
+			<div class="group">
+			  視点 <br>
+				x <input type="text" id="html_eye_x" value="0.0" size="3" ><br>
+				y <input type="text" id="html_eye_y" value="4.5" size="3" ><br>
+				z <input type="text" id="html_eye_z" value="-9.0" size="3" ><br>
+			</div>
+			
+			<div class="group">
+			 注視点 <br>
+				x <input type="text" id="html_at_x" value="0.0" size="3" ><br>
+				y <input type="text" id="html_at_y" value="1.0" size="3" ><br>
+				z <input type="text" id="html_at_z" value="0.0" size="3" ><br>
+			</div>
+
+			<div class="group">
+			 画角 <input type="text" id="html_fovy" value="28.0" size="3" ><br>
+			 回転 <input type="text" id="html_rz" value="0.0" size="3" ><br>
+			</div>
+
+			
+			<div class="group">
+			描画時間<br>
+			    <a id="html_msec" ></a><br>
+			    <a id="html_fps" ></a>
+			</div>
+
+			<input type="button" value="フルスクリーン" onClick="html_setFullscreen()" >
+		</div>
+
+
+
+		<div class="readme">
+		</div>
+
+	</body>
+</html>
