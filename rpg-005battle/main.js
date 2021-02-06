@@ -577,13 +577,26 @@ let line_col = function( sx,sy, ex,ey, col )
 let line = function( sx,sy, ex,ey )
 //-----------------------------------------------------------------------------
 {
-	ctx.beginPath();
-	ctx.strokeStyle = g_flgNight?"#FFF":"#000";
-	ctx.lineWidth = 1.0;
-	ctx.moveTo( sx, sy );
-	ctx.lineTo( ex, ey );
-	ctx.closePath();
-	ctx.stroke();
+	if (0)
+	{
+		ctx.beginPath();
+		ctx.strokeStyle = g_flgNight?"#FFF":"#000";
+		ctx.lineWidth = 1.0;
+		ctx.moveTo( sx, sy );
+		ctx.lineTo( ex, ey );
+		ctx.closePath();
+		ctx.stroke();
+	}
+	else
+	{
+		ctx.beginPath();
+		ctx.moveTo( sx, sy );
+		ctx.lineTo( ex, ey );
+
+		ctx.strokeStyle = g_flgNight?"#FFF":"#000";
+		ctx.lineWidth = 1.0;
+		ctx.stroke();
+	}
 }
 //-----------------------------------------------------------------------------
 let line_bold = function( sx,sy, ex,ey )
