@@ -45,9 +45,9 @@ class GRA
 	
 
 		let adr = (y*this.img.width+x)*4;
-		this.img.data[ adr +1 ] = Math.floor(255*col.y); // G
-		this.img.data[ adr +0 ] = Math.floor(255*col.x); // R
-		this.img.data[ adr +2 ] = Math.floor(255*col.z); // B
+		this.img.data[ adr +1 ] = Math.floor(255*col.y); // g
+		this.img.data[ adr +0 ] = Math.floor(255*col.x); // r
+		this.img.data[ adr +2 ] = Math.floor(255*col.z); // b
 	}
 
 	//-----------------------------------------------------------------------------
@@ -295,7 +295,7 @@ function Raycast( P, I )
 		{
 			let t = - Math.sqrt( aa ) - b;
 
-			if ( t < 0 )
+			if ( t < 0 ) // 衝突距離tがマイナス、つまり視点Pより後ろの衝突は、レイがボールの中を通ってボールの奥で衝突したとみなす。
 			{
 				t = + Math.sqrt( aa ) - b;
 				stat++;
@@ -311,30 +311,49 @@ function Raycast( P, I )
 
 				sur.Q = vadd( vmul( I , new vec3(t,t,t) ) , P );
 
-				if ( stat == 3 )//Surface::STAT_BACK )
-				{
-					sur.N = vsub( new vec3(0,0,0), normalize( vsub( sur.Q , O ) ) );
-				}
-				else
-				{
-					sur.N = normalize( vsub( sur.Q , O ) );
-				}
-
 				sur.C					= obj.C;
 
 				sur.Rl					= reflect( I, sur.N );
 
-				sur.valReflectance		= obj.valReflectance;
+				if ( stat == 3 )//Surface::STAT_BACK )
+				{
+					// ボールから出射
+					sur.N = vsub( new vec3(0,0,0), normalize( vsub( sur.Q , O ) ) );
+					sur.valRefractive		= 1.0; // 球の外は空気（屈折率1.0)と想定
+				}
+				else
+				{
+					// ボールへ入射
+					sur.N = normalize( vsub( sur.Q , O ) );
+					sur.valRefractive		= obj.valRefractive;
+				}
 
-				sur.valRefractive		= obj.valRefractive;
+
+				sur.Rr					= refract( I, sur.N, 1.0/obj.valRefractive ); // 空気の屈折率は1.0（=真空）とみなしてる。
+
+				sur.valReflectance		= obj.valReflectance;	//
 
 				sur.valPower			= obj.valPower;
 
 				sur.valEmissive			= obj.valEmissive;
 
-				sur.valTransmittance	= obj.valTransmittance;
+				sur.valTransmittance	= obj.valTransmittance; // 不透明度 0~1  0.0で不透明 1.0で透明
 
 				sur.flg = true;
+
+
+				//	反射率r	valReflectance
+				//	拡散率d
+				//	吸収率t	valTransmittance = 透明率
+				//	光の強さl
+
+				// rr(refractance/屈折率)
+				// 空気		屈折率	1.0003
+				// 水		屈折率	1.3330
+				// ガラス	屈折率	1.4385
+				// ダイヤ	屈折率	2.4195
+
+
 			}
 		}
 	}
@@ -368,7 +387,9 @@ function Raycast( P, I )
 					sur.C = vmul( obj.C , new vec3(0.5,0.5,0.5) );
 				}
 	
-				sur.Rl = reflect( I, obj.N );
+				sur.Rl	 = reflect( I, obj.N );
+
+				sur.Rr	= 1.0; // 床に屈折はないとみなしている。
 	
 				sur.valReflectance = obj.valReflectance;
 
@@ -389,88 +410,111 @@ function Raycast( P, I )
 
 	return sur;
 }
-let g_flgTestRefract = false;
+
 //------------------------------------------------------------------------------
-function Raytrace( P, I )
+function Raytrace( P, I, nest , lgt )
 //------------------------------------------------------------------------------
 {
 	let ret = new vec3(0,0,0);
 
-	if ( g_cntRay > g_MaxReflect ) return ret;
-	g_cntRay++;
+	if ( nest > g_MaxReflect ) return ret;
 	
 	let sur = Raycast( P, I );
 	if ( sur.flg )
 	{
-		for ( let lgt of g_tblLight )
-		{
-			let mL	= normalize( vsub( lgt.P, sur.Q ) );	// -L
-			let l = dot( vsub( sur.Q , lgt.P) , vsub( sur.Q , lgt.P) ) ;
-			let Lc	= vdiv( lgt.C , new vec3(l,l,l) );
-			let r	= sur.valReflectance;
-			let	d	= Math.max( 0.0, dot( sur.N, mL ) );
-			let	s	= (sur.valPower+2)/(8*Math.PI) * Math.pow( Math.max( 0.0, dot( sur.Rl, mL ) ), sur.valPower );
-			let D   = new vec3(d,d,d);
-			let R   = new vec3(r,r,r);
-			let nR   = new vec3(1-r,1-r,1-r);	// negative R
-			let S   = new vec3(s,s,s);
-			{// 遮蔽物判定＆スペキュラ計算
-				let sur3 = Raycast( sur.Q, sur.Rl );
-				if ( sur3.flg )
-				{
-					s	*=  sur3.valTransmittance;
-				}
-			}
-
-			ret	 =	vadd( ret , vmul( R , vmul( vadd( Raytrace( sur.Q, sur.Rl ), S ) , Lc ) ) );
+		let mL	= normalize( vsub( lgt.P, sur.Q ) );	// -L
+		let l = dot( vsub( sur.Q , lgt.P) , vsub( sur.Q , lgt.P) ) ;
+		let Lc	= vdiv( lgt.C , new vec3(l,l,l) );
+		let r	= sur.valReflectance;
+		let	d	= Math.max( 0.0, dot( sur.N, mL ) );
+		let	s	= (sur.valPower+2)/(8*Math.PI) * Math.pow( Math.max( 0.0, dot( sur.Rl, mL ) ), sur.valPower );
 
 
-			{// 遮蔽物判定＆デフューズ計算
-				let sur2 = Raycast( sur.Q, mL );
-				if ( sur2.flg )
-				{
-					d	*=  sur2.valTransmittance;
-				}
-			}
-				
-			if ( sur.valTransmittance == 0.0 )
+		{// 遮蔽物判定:スペキュラ
+			let sur3 = Raycast( sur.Q, sur.Rl );
+			if ( sur3.flg )
 			{
-				ret = vadd( ret, vmul( vmul( nR , ( vmul( D , sur.C ) ) ) , Lc) );
+				s	*=  sur3.valTransmittance;
+			}
+		}
+
+		ret	 =	vadd( ret , vmul( new vec3(r,r,r) , vmul( vadd( Raytrace( sur.Q, sur.Rl, nest+1, lgt ), new vec3(s,s,s) ) , Lc ) ) );
+
+
+		// 拡散光d=(1-反射率)
+
+		function calc_refract( sur )
+		{
+			// 屈折計算
+			let rt = (1-r)*sur.valTransmittance; //吸収率,透明率
+			let rd = 1-r-rt; // 拡散率
+
+			let surR = Raycast( sur.Q, sur.Rr );
+
+			let Lt = Raytrace( surR.Q, surR.Rr, nest+1, lgt ); 		// 透過光
+
+			let a = Math.pow( sur.valTransmittance, surR.t ); 		// 減衰率
+
+			let Ct = vmul( vmul( new vec3(a,a,a) , sur.C ) , Lt ); 	// 透過光カラー
+
+			let Cd = vmul( vmul( new vec3(d,d,d) , sur.C ) , Lc );	// 拡散カラー
+
+			let ct = vmul( new vec3(rt,rt,rt), Ct ) //透過光
+			let dt = vmul( new vec3(rd,rd,rd), Cd ) //拡散光
+
+			return vadd( ct, dt );
+		}
+
+		function calc_defuse( sur )
+		{
+			return vmul( vmul( new vec3(1-r,1-r,1-r) ,  vmul( new vec3(d,d,d) , sur.C ) ) , Lc);
+		}
+
+		if ( sur.valTransmittance > 0.0 )
+		{
+			// 屈折計算
+			ret = vadd( ret, calc_refract( sur ) );
+		}
+		else
+		{
+			// 遮蔽物判定:デフューズ
+			let sur2 = Raycast( sur.Q, mL );
+			if ( sur2.flg )
+			{
+				// 影の中
+
+				if ( sur2.valTransmittance > 0 )
+				{
+					// 遮蔽物が半透明
+
+					let Lr = calc_refract( sur2 ); // 透過光
+					
+					ret = vadd( ret, vmul( vmul( new vec3(1-r,1-r,1-r) ,  vmul( new vec3(d,d,d) , sur.C ) ) , Lr ) );
+
+				}
 			}
 			else
 			{
-				if( g_flgTestRefract )
-				{
-					let I2 = refract( I, sur.N, sur.valRefractive/1.0 ); // 空気の屈折率は1.0とみなしてる。
-					let surR = Raycast( sur.Q, I2 );
+				// 影の外
 
-					let I3 = refract( I2, surR.N, 1.0/(sur.valRefractive+0.001) );// 空気の屈折率は1.0とみなしてる。
-					let C = Raytrace( surR.Q, I3 ); 
-					let v = (1-r) * Math.pow( sur.valTransmittance, surR.t); // 減衰率の計算
-					let c = vmul( new vec3(v,v,v) , C );
-					ret = vadd( ret, c );
-
-				}
-				else
-				{
-					I = refract( I, sur.N, sur.valRefractive/1.0 ); // 空気の屈折率は1.0とみなしてる。
-					sur = Raycast( sur.Q, I );
-
-					let tm = sur.valTransmittance;
-
-					I = refract( I, sur.N, 1.0/(sur.valRefractive+0.001) );// 空気の屈折率は1.0とみなしてる。
-					let C = Raytrace( sur.Q, I ); 
-					let c = vadd( ret, vmul( new vec3(1-r,1-r,1-r) , C ) ); 
-					let a = Math.pow(tm,sur.t); // 透明率と球体の中を光のとおった距離で累乗する。
-					ret = vadd( ret, vmul( new vec3(a,a,a) , c ) );
-
-				}
+				// デフューズ計算
+				ret = vadd( ret, calc_defuse( sur ) );
 			}
 		}
 	}
 	else
 	{
-		// アンビエント
+		//どこにも衝突しなかった場合。光源が直接返る
+
+		let mL	= normalize( vsub( lgt.P, P ) );	// -L
+		let l = dot( vsub( P , lgt.P) , vsub( P , lgt.P) ) ;
+		let Lc	= vdiv( lgt.C , new vec3(l,l,l) );
+		let	s	= Math.max( 0.0, dot( I, mL ) );
+		s	= Math.pow( s, 100000 ); //10000乗は適当な値
+
+
+		ret	 =	vmul( new vec3(s,s,s), Lc );
+//		ret	 =	Lc;
 	}
 
 
@@ -489,6 +533,21 @@ function initScene( n )
 
 	switch(n)
 	{
+	case "grass":
+		{
+			// rr(refractance/屈折率)
+			// 空気		屈折率	1.0003
+			// 水		屈折率	1.3330
+			// ガラス	屈折率	1.4385
+			// ダイヤ	屈折率	2.4195
+			g_tblPlate.push( new Plate( new vec3( 0   ,  0 , 0 ), normalize(new vec3(0, 1,0))  , new vec3(0.8, 0.8, 0.8), 0.0, 1.0, 20, 0.0, 0.0 ) );
+
+			g_tblSphere.push( new Sphere(new vec3(1.75,1.0 , 0 ), 1.0 , new vec3(1.0, 1.0, 1.0), rl=0.0, rr=1.4, pw=200, 0.0, tm=1.0 ) );
+
+			g_tblLight.push( new Light( new vec3( 20  , 12 , 0 ), new vec3( 800, 800, 800) ) );
+		}
+		break;
+
 	case "spot":
 		{
 		//	X,Y,Z,CR,CG,CB,R,RF,KF,OW,KV
@@ -601,43 +660,8 @@ function initScene( n )
 		}
 		break;
 
-	case "refract2":
-		{
-			g_tblPlate.push( new Plate( new vec3( 0   ,  0 ,  0    ), normalize(new vec3(0, 1,0))  , new vec3(0.8, 0.8, 0.8), 0.5, 1.0, 20, 0.0, 0.0 ) );
-//	constructor( _P, _r, _C, _valReflection, _valRefractive, _valPower, _valEmissive, _valTransmittance )
 
-			g_tblSphere.push( new Sphere(new vec3(-6.0 , 1.0 , 8 ),   1.0 , new vec3(1.0, 0.1, 1.0) , 0.0, 0.0, 20, 0.0, 0.0 ) );
-			g_tblSphere.push( new Sphere(new vec3(-4.0 , 1.0 , 8 ),   1.0 , new vec3(1.0, 1.0, 0.1) , 0.0, 0.0, 20, 0.0, 0.0 ) );
-			g_tblSphere.push( new Sphere(new vec3(-2.0 , 1.0 , 8 ),   1.0 , new vec3(1.0, 0.1, 0.1) , 0.0, 0.0, 20, 0.0, 0.0 ) );
-			g_tblSphere.push( new Sphere(new vec3(-0.0 , 1.0 , 8 ),   1.0 , new vec3(0.1, 1.0, 0.1) , 0.0, 0.0, 20, 0.0, 0.0 ) );
-			g_tblSphere.push( new Sphere(new vec3( 2.0 , 1.0 , 8 ),   1.0 , new vec3(0.1, 0.1, 1.0) , 0.0, 0.0, 20, 0.0, 0.0 ) );
-			g_tblSphere.push( new Sphere(new vec3( 4.0 , 1.0 , 8 ),   1.0 , new vec3(0.1, 1.0, 1.0) , 0.0, 0.0, 20, 0.0, 0.0 ) );
-			g_tblSphere.push( new Sphere(new vec3( 6.0 , 1.0 , 8 ),   1.0 , new vec3(1.0, 1.0, 1.0) , 0.0, 0.0, 20, 0.0, 0.0 ) );
-
-			g_tblSphere.push( new Sphere(new vec3(-5.0 , 1.0 , 4),   1.0 , new vec3(0.7, 0.7, 0.7), 0.0, 0.9, 20, 0.0, 1.0 ) );
-			g_tblSphere.push( new Sphere(new vec3(-3.0 , 1.0 , 4),   1.0 , new vec3(0.7, 0.7, 0.7), 0.0, 0.8, 20, 0.0, 1.0 ) );
-			g_tblSphere.push( new Sphere(new vec3(-1.0 , 1.0 , 4),   1.0 , new vec3(0.7, 0.7, 0.7), 0.0, 0.6, 20, 0.0, 1.0 ) );
-			g_tblSphere.push( new Sphere(new vec3( 1.0 , 1.0 , 4),   1.0 , new vec3(0.7, 0.7, 0.7), 0.0, 0.4, 20, 0.0, 1.0 ) );
-			g_tblSphere.push( new Sphere(new vec3( 3.0 , 1.0 , 4),   1.0 , new vec3(0.7, 0.7, 0.7), 0.0, 0.2, 20, 0.0, 1.0 ) );
-			g_tblSphere.push( new Sphere(new vec3( 5.0 , 1.0 , 4),   1.0 , new vec3(0.7, 0.7, 0.7), 0.0, 0.1, 20, 0.0, 1.0 ) );
-			g_tblLight.push( new Light( new vec3( 0   ,  20 ,  0 ), new vec3(800, 800, 800) ) );
-		}
-		break;
 	case "refract":
-		if( 0 && g_flgTestRefract )
-		{
-			g_tblPlate.push( new Plate( new vec3( 0   ,  0 ,  0    ), normalize(new vec3(0, 1,0))  , new vec3(0.8, 0.8, 0.8), 0.5, 1.0, 20, 0.0, 0.0 ) );
-
-
-//			g_tblSphere.push( new Sphere(new vec3( 0.0 , 1.0 , 0),   1.0 , new vec3(0.0, 0.0, 0.0), rl=0.0, rr=0.5, pw=1, 0.0, tm=1.0 ) );
-			g_tblSphere.push( new Sphere(new vec3( 0.0 , 1.0 ,0),   1.0 , new vec3(0.0, 0.0, 0.0), rl=0.0, rr=0.8, pw=200, 0.0, tm=0.5) );
-
-				g_tblLight.push( new Light( new vec3( 0   ,  20 ,  0 ), new vec3(   0,   0,800) )  );
-				g_tblLight.push( new Light( new vec3( 0   ,  20 ,  0 ), new vec3(   0,800, 0) )  );
-				g_tblLight.push( new Light( new vec3( 0   ,  20 ,  0 ), new vec3(800,   0,   0) )  );
-
-		}
-		else
 		{
 			g_tblPlate.push( new Plate( new vec3( 0   ,  0 ,  0    ), normalize(new vec3(0, 1,0))  , new vec3(0.8, 0.8, 0.8), 0.5, 1.0, 20, 0.0, 0.0 ) );
 			g_tblSphere.push( new Sphere(new vec3( 0.0 , 1.25, 0      +0),   0.5 , new vec3(1  , 0.2, 0.2), 0.2, 1.0, 60, 0.0, 0.0 ) );
@@ -646,26 +670,25 @@ function initScene( n )
 			g_tblSphere.push( new Sphere(new vec3(-0.5 , 0.5 , +0.433 +0),   0.5 , new vec3(0.0, 1.0, 0.0), 0.2, 1.0, 60, 0.0, 0.0 ) );
 
 
-			g_tblSphere.push( new Sphere(new vec3(-1.0 , 1.0 ,-2),   1.0 , new vec3(0.0, 0.0, 0.0), rl=0.1, rr=0.96, pw=200, 0.0, tm=0.8 ) );
-			g_tblSphere.push( new Sphere(new vec3( 1.0 , 1.0 ,+2),   1.0 , new vec3(0.0, 0.0, 0.0), rl=0.1, rr=0.5, pw=200, 0.0, tm=0.8) );
+			g_tblSphere.push( new Sphere(new vec3(-1.0 , 1.0 ,-2),   1.0 , new vec3(1.0, 1.0, 1.0), rl=0.1, rr=0.96, pw=200, 0.0, tm=0.7 ) );
+			g_tblSphere.push( new Sphere(new vec3( 1.0 , 1.0 ,+2),   1.0 , new vec3(1.0, 1.0, 1.0), rl=0.1, rr=0.5, pw=200, 0.0, tm=0.7) );
 			g_tblLight.push( new Light( new vec3( 0   ,  20 ,  0 ), new vec3(800, 800, 800) ) );
+
+//				g_tblLight.push( new Light( new vec3( 11   ,  20 ,  13 ), new vec3(   0,   0,800) )  );
+//				g_tblLight.push( new Light( new vec3( 12   ,  20 ,  12 ), new vec3(   0,800, 0) )  );
+//				g_tblLight.push( new Light( new vec3( 13   ,  20 ,  11 ), new vec3(800,   0,   0) )  );
 
 		}
 
 		
 		break;
 
-	case "grasslight":
+	case "grassball":
 		{
-			g_tblPlate.push( new Plate( new vec3( 0   ,  0 ,  0    ), normalize(new vec3(0, 1,0))  , new vec3(0.8, 0.8, 0.8), 0.5, 1.0, 20, 0.0, 0.0 ) );
-			g_tblSphere.push( new Sphere(new vec3(-1.0 , 1.0 ,0),   1.0 , new vec3(0.7, 0.7, 0.7), rl=0.0, rr=0.96, pw=200, 0.0, tm=0.8 ) );
-			g_tblSphere.push( new Sphere(new vec3( 1.0 , 1.0 ,0),   1.0 , new vec3(0.7, 0.7, 0.7), rl=0.0, rr=0.5, pw=200, 0.0, tm=0.8) );
+			g_tblPlate.push( new Plate( new vec3( 0   ,  0 ,  0    ), normalize(new vec3(0, 1,0))  , new vec3(0.8, 0.8, 0.8), 0.0, 1.0, 20, 0.0, 0.0 ) );
+			g_tblSphere.push( new Sphere(new vec3( 2.0 , 1.0 ,2),   1.0 , new vec3(1.0, 1.0, 1.0), rl=0.1, rr=0.75, pw=200, 0.0, tm=0.5 ) );
 
-//				g_tblLight.push( new Light( new vec3(-20   ,  40 ,  0 ), new vec3(   0,   0,400) )  );
-//				g_tblLight.push( new Light( new vec3( 30   ,  40 ,  0 ), new vec3(   0,400,   0) )  );
-				g_tblLight.push( new Light( new vec3( 10   ,  40 ,  0 ), new vec3(400,   0,   0) )  );
-
-			g_tblLight.push( new Light( new vec3( 0   ,  20 ,  0 ), new vec3(800, 800, 800) ) );
+			g_tblLight.push( new Light( new vec3( 20   ,  12 , 20 ), new vec3(1800, 1800, 1800) ) );
 
 		}
 		break;
@@ -677,11 +700,14 @@ function initScene( n )
 			g_tblSphere.push( new Sphere(P=new vec3(-0.5,1.0,0.0)	,r=0.5  ,C=new vec3(0.0,1.0,0.0),rl=0.3,rr=1.0 ,pw=70,e=10.0,tm=0.0 ) );
 			g_tblSphere.push( new Sphere(P=new vec3( 0.0,1.5,0.0)	,r=0.5  ,C=new vec3(1.0,0.0,0.0),rl=0.3,rr=1.0 ,pw=70,e=10.0,tm=0.0 ) );
 			g_tblSphere.push( new Sphere(P=new vec3( 0.0,0.5,0.0)	,r=0.5  ,C=new vec3(1.0,1.0,0.0),rl=0.3,rr=1.0 ,pw=70,e=10.0,tm=0.0 ) );
-			g_tblSphere.push( new Sphere(P=new vec3( 0.0,1.0,0.0)	,r=0.5 ,C=new vec3(1.0,1.0,1.0),rl=0.3,rr=1.0 ,pw=70,e=10.0,tm=0.0 ) );
+			g_tblSphere.push( new Sphere(P=new vec3( 0.0,1.0,0.0)	,r=0.5 ,C=new vec3(1.0,1.0,1.0),rl=0.1,rr=1.0 ,pw=70,e=10.0,tm=0.0 ) );
 			g_tblLight.push( new Light( P=new vec3( 1.0 ,15, 0 ) ,C=new vec3(360,360,360) )  );
 				g_tblLight.push( new Light( new vec3(-20   ,  40 , 10 ), new vec3(   0,   0,400) )  );
 				g_tblLight.push( new Light( new vec3( 30   ,  40 ,  0 ), new vec3(   0,400,   0) )  );
 				g_tblLight.push( new Light( new vec3( 10   ,  40 , 20 ), new vec3(400,   0,   0) )  );
+//				g_tblLight.push( new Light( new vec3(-20   ,  20 , 10 ), new vec3(   0,   0,1800) )  );
+//				g_tblLight.push( new Light( new vec3( 30   ,  20 ,  0 ), new vec3(   0,1800,   0) )  );
+//				g_tblLight.push( new Light( new vec3( 10   ,  20 , 20 ), new vec3(1800,   0,   0) )  );
 		}
 		break;
 	}
@@ -766,8 +792,6 @@ function paint( gra, rot )
 	{
 		for( let px = 0 ; px < gra.img.width ; px++ )
 		{
-			g_cntRay = 0;
-
 			let x = (px / gra.img.width)*aspect *2.0-1.0*aspect;
 			let y = (py / gra.img.height) *2.0-1.0;
 
@@ -779,7 +803,12 @@ function paint( gra, rot )
 			I = rotPitch( I, rx );
 			I = rotYaw( I, ry );
 
-	 		let C = Raytrace( P, I );
+			let nest = 0;
+			let C = new vec3(0,0,0);
+			for ( let lgt of g_tblLight )
+			{
+		 		C = vadd( C, Raytrace( P, I, nest+1, lgt ) );
+			}
 			gra.pset( px, gra.img.height-py, C );
 		}
 	}
@@ -810,6 +839,7 @@ function update_paint()
 		document.getElementById("html_msec").innerHTML = ""+(time).toFixed()+"msec";
 		document.getElementById("html_fps").innerHTML = ""+(60/(time/(1000/60))).toFixed()+" fps";
 
+	g_flgUpdated = true;
 }
 
 
@@ -828,6 +858,7 @@ function update_scene()
 
 	update_paint();
 }
+/*
 //------------------------------------------------------------------------------
 function update_start()
 //------------------------------------------------------------------------------
@@ -835,6 +866,10 @@ function update_start()
 	// レイトレ結果以外の更新を促すために１フレーム開ける。
 	requestAnimationFrame( update_scene );
 };
+*/
+
+let g_reqId;
+let g_flgUpdated = false;
 //------------------------------------------------------------------------------
 window.onload = function( e )
 //------------------------------------------------------------------------------
@@ -855,7 +890,7 @@ window.onload = function( e )
 
 
 	// レンダリング開始
-	requestAnimationFrame( update_start );
+	g_reqId = window.requestAnimationFrame( update_scene );
 
 }
 //-----------------------------------------------------------------------------
@@ -869,6 +904,8 @@ function rad( v )
 window.onkeydown = function( ev )
 //-----------------------------------------------------------------------------
 {
+	if ( g_flgUpdated == false ) return; // 描画優先にする場合。描画優先にするとフレームオーバーすると一瞬停止する。キー優先にするとフレームが跳ぶ。
+
 	const	KEY_TAB	= 9;
 	const	KEY_CR	= 13;
 	const	KEY_0	= 48;	//0x30
@@ -997,7 +1034,9 @@ window.onkeydown = function( ev )
 		document.getElementById( "html_rz" ).value = (rz * 180 /Math.PI).toFixed();
 	}
 
-	requestAnimationFrame( update_paint );
+	window.cancelAnimationFrame( g_reqId ); // キー優先にする場合は描画待ちをキャンセル。
+	g_reqId = window.requestAnimationFrame( update_paint );
+	g_flgUpdated = false;
 }
 
 
@@ -1005,8 +1044,6 @@ let g_tblLight = [];
 let g_tblSphere = [];
 let g_tblPlate = [];
 let g_MaxReflect;
-
-let g_cntRay = 0;
 
 let g_strScene="";
 let g_numReso=1.0;
