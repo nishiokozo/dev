@@ -672,7 +672,7 @@ class Sphere
 };
 
 //------------------------------------------------------------------------------
-function vnormalize( v )
+function normalize( v )
 //------------------------------------------------------------------------------
 {
 	let s = 1/Math.sqrt( v.x*v.x + v.y*v.y + v.z*v.z );
@@ -837,11 +837,11 @@ function Raycast( P, I )
 
 				if ( stat == 3 )//Surface::STAT_BACK )
 				{
-					sur.N = vsub( new vec3(0,0,0), vnormalize( vsub( sur.Q , O ) ) );
+					sur.N = vsub( new vec3(0,0,0), normalize( vsub( sur.Q , O ) ) );
 				}
 				else
 				{
-					sur.N = vnormalize( vsub( sur.Q , O ) );
+					sur.N = normalize( vsub( sur.Q , O ) );
 				}
 
 				sur.C					= obj.C;
@@ -928,7 +928,7 @@ function Raytrace( P, I )
 	{
 		for ( let lgt of g_tblLight )
 		{
-			let mL	= vnormalize( vsub( lgt.P, sur.Q ) );	// -L
+			let mL	= normalize( vsub( lgt.P, sur.Q ) );	// -L
 			let l = dot( vsub( sur.Q , lgt.P) , vsub( sur.Q , lgt.P) ) ;
 			let Lc	= vdiv( lgt.C , new vec3(l,l,l) );
 			let r	= sur.valReflectance;
@@ -1089,7 +1089,7 @@ function paint_ray( gra, rot )
 			let y = (py / gra.img.height) *2.0-1.0;
 
 			let P = posEye;
-			let I =  vnormalize( new vec3( x, y, sz ) );
+			let I =  normalize( new vec3( x, y, sz ) );
 			
 
 			I = rotRoll( I, rz );

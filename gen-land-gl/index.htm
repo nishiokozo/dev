@@ -17,18 +17,20 @@
 				display:inline-block; 
 				text-align:center;
 				font-size:12px;
+				font-family:monospace;
 			}
 		</style>
 	</head>
-	<body align="center">
-		<H2>js 地形生成 GL</H2>
+	<body align="center" style="font-family:monospace">
+		<H2 style="font-family:sans-serif">js 地形生成 GL</H2>
 
 
+	<div class="group">
 		<div class="group">
 		  blur
 			A:<input type="text" id="html_blur1" value="400" size="3" >
 			B:<input type="text" id="html_blur2" value="40" size="3" >
-			C:<input type="text" id="html_blur3" value="1" size="3" >
+			C:<input type="text" id="html_blur3" value="2" size="3" >
 		</div>
 		<div class="group">
 		合成比率
@@ -47,23 +49,45 @@
 
 	  回転
 		<input type="text" id="yaw" value="45" size="3" >
-		<input type="button" value="フルスクリーン" onClick="html_setFullscreen()" >
 -->
 	  地面
-		<input type="text" id="low" value="0.5" size="3" >
+		<input type="text" id="low" value="0.4" size="3" >
 	  隆起
 		<input type="text" id="rate" value="0.1" size="3" >
+	  諧調
+		<input type="text" id="col" value="255" size="3" >
 
 		<input type="button" value="param更新" onClick="html_updateParam()">
+	</div>
 
-		<select id="html_size">
-			<option value="64" >64x64</option>
-			<option value="128" selected >128x128</option>
-			<option value="256" >256x256</option>
-			<option value="512">512x512</option>
-		</select>
+	<div class="group">
+
+	
+			reso
+			<select id="html_reso">
+				
+				<option value="64" >64x64</option>
+				<option value="128"  selected>128x128</option>
+				<option value="200" >200x200</option>
+			</select>
+
+
+
+			block
+			<select id="html_block">
+				<option value="0" selected>1x1</option>
+				<option value="1"  >3x3</option>
+				<option value="2" >5x5</option>
+				<option value="3" >7x7</option>
+			</select>
+
+			    <a id="html_out" >aaa</a>
 
 	  <input type="button" value="seed更新" onClick="html_updateSeed()">
+	</div>
+	  自動回転
+		<input type="text" id="yaw" value="0.1" size="3" >
+		<input type="button" value="フルスクリーン" onClick="html_setFullscreen()" >
 
 <br>
 		<canvas id="html_canvas1"  width="128" height="128" style="border:1px solid" ></canvas>
@@ -71,7 +95,22 @@
 		<canvas id="html_canvas3"  width="128" height="128" style="border:1px solid" ></canvas>
 		<canvas id="html_canvas5"  width="128" height="128" style="border:1px solid" ></canvas>
 <br>
+<!--
+	  <input type="button" value="param&seed更新" onClick="html_updateAll()">
+			tex
+			<select id="html_size">
+				<option value="64" selected>64x64</option>
+				<option value="128"  >128x128</option>
+				<option value="200" >200x200</option>
+				<option value="254" >254x254</option>
+				<option value="400" >400x400</option>
+				<option value="800" >800x800</option>
+				<option value="1600" >1600x1600</option>
+			</select>
+		<canvas id="html_canvas" width="1280" height="720"  style="border: 1px solid" ></canvas>
 		<canvas id="html_canvas" width="640" height="360"  style="border: 1px solid" ></canvas>
+-->
+		<canvas id="html_canvas" width="960" height="540"  style="border: 1px solid" ></canvas>
 
 <br>
 
@@ -84,6 +123,16 @@
 			<p>ABC/大中小の周波数で凸凹を作り合成</p>
 			<p>周波数が違う三つの画像を重ねることで、高低差とディティールのある山岳っぽい画面を作る実験</p>
 			<p>javascriptで生成して地形データをwebGLで描画</p>
+
+			<br>
+			<p>～リアルタイム操作～</p>
+			<p>上下移動 : W  S or（アナログレバー左）</p>
+			<p>左右移動 : A  D or（アナログレバー左）</p>
+			<p>前後移動 : R  F or（トリガボタン左右）</p>
+			<p>左右回転 :← → or（アナログレバー右）</p>
+			<p>上下回転 :↑ ↓ or（アナログレバー右）</p>
+			
+			
 		</div>
 
 	</body>
