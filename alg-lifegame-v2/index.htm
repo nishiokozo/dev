@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>alg</title>
+		<style>
+			.group
+			{
+				display:inline-block; 
+				padding: 6px; 
+				border-radius: 7px; 
+				border:1px solid #aaa;
+				text-align:right;
+			}
+			.readme
+			{
+				display:inline-block; 
+				text-align:center;
+				font-size:12px;
+				font-family:monospace;
+			}
+			.button
+			{
+				display:inline-block; 
+				text-align:center;
+				font-size:14px;
+				font-family:monospace;
+			}
+
+		</style>
+	</head>
+	<body align="center"  >
+		<H2 style="font-family:sans-serif">Life Game v2</H2>
+
+
+
+
+
+		<div class="group">
+	
+			<select id="html_reso" class="button" >
+				<option value="32" >32x32</option>
+				<option value="64" selected>64x64</option>
+				<option value="128" >128x128</option>
+				<option value="256" >256x256</option>
+				<option value="512" >512x512</option>
+			</select>
+			<input type="text" id="html_landval" value="0.5" size="3" class="button" >
+			<input type="button" value="地形変更" onClick="html_updateSize()" class="button" >
+		</div>
+		<div class="group">
+		Life
+			<input type="button" value="クリア" onClick="html_updateClear()" class="button" >
+			<div class="group">
+				<input type="text" id="html_randval" value="0.5" size="3" class="button" >
+				<input type="button" value="ランダム" onClick="html_updateSeed()" class="button" >
+			</div>
+			<input type="button" value="編集保存" onClick="html_updateStore()" class="button" >
+		</div>
+		<div class="group">
+
+			<div class="group">
+
+				<input type="text" id="html_speed" value="200" size="3" class="button" >ms
+
+				<input type="checkbox" name="html_auto" onClick="html_updateAuto()">auto
+
+			</div>
+
+			<input type="button" value="reset" onClick="html_updateReset()" class="button" >
+
+			<input type="button" value="next" onClick="html_updateNext()" class="button" >
+
+			世代<input type="text" id="html_gen" value="0" size="3" class="button" >
+
+		</div>
+			<input type="button" value="フルスクリーン" onClick="html_updateFullscreen()" class="button" >
+<!--
+			<input type="button" value="フルスクリーン" onClick="html_updateFullscreen()" class="button" >
+		<canvas id="html_canvas_land"  width="256" height="256" style="border:1px solid" ></canvas>
+		<canvas id="html_canvas_v2"  width="256" height="256" style="border:1px solid" ></canvas>
+-->
+		
+		<br>
+		<canvas id="html_canvas"  width="384" height="384" style="border:1px solid" ></canvas>
+		<canvas id="html_canvasB"  width="384" height="384" style="border:1px solid" ></canvas>
+		<br>
+		<br>
+
+		<script src="main.js"></script>
+		<br>
+
+		<div class="readme">
+			<p>～概要～</p>
+			<p>ライフゲーム 1970年にイギリスの数学者ジョン・ホートン・コンウェイが考案した生命の誕生、進化、淘汰などのプロセスを簡易的なモデルで再現したシミュレーションゲームである。(Wikipedia)<p>
+
+			<p>地形のある場合（左）と、無い場合（右）でどんな変化があるか確認する実験</p>
+
+			<p>～操作～</p>
+			<p>黒い画面をマウスクリックで描画</p>
+			<p>カーソル→を押しても世代進行</p>
+			
+
+			</p>
+
+		</div>
+
+	</body>
+</html>
