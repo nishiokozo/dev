@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>btl</title>
+	</head>
+	<body align="center">
+		<canvas id="html_canvas"  width="512" height="384" style="border:1px solid" ></canvas>
+		<script src="main.js"></script>
+		<br>
+
+
+<div align="left" style="font-family:monospace">
+		<input name="hoge" type="radio" value="r" onchange="tmp()" checked> A:乱数r<br>
+		<input name="hoge" type="radio" value="(r+r)/2" onchange="tmp()" > B:(r+r)/2<br>
+		<input name="hoge" type="radio" value="(r+r+r)/3" onchange="tmp()"> C:(r+r+r)/3<br>
+		<input name="hoge" type="radio" value="(A+B)/2" onchange="tmp()"> D:(A+B)/2<br>
+		<input name="hoge" type="radio" value="(A+C)/2" onchange="tmp()"> E:(A+C)/2<br>
+		<input name="hoge" type="radio" value="(B+C)/2" onchange="tmp()"> F:(B+C)/2<br>
+		<input name="hoge" type="radio" value="A*B" onchange="tmp()"> G:A*B<br>
+		<input name="hoge" type="radio" value="A*C" onchange="tmp()"> H:A*C<br>
+		<input name="hoge" type="radio" value="B*C" onchange="tmp()"> I:B*C<br>
+</div>
+
+	</body>
+</html>

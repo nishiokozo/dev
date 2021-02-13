@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>alg</title>
+		<style>
+			.group
+			{
+				display:inline-block; 
+				padding: 6px; 
+				border-radius: 7px; 
+				border:1px solid #aaa;
+				text-align:right;
+			}
+			.readme
+			{
+				display:inline-block; 
+				text-align:center;
+				font-size:12px;
+				font-family:monospace;
+			}
+			.button
+			{
+				display:inline-block; 
+				text-align:center;
+				font-size:14px;
+				font-family:monospace;
+			}
+
+		</style>
+	</head>
+	<body align="center"  >
+		<H2 style="font-family:sans-serif">js Life Game</H2>
+
+
+<!--
+	<div class="group">
+
+		<div class="group">
+		  blur
+			A:<input type="text" id="html_blur1" value="400" size="3" >
+			B:<input type="text" id="html_blur2" value="40" size="3" >
+			C:<input type="text" id="html_blur3" value="2" size="3" >
+		</div>
+		<div class="group">
+		合成比率
+			A:<input type="text" id="html_bp1" value="8" size="3" >
+			B:<input type="text" id="html_bp2" value="4" size="3" >
+			C:<input type="text" id="html_bp3" value="1" size="3" >
+		</div>	  雨量
+		<input type="text" id="rain" value="1" size="3" >
+	  雨数
+		<input type="text" id="rain2" value="3" size="3" >
+	  地面
+		<input type="text" id="low" value="0.4" size="3" >
+	  諧調
+		<input type="text" id="col" value="255" size="3" >
+
+		<input type="button" value="param更新" onClick="html_updateParam()">
+
+	</div>
+
+
+		X: <span id="html_offsetX"		>0</span>px / Y: <span id="html_offsetY"	>0</span>px<br>
+		button: <span id="html_button">-</span><br>
+
+			ペン色
+		<div class="group">
+			<input name="html_radio" type="radio" onchange="html_updatePen(1)" checked>白
+			<input name="html_radio" type="radio" onchange="html_updatePen(0)" >黒
+		</div>
+			<div class="group">
+				reso
+				x:<input type="text" id="html_reso_x" value="64" size="3" class="button" >
+				y:<input type="text" id="html_reso_y" value="64" size="3" class="button" >
+				<input type="button" value="更新" onClick="html_updateReso()" class="button" >
+			</div>
+
+
+-->
+
+
+
+
+		<div class="group">
+	
+			<select id="html_reso" class="button" >
+				<option value="32" >32x32</option>
+				<option value="64" selected>64x64</option>
+				<option value="128" >128x128</option>
+				<option value="256" >256x256</option>
+				<option value="512" >512x512</option>
+			</select>
+
+			<input type="button" value="クリア" onClick="html_updateClear()" class="button" >
+			<input type="button" value="ランダム" onClick="html_updateSeed()" class="button" >
+			<input type="button" value="編集保存" onClick="html_updateStore()" class="button" >
+		</div>
+		<div class="group">
+
+			<div class="group">
+
+				<input type="text" id="html_speed" value="200" size="3" class="button" >ms
+
+				<input type="checkbox" name="html_auto" onClick="html_updateAuto()">auto
+
+			</div>
+
+			<input type="button" value="reset" onClick="html_updateReset()" class="button" >
+
+			<input type="button" value="next" onClick="html_updateNext()" class="button" >
+
+			世代<input type="text" id="html_gen" value="0" size="3" class="button" >
+
+		</div>
+
+			<input type="button" value="フルスクリーン" onClick="html_updateFullscreen()" class="button" >
+		
+		<br>
+		<canvas id="html_canvas"  width="512" height="512" style="border:1px solid" ></canvas>
+		<br>
+		<br>
+
+		<script src="main.js"></script>
+		<br>
+
+		<div class="readme">
+			<p>～概要～</p>
+			<p>(Wikipedia)ライフゲーム 1970年にイギリスの数学者ジョン・ホートン・コンウェイが考案した生命の誕生、進化、淘汰などのプロセスを簡易的なモデルで再現したシミュレーションゲームである。<p>
+
+			<p>～操作～</p>
+			<p>黒い画面をマウスクリックで描画</p>
+			<p>カーソル→を押しても世代進行</p>
+			
+
+			</p>
+
+		</div>
+
+	</body>
+</html>
