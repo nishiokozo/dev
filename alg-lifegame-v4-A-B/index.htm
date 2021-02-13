@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>alg</title>
+		<style>
+			.group
+			{
+				display:inline-block; 
+				padding: 6px; 
+				border-radius: 7px; 
+				border:1px solid #aaa;
+				text-align:right;
+			}
+			.readme
+			{
+				display:inline-block; 
+				text-align:center;
+				font-size:12px;
+				font-family:monospace;
+			}
+			.button
+			{
+				display:inline-block; 
+				text-align:center;
+				font-size:14px;
+				font-family:monospace;
+			}
+
+		</style>
+	</head>
+	<body align="center"  >
+		<H2 style="font-family:sans-serif">Life Game v4</H2>
+
+
+
+
+
+		<div class="group">
+	
+			<select id="html_reso" class="button" >
+				<option value="32" >32x32</option>
+				<option value="48" selected>48x48</option>
+				<option value="64" >64x64</option>
+				<option value="128" >128x128</option>
+				<option value="256" >256x256</option>
+				<option value="512" >512x512</option>
+			</select>
+			<input type="text" id="html_landval" value="0.0" size="3" class="button" >
+			<input type="button" value="地形変更" onClick="html_updateSize()" class="button" >
+		</div>
+		<div class="group">
+			Life
+			<input type="button" value="クリア" onClick="html_updateClear()" class="button" >
+			<div class="group">
+				<input type="text" id="html_randval" value="0.5" size="3" class="button" >
+				<input type="button" value="ランダム" onClick="html_updateSeed()" class="button" >
+			</div>
+			<input type="button" value="編集保存" onClick="html_updateStore()" class="button" >
+				<input type="checkbox" name="html_bold" >太pen
+				<input type="checkbox" name="html_black" >黒pen
+				<input type="checkbox" name="html_symmetry" >対称pen
+		</div>
+		<div class="group">
+
+			<div class="group">
+
+				<input type="text" id="html_speed" value="200" size="3" class="button" >ms
+
+				<input type="checkbox" name="html_auto" onClick="html_updateAuto()">auto
+
+			</div>
+
+			<input type="button" value="reset" onClick="html_updateReset()" class="button" >
+
+			<input type="button" value="next" onClick="html_updateNext()" class="button" >
+
+			世代<input type="text" id="html_gen" value="0" size="3" class="button" >
+
+		</div>
+			<input type="button" value="フルスクリーン" onClick="html_updateFullscreen()" class="button" >
+<!--
+			<div class="group">
+				ペン
+				<input name="html_radio" type="radio" value="0" onchange="html_updatePen(1)" checked>day
+				<input name="html_radio" type="radio" value="1" onchange="html_updatePen(2)" >night
+			</div>
+
+			<input type="button" value="フルスクリーン" onClick="html_updateFullscreen()" class="button" >
+		<canvas id="html_canvas_land"  width="256" height="256" style="border:1px solid" ></canvas>
+		<canvas id="html_canvas_v2"  width="256" height="256" style="border:1px solid" ></canvas>
+		<canvas id="html_canvasB"  width="384" height="384" style="border:1px solid" ></canvas>
+		<canvas id="html_canvas"  width="384" height="384" style="border:1px solid" ></canvas>
+		<canvas id="html_canvasA"  width="384" height="384" style="border:1px solid" ></canvas>
+		<canvas id="html_canvasB"  width="384" height="384" style="border:1px solid" ></canvas>
+-->
+		
+		<br>
+		<canvas id="html_canvasA"  width="256" height="256" style="border:1px solid" ></canvas>
+		<canvas id="html_canvasB"  width="256" height="256" style="border:1px solid" ></canvas>
+		<br>
+			<input type="button" value="A→Bコピー" onClick="html_updateCopy()" class="button" >
+		<br>
+		<canvas id="html_canvasC"  width="256" height="256" style="border:1px solid" ></canvas>
+
+		<script src="main.js"></script>
+		<br>
+
+		<div class="readme">
+			<p>～概要～</p>
+			<p>何もないところの周囲に『同じ陣営の』生命が３つ居たら新たに誕生</p>
+			<p>生命の周囲に１つ以下しか生命がいなければ過疎死</p>
+			<p>生命の周囲に４つ以上の生命が居たら過密死</p>
+			<p>このルールを繰り返す。</p>
+
+			<br>
+
+			<p>～操作～</p>
+			<p>A画面にマウスクリックにて描画</p>
+			<p>『next』ボタンかカーソル→にて世代進行</p>
+			<p>『auto』チェックボックスで自動進行</p>
+			<p>『黒pen』チェックボックスで黒陣営を追加できる</p>
+			<p>地形変更の際数値を0以上にすると地形（障害物）が現れる</p>
+
+			
+
+			</p>
+
+		</div>
+
+	</body>
+</html>
