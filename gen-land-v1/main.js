@@ -1,4 +1,3 @@
-//let g2=html_canvas2.getContext('2d');
 
 //-----------------------------------------------------------------------------
 function rand( n ) // n=3以上が正規分布
@@ -43,22 +42,7 @@ class Gra
 			this.img.data[ adr +3 ] = 0xff;
 		}
 	}
-/*
-	//-----------------------------------------------------------------------------
-	pset( x, y, val )
-	//-----------------------------------------------------------------------------
-	{
-		let adr = (y*this.img.width+x)*4;
-		this.img.data[ adr+3 ] = val?0:0xff;
-	}
-	//-----------------------------------------------------------------------------
-	point( x, y )
-	//-----------------------------------------------------------------------------
-	{
-		let adr = (y*this.img.width+x)*4;
-		return this.img.data[ adr+3 ]?0:1;
-	}
-*/
+
 	//-----------------------------------------------------------------------------
 	pseta( x, y, val )
 	//-----------------------------------------------------------------------------
@@ -71,15 +55,7 @@ class Gra
 		this.img.data[ adr+1 ] = val;
 		this.img.data[ adr+2 ] = val;
 	}
-/*
-	//-----------------------------------------------------------------------------
-	pointa( x, y )
-	//-----------------------------------------------------------------------------
-	{
-		let adr = (y*this.img.width+x)*4;
-		return this.img.data[ adr+3 ];
-	}
-*/
+
 	//-----------------------------------------------------------------------------
 	streach()
 	//-----------------------------------------------------------------------------
@@ -228,14 +204,14 @@ function calc_autolevel( buf )
 	let max = Number.MIN_SAFE_INTEGER;
 	let min = Number.MAX_SAFE_INTEGER;
 
-	for ( let i = 0 ; i < SZ*SZ ; i++ )
+	for ( let i = 0 ; i < g_SZ*g_SZ ; i++ )
 	{
 		let a = buf[i];
 		max = Math.max( max, a );
 		min = Math.min( min, a );
 	}
 	let rate = 1.0/(max-min);
-	for ( let i = 0 ; i < SZ*SZ ; i++ )
+	for ( let i = 0 ; i < g_SZ*g_SZ ; i++ )
 	{
 		buf[i] = (buf[i] - min)*rate;
 	}
@@ -246,7 +222,7 @@ function calc_autolevel( buf )
 function calc_parapolize( buf, n )
 //-----------------------------------------------------------------------------
 {
-	for ( let i = 0 ; i < SZ*SZ ; i++ )
+	for ( let i = 0 ; i < g_SZ*g_SZ ; i++ )
 	{
 		let a = buf[i];
 		for ( let i = 0 ; i < n ; i++ )
@@ -264,50 +240,37 @@ function calc_parapolize( buf, n )
 	}
 }
 
-const SZ = 64*1;
-let g_buf = new Array( SZ*SZ );
 //-----------------------------------------------------------------------------
-function genSeed()
+function genSeed( SZ )
 //-----------------------------------------------------------------------------
 {
+	let buf = new Array( SZ*SZ );
+	
+	
 	// ランダムの種作成
 	for ( let i = 0 ; i < SZ*SZ ; i++ )
 	{
-		g_buf[i] = rand(1);
+		buf[i] = rand(1);
 	}
 
 	function pset( x, y, val )
 	{
-		g_buf[ (y*SZ+x) ] = val;
+		buf[ (y*SZ+x) ] = val;
 	}
 	
 	//	pset( 10,10,11);
+
+	return buf;
 }
 
+
+
 //-----------------------------------------------------------------------------
-function main0()
+function update_land( buf0, SZ )
 //-----------------------------------------------------------------------------
 {
 	// ランダムの種をコピー
-	let buf = Array.from(g_buf);
-
-	{
-		// 画面作成
-		let gra = new Gra( SZ, SZ, html_canvas1 );
-		// 画面クリア
-		gra.cls(0);
-		// 画面描画
-		draw_buf( gra, buf );
-		// 画面をキャンバスへ転送
-		gra.streach();
-	}
-}
-//-----------------------------------------------------------------------------
-function main1()
-//-----------------------------------------------------------------------------
-{
-	// ランダムの種をコピー
-	let buf = Array.from(g_buf);
+	let buf = Array.from( buf0 );
 
 	// 3x3ブラーフィルタ作成
 	let pat33 = pat_normalize(
@@ -344,9 +307,10 @@ function main1()
 		buf[i] *= 5;
 	}
 
+
 	{
 		// 画面作成
-		let gra = new Gra( SZ, SZ, html_canvas1 );
+		let gra = new Gra( SZ, SZ, html_canvas );
 		// 画面クリア
 		gra.cls(0);
 		// 画面描画
@@ -354,99 +318,14 @@ function main1()
 		// 画面をキャンバスへ転送
 		gra.streach();
 	}
-}
-//-----------------------------------------------------------------------------
-function main2()
-//-----------------------------------------------------------------------------
-{
-	// 3x3ブラーフィルタ作成
-	let pat33 = pat_normalize(
-	[
-		[1,2,1],
-		[2,4,2],
-		[1,2,1],
-	]);
-	// 5x5ガウスブラーフィルタ作成
-//	let pat55 = pat_normalize( pat_gauss2d( 5, 1 ) );
-	// 9x9ガウスブラーフィルタ作成
-	let pat99 = pat_normalize(pat_gauss2d( 9, 2 ) );
-
-	function drawCanvas( canvas )
-	{
-		// 画面作成
-		let gra = new Gra( SZ, SZ, canvas );
-		// 画面クリア
-		gra.cls(0);
-		// 画面描画
-		draw_buf( gra, buf );
-		// 画面をキャンバスへ転送
-		gra.streach();
-
-		// canvasのID表示
-		gra.print(0,gra.canvas.height, canvas.id );
-	}
-	
-	//--
-	
-	// ランダムの種をコピー
-	let buf = Array.from(g_buf);
-	drawCanvas( html_canvas0 );
-
-	// ブラーフィルタ適用
-	for ( let i = 0 ; i <10 ; i++ ) 	buf = pat_calc( buf, pat33, SZ, SZ );
-//	for ( let i = 0 ; i <1 ; i++ ) 	buf = pat_calc( buf, pat99, SZ, SZ );
-	drawCanvas( html_canvas1 );
-
-	// 自動レベル調整 0～1.0の範囲に正規化
-	calc_autolevel( buf );
-	drawCanvas( html_canvas2 );
-
-	// ローパスフィルタ
-	{
-		let val = 0.5;
-		for ( let i = 0 ; i < SZ*SZ ; i++ )
-		{
-			if ( buf[i] < val ) buf[i] = val;
-		}
-	}
-	drawCanvas( html_canvas3 );
-
-	// 自動レベル調整 0～1.0の範囲に正規化
-	calc_autolevel( buf );
-	drawCanvas( html_canvas4 );
-
-	// パラポライズ
-	calc_parapolize( buf, 4 );
-	drawCanvas( html_canvas5 );
 
 }
-
-//-----------------------------------------------------------------------------
-function html_getChecked( name )
-//-----------------------------------------------------------------------------
-{
-	var list = document.getElementsByName( name );
-	for ( let l of list ) 
-	{
-		if ( l.checked ) return l;
-	}
-	return undefined;
-}
-
-//-----------------------------------------------------------------------------
-function hotstart()
-//-----------------------------------------------------------------------------
-{
-	let radio = html_getChecked( "html_radio" ); 
-	if ( radio.value == 0 ) main0();
-	if ( radio.value == 1 ) main1();
-	if ( radio.value == 2 ) main2();
-
-}
+const g_SZ = 64*1;
+let g_buf = new Array( g_SZ*g_SZ );
 //-----------------------------------------------------------------------------
 window.onload = function( e )
 //-----------------------------------------------------------------------------
 {
-	genSeed();
-	hotstart();
+	g_buf = genSeed( g_SZ );
+	update_land( g_buf, g_SZ );
 }

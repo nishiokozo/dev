@@ -94,7 +94,7 @@ class vec3
 
 class Plate
 {
-	constructor( _p, _n, _c, _valReflection, _valRefractive, _valPower, _valEmissive, _valTransmittance )
+	constructor( _p, _n, _c, _valReflection, _valRefractive, _valPower, _valEmissive, _valTransmittance, valFresnel )
 	{
 		this.P					= _p;
 		this.N					= _n;
@@ -104,6 +104,7 @@ class Plate
 		this.valPower			= _valPower;
 		this.valEmissive		= _valEmissive;
 		this.valTransmittance	= _valTransmittance;
+		this.valFresnel			= valFresnel;	
 	};
 };
 
@@ -139,13 +140,14 @@ class	Surface
 		this.valPower			= 0.0;
 		this.valEmissive		= 0.0;
 		this.valTransmittance	= 0.0;
+		this.valFresnel			= 0.0;	
 
 	}
 };
 
 class Sphere
 {
-	constructor( _P, _r, _C, _valReflection, _valRefractive, _valPower, _valEmissive, _valTransmittance )
+	constructor( _P, _r, _C, _valReflection, _valRefractive, _valPower, _valEmissive, _valTransmittance, valFresnel )
 	{
 		this.P					= _P;
 		this.r					= _r;
@@ -155,6 +157,7 @@ class Sphere
 		this.valPower			= _valPower;
 		this.valEmissive		= _valEmissive;
 		this.valTransmittance	= _valTransmittance;
+		this.valFresnel			= valFresnel;	
 	};
 };
 
@@ -338,6 +341,8 @@ function Raycast( P, I )
 
 				sur.valTransmittance	= obj.valTransmittance;
 
+				sur.valFresnel			= obj.valFresnel;
+
 				sur.flg = true;
 			}
 		}
@@ -385,6 +390,8 @@ function Raycast( P, I )
 				sur.valEmissive = obj.valEmissive;
 
 				sur.valTransmittance = obj.valTransmittance;
+
+				sur.valFresnel			= obj.valFresnel;
 
 				sur.flg = true;
 			}
@@ -506,11 +513,21 @@ function initScene( n )
 	g_tblSphere = [];
 	g_tblPlate = [];
 
-	let P,C,N,rl,rr,pw,e,tm,r,l;
+	let P,C,N,rl,rr,pw,e,tm,r,l,fn;
 
 	switch(n)
 	{
 	case "grass":
+		{
+			g_tblPlate.push( new Plate( new vec3( 0   ,  0 , 0 ), normalize(new vec3(0, 1,0))  , new vec3(0.8, 0.8, 0.8), 0.0, 1.0, 20, 0.0, 0.0,fn=0.0 ) );
+
+			g_tblSphere.push( new Sphere(new vec3(1.75,1.0 , 0 ), 1.0 , new vec3(1.0, 1.0, 1.0), rl=0.0, rr=1.4, pw=200, 0.0, tm=1.0,fn=0.0 ) );
+
+			g_tblLight.push( new Light( new vec3( 20  , 12 , 0 ), new vec3( 800, 800, 800) ) );
+		}
+		break;
+
+	case "grassball":
 		{
 			// rr(refractance/屈折率)
 			// 空気		屈折率	1.0003
@@ -519,27 +536,8 @@ function initScene( n )
 			// アクリル	屈折率	1.49~1.53
 			// ガラス	屈折率	1.51	一般的なガラス
 			// ダイヤ	屈折率	2.4195
-			g_tblPlate.push( new Plate( new vec3( 0   ,  0 , 0 ), normalize(new vec3(0, 1,0))  , new vec3(0.8, 0.8, 0.8), 0.0, 1.0, 20, 0.0, 0.0 ) );
-
-			g_tblSphere.push( new Sphere(new vec3(1.75,1.0 , 0 ), 1.0 , new vec3(1.0, 1.0, 1.0), rl=0.0, rr=1.4, pw=200, 0.0, tm=1.0 ) );
-
-			g_tblLight.push( new Light( new vec3( 20  , 12 , 0 ), new vec3( 800, 800, 800) ) );
-		}
-		break;
-	case "grassball2":
-		{
-			g_tblPlate.push( new Plate( new vec3( 0   ,  0 ,  0    ), normalize(new vec3(0, 1,0))  , new vec3(0.8, 0.8, 0.8), 0.0, 1.0, 20, 0.0, 0.0 ) );
-			g_tblSphere.push( new Sphere(new vec3( 2.0 , 1.0 ,2),   1.0 , new vec3(0.0, 0.0, 1.0), rl=0.5, rr=1.5, pw=200, 0.0, tm=0.5 ) );
-
-			g_tblLight.push( new Light( new vec3( 20   ,  12 , 20 ), new vec3(1800, 1800, 1800) ) );
-
-		}
-		break;
-	case "grassball":
-		{
-			g_tblPlate.push( new Plate( new vec3( 0   ,  0 ,  0    ), normalize(new vec3(0, 1,0))  , new vec3(0.8, 0.8, 0.8), 0.0, 1.0, 20, 0.0, 0.0 ) );
-			g_tblSphere.push( new Sphere(new vec3( 2.0 , 1.0 ,2),   1.0 , new vec3(1.0, 1.0, 1.0), rl=0.1, rr=1.5, pw=200, 0.0, tm=0.5 ) );
-
+			g_tblPlate.push( new Plate( new vec3( 0   ,  0 ,  0    ), normalize(new vec3(0, 1,0))  , new vec3(0.8, 0.8, 0.8), 0.0, 1.0, 20, 0.0, 0.0,fn=0.0 ) );
+			g_tblSphere.push( new Sphere(new vec3( 2.0 , 1.0 ,2),   1.0 , new vec3(1.0, 1.0, 1.0), rl=0.1, rr=1.5, pw=200, 0.0, tm=0.5,fn=0.0 ) );
 			g_tblLight.push( new Light( new vec3( 20   ,  12 , 20 ), new vec3(1800, 1800, 1800) ) );
 
 		}
@@ -549,7 +547,7 @@ function initScene( n )
 		{
 		//	X,Y,Z,CR,CG,CB,Rl,RF,KF,OW,KV
 		// _P, _r, _C, _valReflection, _valRefractive, _valPower, _valEmissive, _valTransmittance )
-			g_tblPlate.push( new Plate( P=new vec3( 0  ,  0 ,0.0),N=new vec3(0,1,0),C=new vec3(0.8,0.8,0.8),rl=0.5,rr=1.0 ,pw=20,e= 0.0,tm=0.0 ) );
+			g_tblPlate.push( new Plate( P=new vec3( 0  ,  0 ,0.0),N=new vec3(0,1,0),C=new vec3(0.8,0.8,0.8),rl=0.5,rr=1.0 ,pw=20,e= 0.0,tm=0.0,fn=0.0 ) );
 
 			let sphere =
 			[
@@ -569,6 +567,7 @@ function initScene( n )
 					,pw=a.pw
 					,e= 0.0
 					,tm=0.0 
+					,fn=0.0
 				) );
 			}
 
@@ -589,11 +588,11 @@ function initScene( n )
 
 	case "4balls":
 		{
-			g_tblPlate.push( new Plate( P=new vec3( 0  ,  0 ,0.0),N=new vec3(0,1,0),C=new vec3(0.8,0.8,0.8),rl=0.5,rr=1.0 ,pw=20,e= 0.0,tm=0.0 ) );
-			g_tblSphere.push( new Sphere(new vec3( 0.0 , 1.25, 0       ),   0.5 , new vec3(1  , 0.2, 0.2), 0.5, 1.0, 40, 0.0, 0.0 ) );
-			g_tblSphere.push( new Sphere(new vec3( 0.0 , 0.5 , -0.433 ),   0.5 , new vec3(0.0, 0.0, 0.0), 1.0, 1.0, 40, 0.0, 0.0 ) );
-			g_tblSphere.push( new Sphere(new vec3( 0.5 , 0.5 , +0.433 ),   0.5 , new vec3(0.2, 0.2, 1.0), 0.5, 1.0, 40, 0.0, 0.0 ) );
-			g_tblSphere.push( new Sphere(new vec3(-0.5 , 0.5 , +0.433 ),   0.5 , new vec3(0.0, 1.0, 0.0), 0.5, 1.0, 40, 0.0, 0.0 ) );
+			g_tblPlate.push( new Plate( P=new vec3( 0  ,  0 ,0.0),N=new vec3(0,1,0),C=new vec3(0.8,0.8,0.8),rl=0.5,rr=1.0 ,pw=20,e= 0.0,tm=0.0,fn=0.0 ) );
+			g_tblSphere.push( new Sphere(new vec3( 0.0 , 1.25, 0       ),   0.5 , new vec3(1  , 0.2, 0.2), 0.5, 1.0, 40, 0.0, 0.0,fn=0.0 ) );
+			g_tblSphere.push( new Sphere(new vec3( 0.0 , 0.5 , -0.433 ),   0.5 , new vec3(0.0, 0.0, 0.0), 1.0, 1.0, 40, 0.0, 0.0,fn=0.0 ) );
+			g_tblSphere.push( new Sphere(new vec3( 0.5 , 0.5 , +0.433 ),   0.5 , new vec3(0.2, 0.2, 1.0), 0.5, 1.0, 40, 0.0, 0.0,fn=0.0 ) );
+			g_tblSphere.push( new Sphere(new vec3(-0.5 , 0.5 , +0.433 ),   0.5 , new vec3(0.0, 1.0, 0.0), 0.5, 1.0, 40, 0.0, 0.0,fn=0.0 ) );
 			l=40;g_tblLight.push( new Light( new vec3( 4   ,  2 , -1 ), new vec3(0.6*l, 0.8*l, 1.0*l) ) );
 			l=10;g_tblLight.push( new Light( new vec3( -1  ,  2 ,  -3 ), new vec3(1.0*l, 0.8*l, 0.6*l) ) );
 		}
@@ -601,12 +600,12 @@ function initScene( n )
 
 	case "5metals":
 		{
-			g_tblPlate.push( new Plate( P=new vec3( 0  ,  0 ,0.0),N=new vec3(0,1,0),C=new vec3(0.8,0.8,0.8),rl=0.5,rr=1.0 ,pw=120,e= 0.0,tm=0.0 ) );
-			g_tblSphere.push( new Sphere(new vec3(-2.0 , 0.5 , 0 ),   0.5 , new vec3(0.0, 0.0, 0.0), 1.0 , 1.0, 120, 0.0, 0.0 ) );
-			g_tblSphere.push( new Sphere(new vec3(-1.0 , 0.5 , 0 ),   0.5 , new vec3(0.0, 0.0, 0.0), 0.75, 1.0, 120, 0.0, 0.0 ) );
-			g_tblSphere.push( new Sphere(new vec3( 0.0 , 0.5 , 0 ),   0.5 , new vec3(0.0, 0.0, 0.0), 0.5 , 1.0, 120, 0.0, 0.0 ) );
-			g_tblSphere.push( new Sphere(new vec3( 1.0 , 0.5 , 0 ),   0.5 , new vec3(0.0, 0.0, 0.0), 0.25, 1.0, 120, 0.0, 0.0 ) );
-			g_tblSphere.push( new Sphere(new vec3( 2.0 , 0.5 , 0 ),   0.5 , new vec3(0.0, 0.0, 0.0), 0.05, 1.0, 120, 0.0, 0.0 ) );
+			g_tblPlate.push( new Plate( P=new vec3( 0  ,  0 ,0.0),N=new vec3(0,1,0),C=new vec3(0.8,0.8,0.8),rl=0.5,rr=1.0 ,pw=120,e= 0.0,tm=0.0,fn=0.0 ) );
+			g_tblSphere.push( new Sphere(new vec3(-2.0 , 0.5 , 0 ),   0.5 , new vec3(0.0, 0.0, 0.0), 1.0 , 1.0, 120, 0.0, 0.0,fn=0.0 ) );
+			g_tblSphere.push( new Sphere(new vec3(-1.0 , 0.5 , 0 ),   0.5 , new vec3(0.0, 0.0, 0.0), 0.75, 1.0, 120, 0.0, 0.0,fn=0.0 ) );
+			g_tblSphere.push( new Sphere(new vec3( 0.0 , 0.5 , 0 ),   0.5 , new vec3(0.0, 0.0, 0.0), 0.5 , 1.0, 120, 0.0, 0.0,fn=0.0 ) );
+			g_tblSphere.push( new Sphere(new vec3( 1.0 , 0.5 , 0 ),   0.5 , new vec3(0.0, 0.0, 0.0), 0.25, 1.0, 120, 0.0, 0.0,fn=0.0 ) );
+			g_tblSphere.push( new Sphere(new vec3( 2.0 , 0.5 , 0 ),   0.5 , new vec3(0.0, 0.0, 0.0), 0.05, 1.0, 120, 0.0, 0.0,fn=0.0 ) );
 			g_tblLight.push( new Light( new vec3( 0   ,  20 ,  0 ), new vec3(800,800,800) ) );
 
 			//	g_tblLight.push( new Light( new vec3(-20   ,  40 , 10 ), new vec3(   0,   0,400) )  );
@@ -617,8 +616,8 @@ function initScene( n )
 
 	case "rasen":
 		{ 
-			g_tblPlate.push( new Plate( P=new vec3( 0  ,  0 ,0.0),N=new vec3(0,1,0),C=new vec3(0.8,0.8,0.8),rl=0.5,rr=1.0 ,pw=20,e= 0.0,tm=0.0 ) );
-			g_tblSphere.push( new Sphere(  new vec3( 0 , 1.0 , 0 ),   0.5 ,  new vec3(0.0, 0.0, 0.0),   0.5,   1.0 ,  120,  0.0,  0.0 ) );
+			g_tblPlate.push( new Plate( P=new vec3( 0  ,  0 ,0.0),N=new vec3(0,1,0),C=new vec3(0.8,0.8,0.8),rl=0.5,rr=1.0 ,pw=20,e= 0.0,tm=0.0,fn=0.0 ) );
+			g_tblSphere.push( new Sphere(  new vec3( 0 , 1.0 , 0 ),   0.5 ,  new vec3(0.0, 0.0, 0.0),   0.5,   1.0 ,  120,  0.0,  0.0,fn=0.0 ) );
 			let	max = 16*3;
 			for ( let i = 0 ; i < max ; i++ )
 			{
@@ -627,7 +626,7 @@ function initScene( n )
 				let	x = Math.cos(th);
 				let	z = Math.sin(th) ;
 				let	y = Math.cos(th2) +1.2;
-				g_tblSphere.push( new Sphere(P=new vec3( x , y , z ),r=0.2 ,C=new vec3( x, y,  z) ,rl=0.2,rr=0.0 ,pw=60,e= 0.0,tm=0.0 ) );
+				g_tblSphere.push( new Sphere(P=new vec3( x , y , z ),r=0.2 ,C=new vec3( x, y,  z) ,rl=0.2,rr=0.0 ,pw=60,e= 0.0,tm=0.0,fn=0.0 ) );
 			}
 
 
@@ -650,51 +649,30 @@ function initScene( n )
 
 	case "twinballs":
 		{
-			g_tblPlate.push( new Plate( new vec3( 0   ,  0 ,  0    ), normalize(new vec3(0, 1,0))  , new vec3(0.8, 0.8, 0.8), 0.5, 1.0, 20, 0.0, 0.0 ) );
-			g_tblSphere.push( new Sphere(new vec3(-1.0 , 1.0 , 0 ),   1.0 , new vec3(1.0, 0.5, 0.5), 0.2, 1.0, 20, 0.0, 0.0 ) );
-			g_tblSphere.push( new Sphere(new vec3( 1.0 , 1.0 , 0 ),   1.0 , new vec3(0.0, 0.0, 0.0), 0.2, 1.0, 20, 0.0, 0.0 ) );
+			g_tblPlate.push( new Plate( new vec3( 0   ,  0 ,  0    ), normalize(new vec3(0, 1,0))  , new vec3(0.8, 0.8, 0.8), 0.5, 1.0, 20, 0.0, 0.0,fn=0.0 ) );
+			g_tblSphere.push( new Sphere(new vec3(-1.0 , 1.0 , 0 ),   1.0 , new vec3(1.0, 0.5, 0.5), 0.2, 1.0, 20, 0.0, 0.0,fn=0.0 ) );
+			g_tblSphere.push( new Sphere(new vec3( 1.0 , 1.0 , 0 ),   1.0 , new vec3(0.0, 0.0, 0.0), 0.2, 1.0, 20, 0.0, 0.0,fn=0.0 ) );
 			g_tblLight.push( new Light( new vec3( 0   ,  20 ,  0 ), new vec3(800, 800, 800) ) );
 		}
 		break;
 
-	case "refract2":
-		{
-			g_tblPlate.push( new Plate( new vec3( 0   ,  0 ,  0    ), normalize(new vec3(0, 1,0))  , new vec3(0.8, 0.8, 0.8), 0.5, 1.0, 20, 0.0, 0.0 ) );
-//	constructor( _P, _r, _C, _valReflection, _valRefractive, _valPower, _valEmissive, _valTransmittance )
 
-			g_tblSphere.push( new Sphere(new vec3(-6.0 , 1.0 , 8 ),   1.0 , new vec3(1.0, 0.1, 1.0) , 0.0, 0.0, 20, 0.0, 0.0 ) );
-			g_tblSphere.push( new Sphere(new vec3(-4.0 , 1.0 , 8 ),   1.0 , new vec3(1.0, 1.0, 0.1) , 0.0, 0.0, 20, 0.0, 0.0 ) );
-			g_tblSphere.push( new Sphere(new vec3(-2.0 , 1.0 , 8 ),   1.0 , new vec3(1.0, 0.1, 0.1) , 0.0, 0.0, 20, 0.0, 0.0 ) );
-			g_tblSphere.push( new Sphere(new vec3(-0.0 , 1.0 , 8 ),   1.0 , new vec3(0.1, 1.0, 0.1) , 0.0, 0.0, 20, 0.0, 0.0 ) );
-			g_tblSphere.push( new Sphere(new vec3( 2.0 , 1.0 , 8 ),   1.0 , new vec3(0.1, 0.1, 1.0) , 0.0, 0.0, 20, 0.0, 0.0 ) );
-			g_tblSphere.push( new Sphere(new vec3( 4.0 , 1.0 , 8 ),   1.0 , new vec3(0.1, 1.0, 1.0) , 0.0, 0.0, 20, 0.0, 0.0 ) );
-			g_tblSphere.push( new Sphere(new vec3( 6.0 , 1.0 , 8 ),   1.0 , new vec3(1.0, 1.0, 1.0) , 0.0, 0.0, 20, 0.0, 0.0 ) );
-
-			g_tblSphere.push( new Sphere(new vec3(-5.0 , 1.0 , 4),   1.0 , new vec3(0.7, 0.7, 0.7), 0.0, 0.9, 20, 0.0, 1.0 ) );
-			g_tblSphere.push( new Sphere(new vec3(-3.0 , 1.0 , 4),   1.0 , new vec3(0.7, 0.7, 0.7), 0.0, 0.8, 20, 0.0, 1.0 ) );
-			g_tblSphere.push( new Sphere(new vec3(-1.0 , 1.0 , 4),   1.0 , new vec3(0.7, 0.7, 0.7), 0.0, 0.6, 20, 0.0, 1.0 ) );
-			g_tblSphere.push( new Sphere(new vec3( 1.0 , 1.0 , 4),   1.0 , new vec3(0.7, 0.7, 0.7), 0.0, 0.4, 20, 0.0, 1.0 ) );
-			g_tblSphere.push( new Sphere(new vec3( 3.0 , 1.0 , 4),   1.0 , new vec3(0.7, 0.7, 0.7), 0.0, 0.2, 20, 0.0, 1.0 ) );
-			g_tblSphere.push( new Sphere(new vec3( 5.0 , 1.0 , 4),   1.0 , new vec3(0.7, 0.7, 0.7), 0.0, 0.1, 20, 0.0, 1.0 ) );
-			g_tblLight.push( new Light( new vec3( 0   ,  20 ,  0 ), new vec3(800, 800, 800) ) );
-		}
-		break;
 	case "refract":
 		{
-			g_tblPlate.push( new Plate( new vec3( 0   ,  0 ,  0    ), normalize(new vec3(0, 1,0))  , new vec3(0.8, 0.8, 0.8), 0.5, 1.0, 20, 0.0, 0.0 ) );
+			g_tblPlate.push( new Plate( new vec3( 0   ,  0 ,  0    ), normalize(new vec3(0, 1,0))  , new vec3(0.8, 0.8, 0.8), 0.5, 1.0, 20, 0.0, 0.0,fn=0.0 ) );
 //	constructor( _P, _r, _C, _valReflection, _valRefractive, _valPower, _valEmissive, _valTransmittance )
 			// valTransmittance 長さ1辺りの減衰率。0.9なら距離1で90％の明るさになる
 //	let P,C,N,rl,rr,pw,e,tm,r,l;
 
-//			g_tblSphere.push( new Sphere(new vec3(-0.0 , 1.0 , 8 ),   1.0 , new vec3(0.1, 1.0, 0.1) , 0.0, 0.0, 20, 0.0, 0.0 ) );
-			g_tblSphere.push( new Sphere(new vec3( 0.0 , 1.25, 0      +0),   0.5 , new vec3(1  , 0.2, 0.2), 0.2, 1.0, 60, 0.0, 0.0 ) );
-			g_tblSphere.push( new Sphere(new vec3( 0.0 , 0.5 , -0.433 +0),   0.5 , new vec3(1.0, 1.0, 0.2), 0.2, 1.0, 60, 0.0, 0.0 ) );
-			g_tblSphere.push( new Sphere(new vec3( 0.5 , 0.5 , +0.433 +0),   0.5 , new vec3(0.2, 0.2, 1.0), 0.2, 1.0, 60, 0.0, 0.0 ) );
-			g_tblSphere.push( new Sphere(new vec3(-0.5 , 0.5 , +0.433 +0),   0.5 , new vec3(0.0, 1.0, 0.0), 0.2, 1.0, 60, 0.0, 0.0 ) );
+//			g_tblSphere.push( new Sphere(new vec3(-0.0 , 1.0 , 8 ),   1.0 , new vec3(0.1, 1.0, 0.1) , 0.0, 0.0, 20, 0.0, 0.0,fn=0.0 ) );
+			g_tblSphere.push( new Sphere(new vec3( 0.0 , 1.25, 0      +0),   0.5 , new vec3(1  , 0.2, 0.2), 0.2, 1.0, 60, 0.0, 0.0,fn=0.0 ) );
+			g_tblSphere.push( new Sphere(new vec3( 0.0 , 0.5 , -0.433 +0),   0.5 , new vec3(1.0, 1.0, 0.2), 0.2, 1.0, 60, 0.0, 0.0,fn=0.0 ) );
+			g_tblSphere.push( new Sphere(new vec3( 0.5 , 0.5 , +0.433 +0),   0.5 , new vec3(0.2, 0.2, 1.0), 0.2, 1.0, 60, 0.0, 0.0,fn=0.0 ) );
+			g_tblSphere.push( new Sphere(new vec3(-0.5 , 0.5 , +0.433 +0),   0.5 , new vec3(0.0, 1.0, 0.0), 0.2, 1.0, 60, 0.0, 0.0,fn=0.0 ) );
 
 
-			g_tblSphere.push( new Sphere(new vec3(-1.0 , 1.0 ,-2),   1.0 , new vec3(0.0, 0.0, 0.0), rl=0.1, rr=1.5, pw=200, 0.0, tm=0.8 ) );
-			g_tblSphere.push( new Sphere(new vec3( 1.0 , 1.0 ,+2),   1.0 , new vec3(0.0, 0.0, 0.0), rl=0.1, rr=2.0, pw=200, 0.0, tm=0.8) );
+			g_tblSphere.push( new Sphere(new vec3(-1.0 , 1.0 ,-2),   1.0 , new vec3(0.0, 0.0, 0.0), rl=0.1, rr=1.5, pw=200, 0.0, tm=0.8,fn=0.0 ) );
+			g_tblSphere.push( new Sphere(new vec3( 1.0 , 1.0 ,+2),   1.0 , new vec3(0.0, 0.0, 0.0), rl=0.1, rr=2.0, pw=200, 0.0, tm=0.8,fn=0.0 ) );
 if(0)
 {
 				g_tblLight.push( new Light( new vec3( 0   ,  20 ,  0 ), new vec3(   0,   0,800) )  );
@@ -713,12 +691,12 @@ else
 		
 	case "colorballs":
 		{
-			g_tblPlate.push( new Plate( P=new vec3(0  , 0 ,0.0),N=new vec3(0,1,0),C=new vec3(0.8,0.8,0.8),rl=0.3,rr=1.0 ,pw=70,e= 0.0,tm=0.0 ) );
-			g_tblSphere.push( new Sphere(P=new vec3( 0.5,1.0,0.0)	,r=0.5  ,C=new vec3(0.0,0.0,1.0),rl=0.3,rr=1.0 ,pw=70,e=10.0,tm=0.0 ) );
-			g_tblSphere.push( new Sphere(P=new vec3(-0.5,1.0,0.0)	,r=0.5  ,C=new vec3(0.0,1.0,0.0),rl=0.3,rr=1.0 ,pw=70,e=10.0,tm=0.0 ) );
-			g_tblSphere.push( new Sphere(P=new vec3( 0.0,1.5,0.0)	,r=0.5  ,C=new vec3(1.0,0.0,0.0),rl=0.3,rr=1.0 ,pw=70,e=10.0,tm=0.0 ) );
-			g_tblSphere.push( new Sphere(P=new vec3( 0.0,0.5,0.0)	,r=0.5  ,C=new vec3(1.0,1.0,0.0),rl=0.3,rr=1.0 ,pw=70,e=10.0,tm=0.0 ) );
-			g_tblSphere.push( new Sphere(P=new vec3( 0.0,1.0,0.0)	,r=0.5 ,C=new vec3(1.0,1.0,1.0),rl=0.3,rr=1.0 ,pw=70,e=10.0,tm=0.0 ) );
+			g_tblPlate.push( new Plate( P=new vec3(0  , 0 ,0.0),N=new vec3(0,1,0),C=new vec3(0.8,0.8,0.8),rl=0.3,rr=1.0 ,pw=70,e= 0.0,tm=0.0,fn=0.0 ) );
+			g_tblSphere.push( new Sphere(P=new vec3( 0.5,1.0,0.0)	,r=0.5  ,C=new vec3(0.0,0.0,1.0),rl=0.3,rr=1.0 ,pw=70,e=10.0,tm=0.0,fn=0.0 ) );
+			g_tblSphere.push( new Sphere(P=new vec3(-0.5,1.0,0.0)	,r=0.5  ,C=new vec3(0.0,1.0,0.0),rl=0.3,rr=1.0 ,pw=70,e=10.0,tm=0.0,fn=0.0 ) );
+			g_tblSphere.push( new Sphere(P=new vec3( 0.0,1.5,0.0)	,r=0.5  ,C=new vec3(1.0,0.0,0.0),rl=0.3,rr=1.0 ,pw=70,e=10.0,tm=0.0,fn=0.0 ) );
+			g_tblSphere.push( new Sphere(P=new vec3( 0.0,0.5,0.0)	,r=0.5  ,C=new vec3(1.0,1.0,0.0),rl=0.3,rr=1.0 ,pw=70,e=10.0,tm=0.0,fn=0.0 ) );
+			g_tblSphere.push( new Sphere(P=new vec3( 0.0,1.0,0.0)	,r=0.5 ,C=new vec3(1.0,1.0,1.0),rl=0.3,rr=1.0 ,pw=70,e=10.0,tm=0.0,fn=0.0 ) );
 			g_tblLight.push( new Light( P=new vec3( 1.0 ,15, 0 ) ,C=new vec3(360,360,360) )  );
 				g_tblLight.push( new Light( new vec3(-20   ,  40 , 10 ), new vec3(   0,   0,400) )  );
 				g_tblLight.push( new Light( new vec3( 30   ,  40 ,  0 ), new vec3(   0,400,   0) )  );
