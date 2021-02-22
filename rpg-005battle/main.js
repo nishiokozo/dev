@@ -1,86 +1,837 @@
 "use strict";
+
+///// 3D系関数 /////
+class vec3
+{
+	constructor( x, y, z )
+	{
+		this.x = x;
+		this.y = y;
+		this.z = z;
+	}
+};
+//------------------------------------------------------------------------------
+function vrotYaw( v, th )
+//------------------------------------------------------------------------------
+{
+   	let s = Math.sin(th);
+	let c = Math.cos(th);
+	// c,  0, -s,
+	// 0,  1,  0,
+    // s,  0,  c
+	let nx = v.x*c			- v.z*s;
+	let ny =		 v.y;
+	let nz = v.x*s			+ v.z*c;
+
+	return new vec3( nx, ny, nz );
+}
+//------------------------------------------------------------------------------
+function vrotPitch( v, th )
+//------------------------------------------------------------------------------
+{
+	let s = Math.sin(th);
+	let c = Math.cos(th);
+	// 1,  0,  0,
+	// 0,  c,  s,
+	// 0, -s,  c
+	let nx = v.x;
+	let ny =	 v.y*c + v.z*s;
+	let nz =	-v.y*s + v.z*c;
+
+	return new vec3( nx, ny, nz );
+}
+//------------------------------------------------------------------------------
+function vrotRoll( v, th )
+//------------------------------------------------------------------------------
+{
+	let s = Math.sin(th);
+	let c = Math.cos(th);
+	// c,  s,  0,
+	//-s,  c,  0,
+	// 0,  0,  1
+	let nx = v.x*c + v.y*s;
+	let ny =-v.x*s + v.y*c;
+	let nz = 				v.z;
+
+	return new vec3( nx, ny, nz );
+}
+
+//------------------------------------------------------------------------------
+function cross( a, b )
+//------------------------------------------------------------------------------
+{
+	return new vec3(
+		a.y*b.z-a.z*b.y,
+		a.z*b.x-a.x*b.z,
+		a.x*b.y-a.y*b.x
+	);
+}
+
+//------------------------------------------------------------------------------
+function length( v )
+//------------------------------------------------------------------------------
+{
+	return Math.sqrt( v.x*v.x + v.y*v.y + v.z*v.z );
+}
+
+//------------------------------------------------------------------------------
+function normalize( v )
+//------------------------------------------------------------------------------
+{
+	let s = 1/Math.sqrt( v.x*v.x + v.y*v.y + v.z*v.z );
+	return new vec3(
+		v.x * s,
+		v.y * s,
+		v.z * s
+	);
+}
+//------------------------------------------------------------------------------
+function vadd( a, b )
+//------------------------------------------------------------------------------
+{
+	return new vec3( 
+		a.x +b.x,
+		a.y +b.y,
+		a.z +b.z
+	);
+}
+//------------------------------------------------------------------------------
+function vsub( a, b )
+//------------------------------------------------------------------------------
+{
+	return new vec3( 
+		a.x -b.x,
+		a.y -b.y,
+		a.z -b.z
+	);
+}
+//------------------------------------------------------------------------------
+function vmul( a, b )
+//------------------------------------------------------------------------------
+{
+	return new vec3( 
+		a.x *b.x,
+		a.y *b.y,
+		a.z *b.z
+	);
+}
+//------------------------------------------------------------------------------
+function vdiv( a, b )
+//------------------------------------------------------------------------------
+{
+	return new vec3( 
+		a.x /b.x,
+		a.y /b.y,
+		a.z /b.z
+	);
+}
+//------------------------------------------------------------------------------
+function vmax( a, b )
+//------------------------------------------------------------------------------
+{
+	return new vec3( 
+		Math.max(a.x,b.x),
+		Math.max(a.y,b.y),
+		Math.max(a.z,b.z)
+	);
+}
+//------------------------------------------------------------------------------
+function vmin( a, b )
+//------------------------------------------------------------------------------
+{
+	return new vec3( 
+		Math.min(a.x,b.x),
+		Math.min(a.y,b.y),
+		Math.min(a.z,b.z)
+	);
+}
+//------------------------------------------------------------------------------
+function vreflect( I, N )
+//------------------------------------------------------------------------------
+{
+	let a = 2*dot(I,N);
+ 	return vsub( I , vmul( new vec3(a,a,a), N ) );
+}
+//------------------------------------------------------------------------------
+function vrefract( I, N, eta )
+//------------------------------------------------------------------------------
+{
+
+	let R = new vec3(0,0,0);
+	let k = 1.0 - eta * eta * (1.0 - dot(N, I) * dot(N, I));
+	if ( k < 0.0 )
+	{
+		R = new vec3(0,0,0);
+	}
+	else
+	{
+		let ve = new vec3(eta,eta,eta);
+		let a = vmul( ve , I ); 
+		let b = eta * dot(N, I);
+		let c = b + Math.sqrt(k);
+		let d = vmul( new vec3(c,c,c) , N);
+		R = vsub(a , d);
+	}
+	return R;
+}
+
+//------------------------------------------------------------------------------
+function dot( a, b )
+//------------------------------------------------------------------------------
+{
+	return a.x*b.x + a.y*b.y + a.z*b.z;
+}
+
+//---------------------------------------------------------------------
+function mperspective( f, aspect, near, far ) 
+//---------------------------------------------------------------------
+{
+	// 参考)http://marina.sys.wakayama-u.ac.jp/~tokoi/?date=20090829
+	// f = 1/tan(fovy)
+	return [
+	  f/aspect		, 0				, 0							, 0	,
+	   0			, f				, 0							, 0	,
+	   0			, 0				, -(  far+near)/(far-near)	, -1,
+	   0			, 0				, -(2*far*near)/(far-near)	, 0
+	];
+}
+//---------------------------------------------------------------------
+function mprojection( left, right, bottom, top, near, far ) 
+//---------------------------------------------------------------------
+{
+	return [
+	   2*near/(right-left)			, 0								, 0								, 0		,
+	   0							, 2*near/(top-bottom)			, 0								, 0		,
+	   (right+left)/(right-left)	, (top+bottom)/(top-bottom)		, -(far+near)/(far-near)		, -1	,
+	   0							, 0								, -2*far*near/(far-near)		, 0
+	];
+}
+//---------------------------------------------------------------------
+function mrotZ(th) 
+//---------------------------------------------------------------------
+{
+	let c = Math.cos(th);
+	let s = Math.sin(th);
+	// c,  s,  0,
+	//-s,  c,  0,
+	// 0,  0,  1
+	return [
+		c	,	s	,	0	,	0	,
+		-s	,	c	,	0	,	0	,
+		0	,	0	,	1	,	0	,
+		0	,	0	,	0	,	1	
+	];
+}
+//---------------------------------------------------------------------
+function mrotX(th) 
+//---------------------------------------------------------------------
+{
+	let c = Math.cos(th);
+	let s = Math.sin(th);
+	// 1,  0,  0,
+	// 0,  c,  s,
+	// 0, -s,  c
+	return [
+		1	,	0	,	0	,	0	,
+		0	,	c	,	s	,	0	,
+		0	,	-s	,	c	,	0	,
+		0	,	0	,	0	,	1	
+	];
+}
+//---------------------------------------------------------------------
+function mrotY(th) 
+//---------------------------------------------------------------------
+{
+	let c = Math.cos(th);
+	let s = Math.sin(th);
+	// c,  0, -s,
+	// 0,  1,  0,
+    // s,  0,  c
+	return [
+		c	,	0	,	-s	,	0	,
+		0	,	1	,	0	,	0	,
+		s	,	0	,	c	,	0	,
+		0	,	0	,	0	,	1	
+	];
+}
+//---------------------------------------------------------------------
+function midentity() 
+//---------------------------------------------------------------------
+{
+	return [
+		1	,	0	,	0	,	0	,
+		0	,	1	,	0	,	0	,
+		0	,	0	,	1	,	0	,
+		0	,	0	,	0	,	1	
+	];
+}
+//---------------------------------------------------------------------
+function mtrans( v ) 
+//---------------------------------------------------------------------
+{
+if(1)
+{
+	return [
+		1	,	0	,	0	,	0	,
+		0	,	1	,	0	,	0	,
+		0	,	0	,	1	,	0	,
+		v.x	,	v.y	,	v.z	,	1	
+	];
+}
+else
+{
+	return [
+		1	,	0	,	0	,	v.x	,
+		0	,	1	,	0	,	v.y	,
+		0	,	0	,	1	,	v.z	,
+		0	,	0	,	0	,	1	
+	];
+}
+}
+//---------------------------------------------------------------------
+function mmul( a, b ) 
+//---------------------------------------------------------------------
+{
+
+	return [
+		a[ 0] * b[ 0] +  a[ 1] * b[ 4] +  a[ 2] * b[ 8] +  a[ 3] * b[12],
+		a[ 0] * b[ 1] +  a[ 1] * b[ 5] +  a[ 2] * b[ 9] +  a[ 3] * b[13],
+		a[ 0] * b[ 2] +  a[ 1] * b[ 6] +  a[ 2] * b[10] +  a[ 3] * b[14],
+		a[ 0] * b[ 3] +  a[ 1] * b[ 7] +  a[ 2] * b[11] +  a[ 3] * b[15],
+
+		a[ 4] * b[ 0] +  a[ 5] * b[ 4] +  a[ 6] * b[ 8] +  a[ 7] * b[12],
+		a[ 4] * b[ 1] +  a[ 5] * b[ 5] +  a[ 6] * b[ 9] +  a[ 7] * b[13],
+		a[ 4] * b[ 2] +  a[ 5] * b[ 6] +  a[ 6] * b[10] +  a[ 7] * b[14],
+		a[ 4] * b[ 3] +  a[ 5] * b[ 7] +  a[ 6] * b[11] +  a[ 7] * b[15],
+
+		a[ 8] * b[ 0] +  a[ 9] * b[ 4] +  a[10] * b[ 8] +  a[11] * b[12],
+		a[ 8] * b[ 1] +  a[ 9] * b[ 5] +  a[10] * b[ 9] +  a[11] * b[13],
+		a[ 8] * b[ 2] +  a[ 9] * b[ 6] +  a[10] * b[10] +  a[11] * b[14],
+		a[ 8] * b[ 3] +  a[ 9] * b[ 7] +  a[10] * b[11] +  a[11] * b[15],
+
+		a[12] * b[ 0] +  a[13] * b[ 4] +  a[14] * b[ 8] +  a[15] * b[12],
+		a[12] * b[ 1] +  a[13] * b[ 5] +  a[14] * b[ 9] +  a[15] * b[13],
+		a[12] * b[ 2] +  a[13] * b[ 6] +  a[14] * b[10] +  a[15] * b[14],
+		a[12] * b[ 3] +  a[13] * b[ 7] +  a[14] * b[11] +  a[15] * b[15]
+	];
+
+}
+
+
+
+///// 汎用的な関数 /////
+
 //-----------------------------------------------------------------------------
-function html_getValue_checkboxname( name ) // チェックボックス用
+function rad( v )
 //-----------------------------------------------------------------------------
 {
-	const list = document.getElementsByName( name );
-	for ( let l of list )
+	return v/180*Math.PI;
+}
+//-----------------------------------------------------------------------------
+function deg( v )
+//-----------------------------------------------------------------------------
+{
+	return v*180/Math.PI;
+}
+
+class Xorshift32 //再現性のあるランダム
+{
+	constructor() 
 	{
-		return l.value;
+		this.y = 2463534242;
+	}
+	random() 
+	{
+		this.y = this.y ^ (this.y << 13); 
+		this.y = this.y ^ (this.y >> 17);
+		this.y = this.y ^ (this.y << 5);
+		return Math.abs(this.y/((1<<31)));
 	}
 }
-
-//-----------------------------------------------------------------------------
-function html_getValue_radioname( name ) // ラジオボタン用
-//-----------------------------------------------------------------------------
-{
-	var list = document.getElementsByName( name ); // listを得るときに使うのが name
-	for ( let l of list ) 
-	{
-		if ( l.checked ) return l.value;	
-	}
-	return undefined;
-}
-//-----------------------------------------------------------------------------
-function html_getValue_textid( id )	// input type="text" id="xxx" 用
-//-----------------------------------------------------------------------------
-{
-	return document.getElementById( id ).value * 1;
-}
-
-//-----------------------------------------------------------------------------
-function html_getValue_comboid( id )	// select id="xxx" ..option  用
-//-----------------------------------------------------------------------------
-{
-	return document.getElementById( id ).value * 1;
-}
-
-
+const xorshift = new Xorshift32();
 //-----------------------------------------------------------------------------
 function rand( n ) // n=3以上が正規分布
 //-----------------------------------------------------------------------------
 {
+
 	let r = 0;
-	for ( j = 0 ; j < n ; j++ ) r += Math.random();
+//	for ( let j = 0 ; j < n ; j++ ) r += Math.random();
+	for ( let j = 0 ; j < n ; j++ ) r += xorshift.random();
 	return r/n;
 }
-
-class map_GRA
+//-----------------------------------------------------------------------------
+function getadr( x, y, W )
+//-----------------------------------------------------------------------------
 {
-	//-----------------------------------------------------------------------------
-	constructor( w, h, canvas )
-	//-----------------------------------------------------------------------------
+	return (W*y+x);
+}
+//-----------------------------------------------------------------------------
+function round2d( x, y, W, H )
+//-----------------------------------------------------------------------------
+{
+	if ( x < 0   ) x = W-1;
+	else
+	if ( x >= W ) x = 0;
+
+	if ( y < 0   ) y = H-1;
+	else
+	if ( y >= H ) y = 0;
+
+	return (W*y + x); 
+}
+//-----------------------------------------------------------------------------
+function clip2d( x, y, W, H )
+//-----------------------------------------------------------------------------
+{
+	if ( x < 0   ) x = 0;
+	else
+	if ( x >= W ) x = W-1;
+
+	if ( y < 0   ) y = 0;
+	else
+	if ( y >= H ) y = H-1;
+
+	return (W*y + x); 
+}
+//-----------------------------------------------------------------------------
+function edge2d( x, y, W, H )
+//-----------------------------------------------------------------------------
+{
+//	return clip2d( x, y, W, H );	// 
+	return round2d( x, y, W, H );	// 上下左右がループする
+}
+
+
+///// 2D系関数 /////
+
+class GRA_img // イメージバッファに描画する
+{
+	constructor( width, height, canvas )
 	{
-		this.canvas = canvas;
-		this.ctx = canvas.getContext('2d');
-		this.img = this.ctx.createImageData( w, h );
+		this.cv = canvas
+		this.ctx = this.cv.getContext('2d');
+
+		this.img = this.ctx.createImageData( width, height );
+		this.stencil = new Array( width*height );
+
+
+		//-----------------------------------------------------------------------------
+		this.cls = function( col, a =0xff )
+		//-----------------------------------------------------------------------------
+		{
+			for (let x=0; x<this.img.width ; x++ )
+			for (let y=0; y<this.img.height ; y++ )
+			{
+				let adr = (y*this.img.width+x)*4;
+				this.img.data[ adr +0 ] = (col>>16)&0xff;
+				this.img.data[ adr +1 ] = (col>> 8)&0xff;
+				this.img.data[ adr +2 ] = (col>> 0)&0xff;
+				this.img.data[ adr +3 ] = a;
+			}
+		}
+		//-----------------------------------------------------------------------------
+		this.rgb = function( r,g,b )	// xRGB 8:8:8:8 
+		//-----------------------------------------------------------------------------
+		{
+			return (r<<16)|(g<<8)|b;
+		}
+		//-----------------------------------------------------------------------------
+		this.point = function( x, y )
+		//-----------------------------------------------------------------------------
+		{
+			let adr = (y*this.img.width+x)*4;
+			let r = this.img.data[ adr +0 ];
+			let g = this.img.data[ adr +1 ];
+			let b = this.img.data[ adr +2 ];
+		//	let a = this.img.data[ adr +3 ];
+			return this.rgb(r,g,b);
+		}
+		//-----------------------------------------------------------------------------
+		this.point_frgb = function( x, y )
+		//-----------------------------------------------------------------------------
+		{
+			let adr = (y*this.img.width+x)*4;
+			let r = this.img.data[ adr +0 ];
+			let g = this.img.data[ adr +1 ];
+			let b = this.img.data[ adr +2 ];
+		//	let a = this.img.data[ adr +3 ];
+			return [r,g,b];
+		}
+		//-----------------------------------------------------------------------------
+		this.pset0 = function( _ox, _oy, col, a=0xff )
+		//-----------------------------------------------------------------------------
+		{
+			let x = Math.floor(_ox);
+			let y = Math.floor(_oy);
+			if ( x < 0 ) return;
+			if ( y < 0 ) return;
+			if ( x >= this.img.width ) return;
+			if ( y >= this.img.height ) return;
+
+			let adr = (y*this.img.width+x)*4;
+			this.img.data[ adr +0 ] = (col>>16)&0xff;
+			this.img.data[ adr +1 ] = (col>> 8)&0xff;
+			this.img.data[ adr +2 ] = (col>> 0)&0xff;
+			this.img.data[ adr +3 ] = a&0xff;
+		}
+		//-----------------------------------------------------------------------------
+		this.pset = function( px, py, col=0x000000 )
+		//-----------------------------------------------------------------------------
+		{
+			this.pset0( px, py, col );
+		}
+		//-----------------------------------------------------------------------------
+		this.pset_rgb = function( _px, _py, [r,g,b] )
+		//-----------------------------------------------------------------------------
+		{
+
+
+			let adr = (y*this.img.width+x)*4;
+			this.img.data[ adr +0 ] = r&0xff;
+			this.img.data[ adr +1 ] = g&0xff;
+			this.img.data[ adr +2 ] = b&0xff;
+			this.img.data[ adr +3 ] = 0xff;
+		}
+
+		//-----------------------------------------------------------------------------
+		this.pset_frgb = function( x, y, [r,g,b] )
+		//-----------------------------------------------------------------------------
+		{
+			r*=255;
+			if ( r<0		) r = 0;
+			if ( r>255	) r = 255;
+
+			g*=255;
+			if ( g<0		) g = 0;
+			if ( g>255	) g = 255;
+
+			b*=255;
+			if ( b<0		) b = 0;
+			if ( b>255	) b = 255;
+
+			let adr = (y*this.img.width+x)*4;
+			this.img.data[ adr +0 ] = r;
+			this.img.data[ adr +1 ] = g;
+			this.img.data[ adr +2 ] = b;
+			this.img.data[ adr +3 ] = 0xff;
+		}
+
+		//-----------------------------------------------------------------------------
+		this.stencil_point = function( x, y )
+		//-----------------------------------------------------------------------------
+		{
+			let adr = (y*this.img.width+x);
+			let r = this.stencil[ adr ];
+			return r;
+		}
+		//-----------------------------------------------------------------------------
+		this.stencil_pset = function( x, y, a )
+		//-----------------------------------------------------------------------------
+		{
+			let adr = (y*this.img.width+x);
+			this.stencil[ adr ] = a;
+		}
+
+		//-----------------------------------------------------------------------------
+		this.line_frgb = function( x1, y1, x2, y2, [r,g,b] ) 
+		//-----------------------------------------------------------------------------
+		{
+			let col = ((((r*255)&0xff)<<16)|(((g*255)&0xff)<<8)|(((b*255)&0xff)<<0))
+			this.line( x1, y1, x2, y2, col ); 
+		}
+		//-----------------------------------------------------------------------------
+		this.line = function( x1, y1, x2, y2, col=0x000000 ) 
+		//-----------------------------------------------------------------------------
+		{
+
+			//ブレセンハムの線分発生アルゴリズム
+
+			// 二点間の距離
+			let dx = ( x2 > x1 ) ? x2 - x1 : x1 - x2;
+			let dy = ( y2 > y1 ) ? y2 - y1 : y1 - y2;
+
+			// 二点の方向
+			let sx = ( x2 > x1 ) ? 1 : -1;
+			let sy = ( y2 > y1 ) ? 1 : -1;
+
+			if ( dx > dy ) 
+			{
+				// 傾きが1より小さい場合
+				let E = -dx;
+				for ( let i = 0 ; i <= dx ; i++ ) 
+				{
+					this.pset0( x1,y1, col );
+					x1 += sx;
+					E += 2 * dy;
+					if ( E >= 0 ) 
+					{
+						y1 += sy;
+						E -= 2 * dx;
+					}
+				}
+			}
+			else
+			{
+				// 傾きが1以上の場合
+				let E = -dy;
+				for ( let i = 0 ; i <= dy ; i++ )
+				{
+					this.pset0( x1, y1, col );
+					y1 += sy;
+					E += 2 * dx;
+					if ( E >= 0 )
+					{
+						x1 += sx;
+						E -= 2 * dy;
+					}
+				}
+			}
+
+		}
+		//-----------------------------------------------------------------------------
+		this.box = function( x1,y1, x2,y2, col )
+		//-----------------------------------------------------------------------------
+		{
+
+			this.line( x1,y1,x2,y1, col);
+			this.line( x1,y2,x2,y2, col);
+			this.line( x1,y1,x1,y2, col);
+			this.line( x2,y1,x2,y2, col);
+		}
+
+		//-----------------------------------------------------------------------------
+		this.circle = function( x,y,r,col )
+		//-----------------------------------------------------------------------------
+		{
+			//-----------------------------------------------------------------------------
+			let rad = function( deg )
+			//-----------------------------------------------------------------------------
+			{
+				return deg*Math.PI/180;
+			}
+			{
+				let st = rad(1);
+				let x0,y0;
+				for (  let i = 0 ; i <= Math.PI*2 ; i+=st  )
+				{
+					let x1 = r * Math.cos(i) + x;
+					let y1 = r * Math.sin(i) + y;
+
+					if ( i > 0 ) this.line( x0, y0, x1, y1, col );
+					x0 = x1;
+					y0 = y1;
+				}
+			}
+		}
+
+		//-----------------------------------------------------------------------------
+		this.paint = function(  x0, y0, colsPat=[[0x000000]], colsRej=[0xffffff]  ) 
+		//-----------------------------------------------------------------------------
+		{
+			{
+				let c = this.point(x0,y0);
+				if ( colsRej.indexOf(c) != -1 ) return 0;
+			}
+
+			// 単色色指定（非タイリング）に対応
+
+			let cntlines = 0;
+
+			let flgTiling = false;
+
+			if ( colsPat.length > 0 && colsPat[0].length > 0  )
+			{
+				flgTiling = true;
+			}
+			else
+			if ( colsPat.length == undefined )
+			{
+				flgTiling = false;	// 単色
+			}
+			else
+			{
+				console.log("error invalid col format");
+			}
+
+
+			this.stencil.fill(0);
+
+			let seed=[];
+			seed.push([x0,y0,0,0,0]); // x,y,dir,lx,rx
+			while( seed.length > 0 )
+			{
+				// 先頭のシードを取り出す
+				let sx	= seed[0][0];
+				let sy	= seed[0][1];
+				let pdi	= seed[0][2];
+				let plx	= seed[0][3];
+				let prx	= seed[0][4];
+				seed.shift();
+
+				// シードから左端を探す
+				let lx=sx;
+				while( lx >= 0 )
+				{
+					let c = this.point(lx,sy);
+					if ( colsRej.indexOf(c) != -1 ) break;
+					let s = this.stencil_point(lx,sy);
+					if ( s != 0 ) break;
+					lx--;
+				}
+				lx++;
+
+				// シードから右端探す
+				let rx=sx;
+				while( rx < this.img.width )
+				{
+					let c = this.point(rx,sy);
+					if ( colsRej.indexOf(c) != -1 ) break;
+					let s = this.stencil_point(rx,sy);
+					if ( s != 0 ) break;
+					rx++;
+				}
+				rx--;
+
+				// 1ライン塗り
+				if ( flgTiling )
+				{//タイリング
+					let iy = Math.floor( sy % colsPat.length );
+					let ay = sy*this.img.width;
+					for ( let x = lx ; x <=rx ; x++ )
+					{
+						let ix = Math.floor(  x % colsPat[0].length );
+						let col = colsPat[iy][ix];
+						let adr = (ay+x);
+						this.img.data[ adr*4 +0 ] = (col>>16)&0xff;
+						this.img.data[ adr*4 +1 ] = (col>> 8)&0xff;
+						this.img.data[ adr*4 +2 ] = (col>> 0)&0xff;
+						this.img.data[ adr*4 +3 ] = 0xff;
+					
+						this.stencil[ adr ] = 1;
+					}
+					cntlines++;
+				}
+				else
+				{
+					let ay = sy*this.img.width;
+					for ( let x = lx ; x <=rx ; x++ )
+					{
+						let col = colsPat; // 単色
+						let adr = (ay+x);
+						this.img.data[ adr*4 +0 ] = (col>>16)&0xff;
+						this.img.data[ adr*4 +1 ] = (col>> 8)&0xff;
+						this.img.data[ adr*4 +2 ] = (col>> 0)&0xff;
+						this.img.data[ adr*4 +3 ] = 0xff;
+					
+						this.stencil[ adr ] = 1;
+					}
+					cntlines++;
+				}
+				
+
+				if ( seed.length > 50 ) 
+				{
+					console.log("err Maybe Over seed sampling:seed=",seed.length);
+					break;
+				}
+				for( let dir of [-1,1] )
+				{// 一ライン上（下）のライン内でのペイント領域の右端をすべてシードに加える
+					let y=sy+dir;
+					if ( dir ==-1 && y < 0 ) continue;
+					if ( dir == 1 && y >= this.img.height ) continue;
+					let flgBegin = false;
+					for ( let x = lx ; x <=rx ; x++ )
+					{
+						let c = this.point(x,y);
+						let s = this.stencil_point(x,y);
+						if ( flgBegin == false )
+						{
+							if ( s == 0 && colsRej.indexOf(c) == -1 )
+							{
+								flgBegin = true;
+							}
+						}
+						else
+						{
+							if ( s == 0 && colsRej.indexOf(c) == -1 )
+							{}
+							else
+							{
+								seed.push([x-1,y,dir,lx,rx]);
+								flgBegin = false;
+							}
+						}
+					}
+					if ( flgBegin == true )
+					{
+								seed.push([rx,y,dir,lx,rx]);
+					}
+				}
+			}
+			
+			return cntlines;
+		}
+
+
 	}
 	//-----------------------------------------------------------------------------
-	print( tx, ty, str )
+	streach()
 	//-----------------------------------------------------------------------------
 	{
-		this.ctx.beginPath();
+		// -----------------------------------------
+		// ImageDataをcanvasに合成
+		// -----------------------------------------
+		// g   : canvas.getContext('2d')
+		// img : g.createImageData( width, height )
+
+		this.ctx.imageSmoothingEnabled = this.ctx.msImageSmoothingEnabled = 0; // スムージングOFF
+		{
+		// 引き伸ばして表示
+		    let cv=document.createElement('canvas');				// 新たに<canvas>タグを生成
+		    cv.width = this.img.width;
+		    cv.height = this.img.height;
+			cv.getContext("2d").putImageData( this.img,0,0);				// 作成したcanvasにImageDataをコピー
+			{
+				let sx = 0;
+				let sy = 0;
+				let sw = this.img.width;
+				let sh = this.img.height;
+				let dx = 0;
+				let dy = 0;
+				let dw = this.cv.width;
+				let dh = this.cv.height;
+				this.ctx.drawImage( cv,sx,sy,sw,sh,dx,dy,dw,dh);	// ImageDataは引き延ばせないけど、Imageは引き延ばせる
+			}
+			
+		}
+	}
+	//-----------------------------------------------------------------------------
+	put_buf( buf )
+	//-----------------------------------------------------------------------------
+	{
+		let h = this.img.height;
+		let w = this.img.width
+		for ( let y = 0 ; y < h ; y++ )
+		{
+			for ( let x = 0 ; x < w ; x++ )
+			{
+				let v = buf[ w*y + x ];
+				this.pset_frgb( x, y, [v,v,v] );
+			}
+		}
+	}
+	//-----------------------------------------------------------------------------
+	ctx_print( tx, ty, str )
+	//-----------------------------------------------------------------------------
+	{
 		this.ctx.font = "12px monospace";
 		this.ctx.fillStyle = "#000000";
 		this.ctx.fillText( str, tx+1, ty+1 );
 		this.ctx.fillStyle = "#ffffff";
 		this.ctx.fillText( str, tx, ty );
-		this.ctx.closePath();
 	}
 	//-----------------------------------------------------------------------------
-	line = function( sx,sy, ex,ey, col="#000" )
-	//-----------------------------------------------------------------------------
-	{
-		this.ctx.beginPath();
-		this.ctx.strokeStyle = col;
-		this.ctx.lineWidth = 1.0;
-		this.ctx.moveTo( sx, sy );
-		this.ctx.lineTo( ex, ey );
-		this.ctx.closePath();
-		this.ctx.stroke();
-	}
-	//-----------------------------------------------------------------------------
-	scr_circle( x,y,r, col="#000"  )
+	ctx_circle( x,y,r, col="#000"  )
 	//-----------------------------------------------------------------------------
 	{
 		this.ctx.beginPath();
@@ -91,93 +842,23 @@ class map_GRA
 		this.ctx.stroke();
 	}
 	//-----------------------------------------------------------------------------
-	box( sx,sy, ex,ey, col="#000" )
+	ctx_line = function( sx,sy, ex,ey, col="#000" )
 	//-----------------------------------------------------------------------------
 	{
 		this.ctx.beginPath();
-		this.ctx.strokeStyle = col;//"#000000";
-	    this.ctx.rect(sx,sy,ex-sx,ey-sy);
+		this.ctx.strokeStyle = col;
+		this.ctx.lineWidth = 1.0;
+		this.ctx.moveTo( sx, sy );
+		this.ctx.lineTo( ex, ey );
 		this.ctx.closePath();
 		this.ctx.stroke();
-
-	}
-	//-----------------------------------------------------------------------------
-	cls( val = 0)
-	//-----------------------------------------------------------------------------
-	{
-		for (let x=0; x<this.img.width ; x++ )
-		for (let y=0; y<this.img.height ; y++ )
-		{
-			let adr = (y*this.img.width+x)*4;
-			this.img.data[ adr +0 ] = val;
-			this.img.data[ adr +1 ] = val;
-			this.img.data[ adr +2 ] = val;
-			this.img.data[ adr +3 ] = 0xff;
-		}
 	}
 
-	//-----------------------------------------------------------------------------
-	pseta( x, y, val )
-	//-----------------------------------------------------------------------------
-	{
-		if ( val > 1 ) val = 1;
-		if ( val < 0 ) val = 0;
-		val = (val*255)&0xff;
-		let adr = (y*this.img.width+x)*4;
-		this.img.data[ adr+0 ] = val;
-		this.img.data[ adr+1 ] = val;
-		this.img.data[ adr+2 ] = val;
-	}
+};
 
-	//-----------------------------------------------------------------------------
-	draw_buf( buf )
-	//-----------------------------------------------------------------------------
-	{
-		let h = this.img.height;
-		let w = this.img.width
-		for ( let y = 0 ; y < h ; y++ )
-		{
-			for ( let x = 0 ; x < w ; x++ )
-			{
-				let v = buf[ w*y + x ];
-				this.pseta( x, y, v );
-			}
-		}
-	}
-	//-----------------------------------------------------------------------------
-	streach()
-	//-----------------------------------------------------------------------------
-	{
-		// -----------------------------------------
-		// ImageDataをcanvasに合成
-		// -----------------------------------------
-		// ctx   : html_canvas.getContext('2d')
-		// img : ctx.createImageData( width, height )
 
-		this.ctx.imageSmoothingEnabled = this.ctx.msImageSmoothingEnabled = 0; // スムージングOFF
-		{
-		// 引き伸ばして表示
-		    let cv=document.createElement('canvas');				// 新たにcanvasを生成
-		    cv.width = this.img.width;
-		    cv.height = this.img.height;
-			cv.getContext("2d").putImageData( this.img,0,0);		// 作成したcanvasにImageDataをコピー
-			{
-				let sx = 0;
-				let sy = 0;
-				let sw = this.img.width;
-				let sh = this.img.height;
-				let dx = 0;
-				let dy = 0;
-				let dw = this.canvas.width;
-				let dh = this.canvas.height;
-				this.ctx.drawImage( cv,sx,sy,sw,sh,dx,dy,dw,dh);	// ImageDataは引き延ばせないけど、Imageは引き延ばせる
-			}
-			
-		}
-	}
-}
 //-----------------------------------------------------------------------------
-function pat_normalize( pat )
+function calc_pat_normalize( pat )
 //-----------------------------------------------------------------------------
 {
 	let amt = 0;
@@ -197,19 +878,20 @@ function pat_normalize( pat )
 	}
 	return pat;
 }
-
 //-----------------------------------------------------------------------------
-function pat_calc( buf1, pat, w, h )
+function calc_blur( buf1, pat, w, h )
 //-----------------------------------------------------------------------------
 {
+	// patで乗算
 	let buf2 = new Array( buf1.length );
 	let edge = Math.floor(pat.length/2);
+
+
 
 	for ( let y = 0 ; y < h ; y++ )
 	{
 		for ( let x = 0 ; x < w ; x++ )
 		{
-			let adr = (w*y + x); 
 
 			let v = 0;
 			for ( let m = 0 ; m < pat.length ; m++ )
@@ -217,29 +899,113 @@ function pat_calc( buf1, pat, w, h )
 				for ( let n = 0 ; n < pat[m].length ; n++ )
 				{
 					// ラウンドする
-					let px = x+(m-edge);
-					let py = y+(n-edge);
-		
-					if ( px < 0   ) px = w-1;
-					else
-					if ( px >= w ) px = 0;
+					let a = edge2d( x+(m-edge), y+(n-edge),w,h );
 
-					if ( py < 0   ) py = h-1;
-					else
-					if ( py >= h ) py = 0;
-
-					let a = (w*py + px); 
 
 					v += buf1[ a ] * pat[m][n];
 				}
 			}
-			buf2[ adr ] = v;
+			buf2[ (w*y + x) ] = v;
 		}
 	}
 	return buf2;
 }
 //-----------------------------------------------------------------------------
-function pat_gauss2d( size, sigma )
+function pat_calc_rain( buf0, pat, w, h, rate )
+//-----------------------------------------------------------------------------
+{
+	// patで水流シミュレーション
+	let buf = new Array( buf0.length );
+	let edge = Math.floor(pat.length/2);
+
+	for ( let y = 0 ; y < h ; y++ )
+	{
+		for ( let x = 0 ; x < w ; x++ )
+		{
+			//let adr = (w*y + x); 
+
+			let base_high = buf0[ w*y+x ]; // 基準となる中心の高さ
+	if(1)
+	{
+				let cntRain = 0;
+				let cntAll = 0;
+				for ( let m = 0 ; m < pat.length ; m++ )
+				{
+					for ( let n = 0 ; n < pat[m].length ; n++ )
+					{
+						// ラウンドする
+						let px = x+(m-edge);
+						let py = y+(n-edge);
+			
+						if ( px < 0   ) px = w-1;
+						else
+						if ( px >= w ) px = 0;
+
+						if ( py < 0   ) py = h-1;
+						else
+						if ( py >= h ) py = 0;
+
+						let adr = (w*py + px); 
+
+						if ( base_high < buf0[ adr ] )
+						{
+							// 高いところには流れない
+						}
+						else
+						{
+							// その分低いところに集まる
+							cntRain++;
+						}
+						cntAll++;
+
+					}
+				}
+				let mizu = cntRain/cntAll;//（均等配分）
+	mizu*=rate;
+	}
+	else
+	{
+	let v = 0;
+				for ( let m = 0 ; m < pat.length ; m++ )
+				{
+					for ( let n = 0 ; n < pat[m].length ; n++ )
+					{
+						// ラウンドする
+						let px = x+(m-edge);
+						let py = y+(n-edge);
+			
+						if ( px < 0   ) px = w-1;
+						else
+						if ( px >= w ) px = 0;
+
+						if ( py < 0   ) py = h-1;
+						else
+						if ( py >= h ) py = 0;
+
+						let adr = (w*py + px); 
+
+						let a = buf0[ adr ];
+						if ( base_high < a )
+						{
+							// 高いところには流れない
+						}
+						else
+						{
+							// 流れ込んだ分削られる
+							v = - rate;
+						}
+
+					}
+				}
+				buf[ adr ] = buf0[ adr ] + v;
+	}
+		}
+	}
+	return buf;
+}
+
+//-----------------------------------------------------------------------------
+function calc_pat_gauss2d( size, sigma )
 //-----------------------------------------------------------------------------
 {
 	//-----------------------------------------------------------------------------
@@ -269,445 +1035,951 @@ function pat_gauss2d( size, sigma )
 	return pat;
 
 }	
-// 自動レベル調整 0～1.0の範囲に正規化
 //-----------------------------------------------------------------------------
-function calc_autolevel( buf, SZ )
+function calc_autolevel( buf0, W, H, low=0.0, high=1.0 )
 //-----------------------------------------------------------------------------
 {
+	let buf = Array.from(buf0);
+
 	let max = Number.MIN_SAFE_INTEGER;
 	let min = Number.MAX_SAFE_INTEGER;
 
-	for ( let i = 0 ; i < SZ*SZ ; i++ )
+	for ( let i = 0 ; i < W*H ; i++ )
 	{
 		let a = buf[i];
 		max = Math.max( max, a );
 		min = Math.min( min, a );
 	}
-	let rate = 1.0/(max-min);
-	for ( let i = 0 ; i < SZ*SZ ; i++ )
 	{
-		buf[i] = (buf[i] - min)*rate;
+		let rate = (high-low)/(max-min);
+		for ( let i = 0 ; i < W*H ; i++ )
+		{
+			buf[i] = (buf[i] - min)*rate + low;
+		}
 	}
+	return buf;
+}
+
+// ローパスフィルタ
+//-----------------------------------------------------------------------------
+function calc_lowpass( buf0, W, H, val )
+//-----------------------------------------------------------------------------
+{
+	let buf = [];
+	for ( let i = 0 ; i < W*H ; i++ )
+	{
+		if ( buf0[i] < val ) 
+		{
+			buf[i] = val;
+		}
+		else
+		{
+			buf[i] = buf0[i];
+		}
+	}
+	return buf;
+}
+
+//-----------------------------------------------------------------------------
+function func_lvl( j, col )
+//-----------------------------------------------------------------------------
+{
+	// 段を作るための共通関数
+	return (1.0/col)*(j+1); // lvl
 }
 
 // パラポライズ
 //-----------------------------------------------------------------------------
-function calc_parapolize( buf, n, SZ )
+function calc_parapolize( buf0, W, H, col )
 //-----------------------------------------------------------------------------
 {
-	for ( let i = 0 ; i < SZ*SZ ; i++ )
+	let buf = Array.from(buf0);
+	for ( let y = 0 ; y < H ; y++ )
 	{
-		let a = buf[i];
-		for ( let i = 0 ; i < n ; i++ )
+		for ( let x = 0 ; x < W ; x++ )
 		{
-			let b = (1.0/n)*(i+1);
-			let c = (1.0/(n-1))*i;
-			if ( a < b ) 
+			for ( let j = 0 ; j < col ; j++ )
 			{
-				a = c;
-				break;
+				let lvl = func_lvl( j, col );
+				if ( buf[W*y+x] <= lvl) // 内側を検出 lvl
+				{
+					buf[W*y+x] = (1.0/(col-1))*j;
+					break;
+				}
 			}
 		}
-		
-		buf[i] =a;
 	}
+	return buf;
 }
+// ノイズをわざと乗せる
 //-----------------------------------------------------------------------------
-function calc_negative( buf, SZ )
+function calc_addnoise( buf0, W, H, val )
 //-----------------------------------------------------------------------------
 {
-	for ( let i = 0 ; i < SZ*SZ ; i++ )
+	let buf = Array.from(buf0);
+	for ( let i = 0 ; i < W*H ; i++ ) 
 	{
-		let a = 1.0-buf[i];
+		let a = buf0[i];
+		if ( a > 1.0 ) a=1.0;
+		if ( a < 0.0 ) a=0.0;
 		buf[i] = a;
 	}
-}
-
-let g_map_SZ;
-let g_map_buf0;
-//let g_map_buf3;
-//-----------------------------------------------------------------------------
-function map_genSeed( SZ )
-//-----------------------------------------------------------------------------
-{
-	// ランダムの種作成
-	for ( let i = 0 ; i < SZ*SZ ; i++ )
-	{
-		g_map_buf0[i] = rand(1);
-	}
-
-	function pset( x, y, val )
-	{
-		g_map_buf0[ (y*SZ+x) ] = val;
-	}
-
-	// 枠	島化
-if(0)
-	for ( let i = 0 ; i < SZ ; i++ )
-	{
-		pset(0 ,i ,0);
-		pset(i ,0 ,0);
-		pset(SZ,i ,0);
-		pset(i ,SZ,0);
-	}
-
-//	pset( SZ/2,SZ/2,11);
-}
-
-//-----------------------------------------------------------------------------
-function map_gen( SZ )
-//-----------------------------------------------------------------------------
-{
-	// 3x3ブラーフィルタ作成
-	let pat33 = pat_normalize(
-	[
-		[1,2,1],
-		[2,4,2],
-		[1,2,1],
-	]);
-	// 5x5ガウスブラーフィルタ作成
-//	let pat55 = pat_normalize( pat_gauss2d( 5, 1 ) );
-	// 9x9ガウスブラーフィルタ作成
-//	let pat99 = pat_normalize(pat_gauss2d( 9, 2 ) );
-
-	
-	//--
-	
-	// ランダムの種をコピー
-	let buf = Array.from(g_map_buf0);
-
-	// ブラーフィルタ適用
-	{
-		let num = html_getValue_textid("blur");
-		for ( let i = 0 ; i < num ; i++ ) 	buf = pat_calc( buf, pat33, SZ, SZ );
-	}
-
-	// 自動レベル調整 0～1.0の範囲に正規化
-	calc_autolevel( buf, SZ );
-
-	// ローパスフィルタ
-	{
-		let val =  html_getValue_textid("low");
-		for ( let i = 0 ; i < SZ*SZ ; i++ )
-		{
-			if ( buf[i] < val ) buf[i] = 0.0;
-		}
-	}
-
-	// 自動レベル調整 0～1.0の範囲に正規化
-	calc_autolevel( buf, SZ );
-
-	// パラポライズ
-	{
-		let val =  html_getValue_textid("col");
-		calc_parapolize( buf, val, SZ );
-	}
-
-	// 反転
-	{
-	//calc_negative( buf, SZ );
-	}
-
 	return buf;
 }
 
-
+// ノイズカット 等高線に向かない面に満たないノイズを取り除く
 //-----------------------------------------------------------------------------
-function map_hotstart()
+function calc_cutnoise( buf0, w, h )
 //-----------------------------------------------------------------------------
 {
-	g_map_buf2 = map_gen( g_map_SZ );
+	// patで乗算
+	let buf = Array.from( buf0 );
 
-	if ( null != document.getElementById("html_canvas2") )
+	for ( let y = 0 ; y < h ; y++ )
 	{
-		// キャンバスに描画
-		// 画面作成
-		g_map_gra2 = new map_GRA( g_map_SZ, g_map_SZ, html_canvas2 );
-		// 画面クリア
-		g_map_gra2.cls(255);
-		// 画面描画
-		if(0)
-		{//全マップ開示
-			g_map_gra2.draw_buf( g_map_buf2 );
-		}
-		// 画面をキャンバスへ転送
-		g_map_gra2.streach();
-
-		// canvasのID表示
-		g_map_gra2.print(0,html_canvas2.height, html_canvas2.id );
-
-	}
-}
-//-----------------------------------------------------------------------------
-function map_create()
-//-----------------------------------------------------------------------------
-{
-	g_map_SZ = html_getValue_comboid( "html_reso" );
-	g_map_buf0 = new Array( g_map_SZ*g_map_SZ );
-//	g_map_buf3 = new Array( g_map_SZ*g_map_SZ );
-//	g_map_buf3.fill(0);
-
-	map_genSeed( g_map_SZ );
-	map_hotstart();
-}
-
-////////////////////////////
-let ctx=html_canvas.getContext('2d');
-
-//-----------------------------------------------------------------------------
-function streachImage2Canvas( img )
-//-----------------------------------------------------------------------------
-{
-	// -----------------------------------------
-	// ImageDataをcanvasに合成
-	// -----------------------------------------
-	// ctx : html_canvas.getContext('2d')
-	// img : ctx.createImageData( width, height )
-
-	ctx.imageSmoothingEnabled = ctx.msImageSmoothingEnabled = 0; // スムージングOFF
-
-	{
-	// 引き伸ばして表示
-	    let cv=document.createElement('canvas');				// 新たに<canvas>タグを生成
-	    cv.width=img.width;
-	    cv.height=img.height;
-		cv.getContext("2d").putImageData(img,0,0);				// 作成したcanvasにImageDataをコピー
+		for ( let x = 0 ; x < w ; x++ )
 		{
-			let sx = 0;
-			let sy = 0;
-			let sw = img.width;
-			let sh = img.height;
-			let dx = 0;
-			let dy = 0;
-			let dw = 640;
-			let dh = 400;
-			ctx.drawImage( cv,sx,sy,sw,sh,dx,dy,dw,dh);	// ImageDataは引き延ばせないけど、Imageは引き延ばせる
+		
+			let a1 = edge2d( x-1, y+1 ,w, h );
+			let a2 = edge2d( x  , y+1 ,w, h );
+			let a3 = edge2d( x+1, y+1 ,w, h );
+			let a4 = edge2d( x-1, y   ,w, h );
+			let a5 = edge2d( x  , y   ,w, h );
+			let a6 = edge2d( x+1, y   ,w, h );
+			let a7 = edge2d( x-1, y-1 ,w, h );
+			let a8 = edge2d( x  , y-1 ,w, h );
+			let a9 = edge2d( x+1, y-1 ,w, h );
+			
+			if ( a5 == 1 )
+			{
+				if ( a4 && a7 && a8 ) continue;
+				if ( a8 && a9 && a6 ) continue;
+				if ( a4 && a1 && a2 ) continue;
+				if ( a2 && a3 && a6 ) continue;
+				buf[w*y + x] = 0;
+			}
+			else
+			{
+				if ( !a4 && !a7 && !a8 ) continue;
+				if ( !a8 && !a9 && !a6 ) continue;
+				if ( !a4 && !a1 && !a2 ) continue;
+				if ( !a2 && !a3 && !a6 ) continue;
+				buf[w*y + x] = 1;
+			}
+		}
+	}
+	return buf;
+}
+
+// エッジを作る。0,0だと島になりやすく、1,1で無効、0,1だと横だけつながる世界
+//-----------------------------------------------------------------------------
+function calc_makeedge( buf0, W, H, valw, valh )
+//-----------------------------------------------------------------------------
+{
+	let buf = Array.from(buf0);
+	for ( let i = 0 ; i < W ; i++ )
+	{
+		buf[ W*( H-1)+i ] *= valw; 
+		buf[ W*0+i ] *= valw;
+	}
+	for ( let i = 0 ; i < H ; i++ )
+	{
+		buf[ W*i+0 ] *= valh;
+		buf[ W*i+ (W-1) ] *= valh;
+	}
+	return buf;
+}
+// シリンダーを作る
+//-----------------------------------------------------------------------------
+function calc_makecylinder( buf0, W, H, sx, sy, sr, val )
+//-----------------------------------------------------------------------------
+{
+	let buf = Array.from(buf0);
+	for ( let r = 0 ; r < sr  ; r++ )
+	{
+		for ( let th = 0 ; th < Math.PI*2 ; th+=rad(1) )
+		{
+			let x = Math.floor( r*Math.cos(th)+0.5 )+sx;
+			let y = Math.floor( r*Math.sin(th)+0.5 )+sy;
+			
+			buf[ y*W+x ] = val;
+		}
+	}
+	return buf;
+}
+// BOXを作る
+//-----------------------------------------------------------------------------
+function calc_makebox( buf0, W, H, sx, sy, ex, ey, val )
+//-----------------------------------------------------------------------------
+{
+	let buf = Array.from(buf0);
+	for ( let y = sy ; y < ey ; y++ )
+	{
+		for ( let x = sx ; x < ex; x++ )
+		{
+			let px = Math.floor(x);
+			let py = Math.floor(y);
+			
+			let adr = round2d( px , py , W, H );
+			buf[adr] = val;
+		}
+	}
+	return buf;
+}
+//-----------------------------------------------------------------------------
+function calc_defferencial( bufA, bufB, W, H )
+//-----------------------------------------------------------------------------
+{
+	// patで乗算
+	let buf = new Array( bufA.length );
+
+	for ( let y = 0 ; y < H ; y++ )
+	{
+		for ( let x = 0 ; x < W ; x++ )
+		{
+			let adr = (W*y + x);
+			buf[adr] = Math.abs( bufA[adr]-bufB[adr] );
+		}
+	}
+	return buf;
+}
+
+//-----------------------------------------------------------------------------
+function calc_vectorize( buf, W, H, col )
+//-----------------------------------------------------------------------------
+{ // ベクトル化
+
+/*
+	//-----------------------------------------------------------------------------
+	function vec_getStart( buf, sy, lvl )
+	//-----------------------------------------------------------------------------
+	{
+		let ret = [false,-1,-1,-1,-1];
+
+		loop:
+		for ( let y = sy ; y < H ; y++ )
+		{
+			for ( let x = 0 ; x < W ; x++ )
+			{
+				if( chkedge(buf,W,H, lvl,x,y) == false )
+				{
+					for ( ; x < W ; x++ )
+					{
+						if( chkedge(buf,W,H, lvl,x+1,y) )
+						{
+							ret = [true,x,y,0,1];
+							break loop;
+						}
+					}
+					
+				}
+			}
+		}
+
+		return ret;
+	}
+*/
+
+
+/*
+	//-----------------------------------------------------------------------------
+	function vec_make2( lvl )
+	//-----------------------------------------------------------------------------
+	{
+		let msk = Array( buf.length ).fill(0);
+		loop:
+		for ( let y = 0 ; y < H ; y++ )
+		{ 
+
+			{ 
+
+				let [flg,sx,sy,ax,ay] = vec_getStart( buf, y, lvl );
+				if ( flg )
+				{
+					if ( msk[ W*sy+sx ] != lvl ) 
+					{
+						points = vec_search( points, buf, msk, sx, sy, ax, ay, lvl );
+					}
+				}
+				else break loop;
+
+			}
+		}
+	}
+
+	//-----------------------------------------------------------------------------
+	function vec_make3( lvl )
+	//-----------------------------------------------------------------------------
+	{
+		loop:
+		for ( let y = 0 ; y < H ; y++ )
+		{ 
+			loop2:
+			for ( let y2 = y ; y2 < H ; y2++ )
+			{
+				for ( let x2 = 0 ; x2 < W ; x2++ )
+				{
+					if ( buf[W*y2+x2] > lvl && msk[ W*y2+x2 ] != lvl )
+					if( chkedge(buf,W,H, lvl,x2,y2) == false )
+					{ 
+						if ( msk[ W*y2+x2 ] != lvl ) 
+					 	{
+							let [ax,ay] = [0,0];
+
+							     if( chkedge(buf,W,H, lvl,x2+1,y2  ) ) [ax,ay] = [ 0, 1];
+							else if( chkedge(buf,W,H, lvl,x2-1,y2  ) ) [ax,ay] = [ 0,-1];
+							else if( chkedge(buf,W,H, lvl,x2  ,y2-1) ) [ax,ay] = [-1, 0];
+							else if( chkedge(buf,W,H, lvl,x2  ,y2+1) ) [ax,ay] = [ 1, 0];
+							else {console.log("err:vec_make()");break loop;}
+
+console.log( ax,ay,buf[W*y2+x2] );
+							points = vec_search( points, buf, msk, x2, y2, ax, ay, lvl );
+						}
+					}
+				}
+			}
+		}
+	}
+*/
+	//-----------------------------------------------------------------------------
+	function vec_make_old( lvl )
+	//-----------------------------------------------------------------------------
+	{
+		let msk = Array( buf.length ).fill(0);
+		loop:
+		for ( let y = 0 ; y < H ; y++ )
+		{ 
+			loop2:
+			for ( let y2 = y ; y2 < H ; y2++ )
+			{
+				for ( let x = 0 ; x < W ; x++ )
+				{
+					if( chkedge(buf,W,H, lvl,x,y2) == false )
+					{
+						for ( ; x < W ; x++ )
+						{
+							if( chkedge(buf,W,H, lvl,x+1,y2) )
+							{
+								if ( msk[ W*y2+x ] != lvl ) 
+								{
+									points = vec_search( points, buf, msk, x, y2, 0, 1, lvl );
+								}
+								break loop2;
+							}
+						}
+						
+					}
+				}
+			}
+		}
+	}
+
+	//-----------------------------------------------------------------------------
+	function chkedge( buf,W,H, lvl, x, y )
+	//-----------------------------------------------------------------------------
+	{ // 淵かどうかを判定
+
+		if ( 0 )
+		{
+			if ( x < 0   ) x = W-1;
+			else
+			if ( x >= W ) x = 0;
+
+			if ( y < 0   ) y = H-1;
+			else
+			if ( y >= H ) y = 0;
+			return ( buf[W*y+x] <= lvl ); // 崖の内側を検出
+		}
+		else
+		{
+			if ( x < 0 || y < 0 || x >= W || y >= H ) return true;
+			return ( buf[W*y+x] <= lvl ); // 崖の内側を検出
 		}
 		
+//		return ( buf[W*y+x] >= lvl ); // 崖の外側を検出
 	}
-}
-
-//-----------------------------------------------------------------------------
-function rad( v )
-//-----------------------------------------------------------------------------
-{
-	return v/180*Math.PI;
-}
-//-----------------------------------------------------------------------------
-function deg( v )
-//-----------------------------------------------------------------------------
-{
-	return v*180/Math.PI;
-}
-//-----------------------------------------------------------------------------
-let box = function( sx,sy, ex,ey )
-//-----------------------------------------------------------------------------
-{
-	ctx.beginPath();
-	ctx.strokeStyle = "#000";
-    ctx.rect(sx,sy,ex-sx,ey-sy);
-	ctx.closePath();
-	ctx.stroke();
-}
-//-----------------------------------------------------------------------------
-let fill_hach= function( sx,sy, ex,ey, step )
-//-----------------------------------------------------------------------------
-{
-	let w = ex-sx;
-	let g_scr_h = ey-sy;
-	for ( let x = -w ; x <= w ; x+=step )
+	//-----------------------------------------------------------------------------
+	function vec_search( points, buf, msk, sx, sy,  ax, ay, lvl )
+	//-----------------------------------------------------------------------------
 	{
-		let x1 = x;
-		let y1 = 0;
-		let x2 = x+w;
-		let y2 = g_scr_h;
-		if ( x1 < 0 ) 
+		let x = sx;
+		let y = sy;
+		let c = 0;
+
 		{
-			x1 = 0;
-			y1 = g_scr_h-(x+w) * (g_scr_h/w);
+			msk[ W*y+x ] = lvl;
+			tblIndex[ W*y+x ] = points.length;
+			points.push( {x:x, y:y, c:c, end:0} );
 		}
-		if ( x2 > w ) 
+
+		let cnt = 0;
+
+		let cnt_r = 0;
+		while(1)
+		{	
+			if ( chkedge(buf,W,H, lvl, x+ax,y+ay) == false )
+			{//前方に崖が無かったら、左手前方を調べる
+				if ( chkedge(buf,W,H, lvl, x+ax+ay,y+ay-ax) == false )
+				{//左手にも崖が無かったら前進＆左ターン＆前進
+					x+=ax;
+					y+=ay;
+					[ax,ay]=[ay,-ax];
+					x+=ax;
+					y+=ay;
+					
+					msk[ W*y+x ] = lvl;
+					tblIndex[ W*y+x ] = points.length;
+					points.push( {x:x, y:y, c:c, end:0} );
+				}
+				else
+				{//左手が別の色だったら	そのまま前進移動
+					x+=ax;
+					y+=ay;
+				}
+				if ( sx == x && sy== y ) 
+				{
+					msk[ W*y+x ] = lvl;
+					tblIndex[ W*y+x ] = points.length;
+					points.push( {x:x, y:y, c:c, end:1} );
+
+					break; // 必ず元の場所に戻ってくる。
+				}
+				else
+				{
+					msk[ W*y+x ] = lvl;
+					tblIndex[ W*y+x ] = points.length;
+					points.push( {x:x, y:y, c:c, end:0} );
+				}
+				
+				cnt_r=0;
+			}
+			else
+			{//前進できなければ右ターン
+				[ax,ay]=[-ay,ax];
+				cnt_r++;
+				if ( cnt_r>=4 ) 
+				{
+					msk[ W*y+x ] = lvl;
+					tblIndex[ W*y+x ] = points.length;
+					points.push( {x:x, y:y, c:c, end:1} );
+
+					break; // 4連続右折は１ドットピクセル
+				}
+			}
+			if(++cnt>3000) {console.log(">>warn!!<<:too much:",cnt);break;}
+		}
+	
+	
+		return points;
+	}
+	
+	//-----------------------------------------------------------------------------
+	function vec_make( lvl )
+	//-----------------------------------------------------------------------------
+	{
+		for ( let y = 0 ; y < H ; y++ )
 		{
-			x2 = w;
-			y2 = g_scr_h-(x) * (g_scr_h/w);
+			let prev = (buf[W*y+W-1]>lvl);
+			for ( let x = 0 ; x < W ; x++ )
+			{
+				let flg = ( buf[W*y+x] > lvl );
+				if ( flg && prev != flg && msk[W*y+x] != lvl )
+				{
+					points = vec_search( points, buf, msk, x, y, 0,-1, lvl );
+				}
+				prev = flg;
+			}
 		}
-		// 左上がりストライプ
-		line( 
-			 sx+x1
-			,sy+y1
-			,sx+x2
-			,sy+y2
-		);
-		// 右上がりストライプ
-		line( 
-			 sx+x1
-			,sy+(g_scr_h-y1)
-			,sx+x2
-			,sy+(g_scr_h-y2)
-		);
+
+if(1)
+		for ( let y = 0 ; y < H ; y++ )
+		{
+			let prev = (buf[W*y+0]>lvl);
+			for ( let x = W-1 ; x >= 0 ; x-- )
+			{
+				let flg = ( buf[W*y+x] > lvl );
+				if ( flg && prev != flg && msk[W*y+x] != lvl )
+				{
+					points = vec_search( points, buf, msk, x, y, 0, 1, lvl );
+				}
+				prev = flg;
+			}
+		}
+//		console.log(points.length);
+ 	
 	}
-}
-//-----------------------------------------------------------------------------
-let fill= function( sx,sy, ex,ey )
-//-----------------------------------------------------------------------------
-{
-	ctx.beginPath();
-    ctx.rect(sx,sy,ex-sx,ey-sy);
-	ctx.closePath();
-	ctx.fillStyle = "#000000";
-	ctx.fill();
-	ctx.stroke();
 
-}
-//-----------------------------------------------------------------------------
-let line_col = function( sx,sy, ex,ey, col )
-//-----------------------------------------------------------------------------
-{
-	ctx.beginPath();
-	ctx.strokeStyle = col;
-	ctx.lineWidth = 1.0;
-	ctx.moveTo( sx, sy );
-	ctx.lineTo( ex, ey );
-	ctx.closePath();
-	ctx.stroke();
+	// main
 
-}
+	let tblIndex = new Array( buf.length ).fill(-1);
+	let points = [];
 
-//-----------------------------------------------------------------------------
-let line = function( sx,sy, ex,ey )
-//-----------------------------------------------------------------------------
-{
-	if (0)
+
+	let msk = Array( buf.length ).fill(0);
+	for ( let j = 0 ; j < col-1 ; j++ ) // j=col=1.0に等高線は無いはずなのでcol-1にしておく。
 	{
-		ctx.beginPath();
-		ctx.strokeStyle = g_flgNight?"#FFF":"#000";
-		ctx.lineWidth = 1.0;
-		ctx.moveTo( sx, sy );
-		ctx.lineTo( ex, ey );
-		ctx.closePath();
-		ctx.stroke();
+		let lvl = func_lvl( j, col );
+
+		vec_make( lvl ); 
 	}
-	else
+//		vec_make( 1/3 ); 
+//		vec_make( 2/3 ); 
+
+	return [points, tblIndex];
+}
+
+//-----------------------------------------------------------------------------
+function calc_rasterize( gra, points, W, H )
+//-----------------------------------------------------------------------------
+{// ベクター描画2
+
+	const BACK = 0xffffff;
+
+	gra.cls( BACK );
+
+	let sw = gra.img.width / W;
+	let sh = gra.img.height / H;
+
+	let sx=0;
+	let sy=0;
+	let flgFirst = true;
+	for( let i = 0 ; i < points.length ; i++ )
 	{
-		ctx.beginPath();
-		ctx.moveTo( sx, sy );
-		ctx.lineTo( ex, ey );
+		let ex = Math.floor(points[i].x*sw);
+		let ey = Math.floor(points[i].y*sh);
 
-		ctx.strokeStyle = g_flgNight?"#FFF":"#000";
-		ctx.lineWidth = 1.0;
-		ctx.stroke();
+		let c = points[i].c;
+
+		if ( flgFirst == false )
+		{
+			gra.line_frgb( sx, sy, ex, ey, [c,c,c] ); 
+		}
+		flgFirst = false;
+
+		if ( points[i].end == 1 ) 
+		{
+			flgFirst = true;
+		}
+		sx = ex;
+		sy = ey;
+	}
+
+}
+
+
+///// 開発用 /////
+
+
+class Terrain
+{
+
+	bufA = [];
+	bufB = [];
+	bufC = [];
+
+	blur1;
+	blur2;
+	blur3;
+	bp1;
+	bp2;
+	bp3;
+	
+	tblIndex = [];
+	points = [];
+
+	low;	// 地面
+	col;	// 諧調
+	reso;	// マップテクスチャサイズ
+
+	//-----------------------------------------------------------------------------
+	initParam()
+	//-----------------------------------------------------------------------------
+	{
+		this.blur1 = document.getElementById( "html_blur1" ).value*1;
+		this.blur2 = document.getElementById( "html_blur2" ).value*1;
+		this.blur3 = document.getElementById( "html_blur3" ).value*1;
+		this.bp1 = document.getElementById( "html_bp1" ).value*1;
+		this.bp2 = document.getElementById( "html_bp2" ).value*1;
+		this.bp3 = document.getElementById( "html_bp3" ).value*1;
+		this.col =  document.getElementById( "html_col" ).value * 1.0;
+		this.low =  document.getElementById( "html_low" ).value * 1.0;
+
+		this.reso =  document.getElementById( "html_reso" ).value * 1.0;
+
+		this.bufA = [];
+		this.bufB = [];
+		this.bufC = [];
+
+
+		for ( let i = 0 ; i < this.reso*this.reso ; i++ )
+		{
+			this.bufA[i] = rand(1);
+			this.bufB[i] = rand(1);
+			this.bufC[i] = rand(1);
+		}
+	}
+	//-----------------------------------------------------------------------------
+	update_map()
+	//-----------------------------------------------------------------------------
+	{
+		let SZ = this.reso;
+
+		// 3x3ブラーフィルタ作成
+		let pat33 = calc_pat_normalize(
+		[
+			[1,2,1],
+			[2,4,2],
+			[1,2,1],
+		]);
+		// 5x5ガウスブラーフィルタ作成
+	//	let pat55 = calc_pat_normalize( calc_pat_gauss2d( 5, 1 ) );
+		// 9x9ガウスブラーフィルタ作成
+		let pat99 = calc_pat_normalize( calc_pat_gauss2d( 9, 2 ) );
+
+
+		//-----------------------------------------------------------------------------
+		function drawCanvas( canvas, buf, str=null )
+		//-----------------------------------------------------------------------------
+		{
+			//-----------------------------------------------------------------------------
+			function put_buf( gra, buf )
+			//-----------------------------------------------------------------------------
+			{
+				let h = gra.img.height;
+				let w = gra.img.width
+				for ( let y = 0 ; y < h ; y++ )
+				{
+					for ( let x = 0 ; x < w ; x++ )
+					{
+						let v = buf[ w*y + x ];
+						gra.pset_frgb( x, y, [v,v,v] );
+					}
+				}
+			}
+			// 画面作成
+			{
+				let gra = new GRA_img( SZ, SZ, canvas );
+				// 画面クリア
+				gra.cls(0);
+				// 画面描画
+				put_buf( gra, buf );
+				// 画面をキャンバスへ転送
+				gra.streach();
+
+				// canvasのID表示
+				if ( str == null ) str = canvas.id;
+				gra.print(1,gra.cv.height-1, str );
+			}
+		}
+		
+		//--
+		
+		// ランダムの種をコピー
+		let buf1 = Array.from(this.bufA);
+		let buf2 = Array.from(this.bufB);
+		let buf3 = Array.from(this.bufC);
+
+		if(0)
+		{
+			// ベクター化しやすいように縁取り
+			buf1 = calc_makeedge( buf1, SZ, SZ, 0,0 );
+			buf2 = calc_makeedge( buf2, SZ, SZ, 0,0 );
+			buf3 = calc_makeedge( buf3, SZ, SZ, 0,0 );
+		}
+		if(0)
+		{
+			// 中央に穴をあける
+			buf1 = calc_makecylinder( buf1, SZ, SZ, SZ/2, SZ/2, SZ/8/2, 0 );
+			buf2 = calc_makecylinder( buf2, SZ, SZ, SZ/2, SZ/2, SZ/8/2, 0 );
+			buf3 = calc_makecylinder( buf3, SZ, SZ, SZ/2, SZ/2, SZ/8/2, 0 );
+		//	drawCanvas( html_canvas6, buf1, "A" );
+		}
+
+		// 鞣し
+		// ブラーフィルタn回適用
+		for ( let i = 0 ; i < this.blur1 ; i++ ) buf1 = calc_blur( buf1, pat33, SZ, SZ, this.blur1 );
+		buf1 = calc_autolevel(buf1, SZ,SZ);
+
+		for ( let i = 0 ; i < this.blur2 ; i++ ) buf2 = calc_blur( buf2, pat33, SZ, SZ, this.blur2 );
+		buf2 = calc_autolevel(buf2, SZ,SZ);
+
+		for ( let i = 0 ; i < this.blur3 ; i++ ) buf3 = calc_blur( buf3, pat33, SZ, SZ, this.blur3 );
+		buf3 = calc_autolevel(buf3, SZ,SZ);
+
+		let buf4= [];
+
+		{//合成
+			for ( let x = 0 ; x < SZ*SZ ; x++ )
+			{
+				buf4[x] =(buf1[x]*this.bp1+buf2[x]*this.bp2+buf3[x]*this.bp3)/(this.bp1+this.bp2+this.bp3);
+			}
+		}
+
+		// 自動レベル調整
+		buf4 = calc_autolevel(buf4, SZ, SZ);
+
+		// ローパスフィルタ
+		buf4 = calc_lowpass( buf4, SZ, SZ, this.low );
+
+		// 自動レベル調整
+		buf4 = calc_autolevel( buf4, SZ,SZ, 0 );
+
+		{
+//			let [x,y,w] = [SZ/2-1,SZ/2-1,3];
+			let [x,y,w] = [13,15,2];
+			buf4 = calc_makebox( buf4, SZ, SZ, x, y, x+w, y+w, 0.8 );
+		}
+
+
+		[this.points,this.tblIndex] = calc_vectorize( buf4, SZ, SZ, this.col );
+
+		buf4 = calc_parapolize( buf4, SZ, SZ, this.col );
+
+
+	if(0)
+		// 雨削られるシミュレーション
+		{
+			let rate = document.getElementById( "html_rain" ).value*1;
+			let num = document.getElementById( "html_rain2" ).value*1;
+			for ( let i = 0 ; i < num ; i++ ) buf4 = pat_calc_rain( buf2, pat33, SZ, SZ, rate );
+
+			// 自動レベル調整 fill:0～1.0の範囲に正規化 up:ハイレベルを1.0に合わせて底上げ
+			buf4 = calc_autolevel( buf4, SZ*SZ );
+		}
+
+		
+		return buf4;
+
 	}
 }
-//-----------------------------------------------------------------------------
-let line_bold = function( sx,sy, ex,ey )
-//-----------------------------------------------------------------------------
+
+let g_terrain = new Terrain;
+
+
+
+/////////////////////////
+
+
+class GRA_cv // 直接キャンバスに描画する
 {
-	ctx.beginPath();
-	ctx.strokeStyle = g_flgNight?"#FFF":"#000";
-	ctx.lineWidth = 3.0;
-	ctx.moveTo( sx, sy );
-	ctx.lineTo( ex, ey );
-	ctx.closePath();
-	ctx.stroke();
+	//-----------------------------------------------------------------------------
+	constructor( ctx )
+	//-----------------------------------------------------------------------------
+	{
+		this.ctx = ctx;
+	}
+
+	//-----------------------------------------------------------------------------
+	box( sx,sy, ex,ey )
+	//-----------------------------------------------------------------------------
+	{
+		this.ctx.beginPath();
+		this.ctx.strokeStyle = "#000";
+	    this.ctx.rect(sx,sy,ex-sx,ey-sy);
+		this.ctx.closePath();
+		this.ctx.stroke();
+	}
+	//-----------------------------------------------------------------------------
+	fill_hach( sx,sy, ex,ey, step )
+	//-----------------------------------------------------------------------------
+	{
+		let w = ex-sx;
+		let g_scr_h = ey-sy;
+		for ( let x = -w ; x <= w ; x+=step )
+		{
+			let x1 = x;
+			let y1 = 0;
+			let x2 = x+w;
+			let y2 = g_scr_h;
+			if ( x1 < 0 ) 
+			{
+				x1 = 0;
+				y1 = g_scr_h-(x+w) * (g_scr_h/w);
+			}
+			if ( x2 > w ) 
+			{
+				x2 = w;
+				y2 = g_scr_h-(x) * (g_scr_h/w);
+			}
+			// 左上がりストライプ
+			this.line( 
+				 sx+x1
+				,sy+y1
+				,sx+x2
+				,sy+y2
+			);
+			// 右上がりストライプ
+			this.line( 
+				 sx+x1
+				,sy+(g_scr_h-y1)
+				,sx+x2
+				,sy+(g_scr_h-y2)
+			);
+		}
+	}
+	//-----------------------------------------------------------------------------
+	fill( sx,sy, ex,ey )
+	//-----------------------------------------------------------------------------
+	{
+		this.ctx.beginPath();
+	    this.ctx.rect(sx,sy,ex-sx,ey-sy);
+		this.ctx.closePath();
+		this.ctx.fillStyle = "#000000";
+		this.ctx.fill();
+		this.ctx.stroke();
+
+	}
+	//-----------------------------------------------------------------------------
+	line_col( sx,sy, ex,ey, col )
+	//-----------------------------------------------------------------------------
+	{
+		this.ctx.beginPath();
+		this.ctx.strokeStyle = col;
+		this.ctx.lineWidth = 1.0;
+		this.ctx.moveTo( sx, sy );
+		this.ctx.lineTo( ex, ey );
+		this.ctx.closePath();
+		this.ctx.stroke();
+
+	}
+
+	//-----------------------------------------------------------------------------
+	line( sx,sy, ex,ey )
+	//-----------------------------------------------------------------------------
+	{
+		if (0)
+		{
+			this.ctx.beginPath();
+			this.ctx.strokeStyle = g_flgNight?"#FFF":"#000";
+			this.ctx.lineWidth = 1.0;
+			this.ctx.moveTo( sx, sy );
+			this.ctx.lineTo( ex, ey );
+			this.ctx.closePath();
+			this.ctx.stroke();
+		}
+		else
+		{
+			this.ctx.beginPath();
+			this.ctx.moveTo( sx, sy );
+			this.ctx.lineTo( ex, ey );
+
+			this.ctx.strokeStyle = g_flgNight?"#FFF":"#000";
+			this.ctx.lineWidth = 1.0;
+			this.ctx.stroke();
+		}
+	}
+	//-----------------------------------------------------------------------------
+	line_bold( sx,sy, ex,ey )
+	//-----------------------------------------------------------------------------
+	{
+		this.ctx.beginPath();
+		this.ctx.strokeStyle = g_flgNight?"#FFF":"#000";
+		this.ctx.lineWidth = 3.0;
+		this.ctx.moveTo( sx, sy );
+		this.ctx.lineTo( ex, ey );
+		this.ctx.closePath();
+		this.ctx.stroke();
+
+	}
+
+	//-----------------------------------------------------------------------------
+	scr_print( tx, ty, str, col )
+	//-----------------------------------------------------------------------------
+	{
+		this.ctx.beginPath();
+		this.ctx.font = "10px monospace";
+		this.ctx.fillStyle = col;
+		this.ctx.fillText( str, tx, ty );
+		this.ctx.closePath();
+
+	}
+
+
+	//-----------------------------------------------------------------------------
+	circle( x,y,r )
+	//-----------------------------------------------------------------------------
+	{
+		this.ctx.beginPath();
+		this.ctx.lineWidth = 1.0;
+		this.ctx.strokeStyle = g_flgNight?"#FFF":"#000";
+		this.ctx.arc(x, y, r, 0, Math.PI * 2, true);
+		this.ctx.closePath();
+		this.ctx.stroke();
+	}
+	//-----------------------------------------------------------------------------
+	circle_col( x,y,r, col )
+	//-----------------------------------------------------------------------------
+	{
+		this.ctx.beginPath();
+		this.ctx.lineWidth = 1.0;
+		this.ctx.strokeStyle = col;
+		this.ctx.arc(x, y, r, 0, Math.PI * 2, true);
+		this.ctx.closePath();
+		this.ctx.stroke();
+	}
+	//-----------------------------------------------------------------------------
+	circle_red( x,y,r )
+	//-----------------------------------------------------------------------------
+	{
+		this.ctx.beginPath();
+		this.ctx.strokeStyle = "#F00";
+		this.ctx.lineWidth = 1.0;
+		this.ctx.arc(x, y, r, 0, Math.PI * 2, true);
+		this.ctx.closePath();
+		this.ctx.stroke();
+	}
+
+	g_col = "#000";
+	g_back = "#FFF";
+	//-----------------------------------------------------------------------------
+	cls( col = "#FFF" )
+	//-----------------------------------------------------------------------------
+	{
+		this.ctx.fillStyle = col;
+		this.ctx.fillRect( 0, 0, html_canvas1.width, html_canvas1.height );
+	}
+	//-----------------------------------------------------------------------------
+	clsb()
+	//-----------------------------------------------------------------------------
+	{
+		this.ctx.fillStyle = g_flgNight?"#000":"#FFF"; //バックの色はラインと反対
+		this.ctx.fillRect( -html_canvas1.width/2, -html_canvas1.height/2, html_canvas1.width, html_canvas1.height );
+	}
+
+	//-----------------------------------------------------------------------------
+	line_dir( x, y, dir, r )
+	//-----------------------------------------------------------------------------
+	{
+		let x2 = r * Math.cos( dir )+x;
+		let y2 = r * Math.sin( dir )+y;
+		this.line( x, y, x2, y2 );
+	}
 
 }
 
-//-----------------------------------------------------------------------------
-function scr_print( tx, ty, str, col )
-//-----------------------------------------------------------------------------
-{
-	ctx.beginPath();
-	ctx.font = "10px monospace";
-//	ctx.fillStyle =  g_flgNight?"#000":"#FFF";
-//	ctx.fillText( str, tx+1, ty+1 );
-	ctx.fillStyle = col;
-	ctx.fillText( str, tx, ty );
-	ctx.closePath();
 
-}
-
-
-//-----------------------------------------------------------------------------
-let scr_circle = function( x,y,r )
-//-----------------------------------------------------------------------------
+//////////////////////
+function unit_circle( x, y, r )
 {
-	ctx.beginPath();
-	ctx.lineWidth = 1.0;
-	ctx.strokeStyle = g_flgNight?"#FFF":"#000";
-	ctx.arc(x, y, r, 0, Math.PI * 2, true);
-	ctx.closePath();
-	ctx.stroke();
+	let cx = g_scr_cx;
+	let cy = g_scr_cy;
+	gra1.circle( x-cx, y-cy, r );
 }
-//-----------------------------------------------------------------------------
-let circle_col = function( x,y,r, col )
-//-----------------------------------------------------------------------------
+function unit_circle_red( x, y, r )
 {
-	ctx.beginPath();
-	ctx.lineWidth = 1.0;
-	ctx.strokeStyle = col;
-	ctx.arc(x, y, r, 0, Math.PI * 2, true);
-	ctx.closePath();
-	ctx.stroke();
+	let cx = g_scr_cx;
+	let cy = g_scr_cy;
+	gra1.circle_red( x-cx, y-cy, r );
 }
-//-----------------------------------------------------------------------------
-function circle_red( x,y,r )
-//-----------------------------------------------------------------------------
+function unit_line( x1, y1, x2,y2 )
 {
-	ctx.beginPath();
-	ctx.strokeStyle = "#F00";
-	ctx.lineWidth = 1.0;
-	ctx.arc(x, y, r, 0, Math.PI * 2, true);
-	ctx.closePath();
-	ctx.stroke();
+	let cx = g_scr_cx;
+	let cy = g_scr_cy;
+	gra1.line( x1-cx, y1-cy, x2-cx, y2-cy );
 }
 
-let g_col = "#000";
-let g_back = "#FFF";
-//-----------------------------------------------------------------------------
-function cls( col = "#FFF" )
-//-----------------------------------------------------------------------------
-{
-	ctx.fillStyle = col;
-	ctx.fillRect( 0, 0, html_canvas.width, html_canvas.height );
-}
-//-----------------------------------------------------------------------------
-function scr_cls()
-//-----------------------------------------------------------------------------
-{
-	ctx.fillStyle = g_flgNight?"#000":"#FFF"; //バックの色はラインと反対
-	ctx.fillRect( -html_canvas.width/2, -html_canvas.height/2, html_canvas.width, html_canvas.height );
-}
+let g_effect;// = new Effect(100);
 
-//-----------------------------------------------------------------------------
-function line_dir( x, y, dir, r )
-//-----------------------------------------------------------------------------
-{
-	let x2 = r * Math.cos( dir )+x;
-	let y2 = r * Math.sin( dir )+y;
-	line( x, y, x2, y2 );
-}
-
-
-//-----------------------------------------------------------------------------
-function rand( n ) // n=3以上が正規分布
-//-----------------------------------------------------------------------------
-{
-	let r = 0;
-	for ( let j = 0 ; j < n ; j++ ) r += Math.random();
-	return r/n;
-}
-//-----------------------------------------------------------------------------
-function m100_cos( n ) // 100量子化cos n:0~99
-//-----------------------------------------------------------------------------
-{
-	return Math.cos(n/100*Math.PI);
-}
-//-----------------------------------------------------------------------------
-function m100_cos( n ) // 100量子化sin n:0~99
-//-----------------------------------------------------------------------------
-{
-	return Math.sin(n/100*Math.PI);
-}
 
 class Effect
 {
@@ -776,27 +2048,6 @@ class Effect
 		}
 	}
 };
-
-function unit_circle( x, y, r )
-{
-	let cx = g_scr_cx;
-	let cy = g_scr_cy;
-	scr_circle( x-cx, y-cy, r );
-}
-function unit_circle_red( x, y, r )
-{
-	let cx = g_scr_cx;
-	let cy = g_scr_cy;
-	circle_red( x-cx, y-cy, r );
-}
-function unit_line( x1, y1, x2,y2 )
-{
-	let cx = g_scr_cx;
-	let cy = g_scr_cy;
-	line( x1-cx, y1-cy, x2-cx, y2-cy );
-}
-
-let g_effect;// = new Effect(100);
 
 class ActTst
 {
@@ -1109,7 +2360,7 @@ class ActSword
 				let th2	= unit_dir+this.swd_dir2;
 				let	cx	= 2*r*Math.cos(th2)+ax;
 				let	cy	= 2*r*Math.sin(th2)+ay;
-				line_bold(bx,by,cx,cy);
+				gra1.line_bold(bx,by,cx,cy);
 			}
 		}
 		if ( this.swd_stat == 2 )
@@ -1128,7 +2379,7 @@ class ActSword
 				this.swd_dir += this.swd_add_r;	
 				this.swd_dir2 += this.swd_add_r*1.5;	
 				this.swd_add_r += this.swd_acc_r;
-				line_bold(bx,by,cx,cy);
+				gra1.line_bold(bx,by,cx,cy);
 			}
 		}
 		
@@ -1144,7 +2395,7 @@ class ActTwincle	// 点滅アクション
 		this.lim		= 0;		//攻撃リミット
 	}
 	//-----------------------------------------------------------------------------
-	twn_set( lim )  //) = function(  u1 )
+	twn_set( lim )
 	//-----------------------------------------------------------------------------
 	{
 		this.time		= 0;
@@ -2103,7 +3354,7 @@ class Unit
 			let ux = u1.x + u1.add_x;
 			let uy = u1.y + u1.add_y;
 			{
-				const sz = g_map_SZ * g_tile_SZ;
+				const sz = g_terrain.reso * g_tile_SZ;
 				if ( ux < 0		) ux += sz;
 				if ( ux >= sz	) ux -= sz;
 				if ( uy < 0		) uy += sz;
@@ -2408,10 +3659,13 @@ let g_json_cast =
 const g_tblCast = new Cast( g_json_cast );
 
 const g_tile_SZ = 52;
-let g_scr_w = Math.floor(html_canvas.width/g_tile_SZ);
-let g_scr_h = Math.floor(html_canvas.height/g_tile_SZ);
-let g_scr_sx = (html_canvas.width-g_scr_w*g_tile_SZ)/2+g_tile_SZ/2;
-let g_scr_sy = (html_canvas.height-g_scr_h*g_tile_SZ)/2+g_tile_SZ/2;
+const g_scr_ofx = html_canvas1.width/2;	//canvas 左上オフセットx
+const g_scr_ofy = html_canvas1.height/2;	//canvas 左上オフセットy
+const g_scr_radius = 256;
+const g_scr_w = Math.floor(2*g_scr_radius/g_tile_SZ);
+const g_scr_h = Math.floor(2*g_scr_radius/g_tile_SZ);
+const g_scr_sx = (2*g_scr_ofx-g_scr_w*g_tile_SZ)/2+g_tile_SZ/2;
+const g_scr_sy = (2*g_scr_ofy-g_scr_h*g_tile_SZ)/2+g_tile_SZ/2;
 
 let g_scr_rot = 0;
 
@@ -2492,7 +3746,7 @@ window.onkeydown = function( ev )
 				{ // MOVE
 					u1.x += Math.cos( dir )*spd;
 					u1.y += Math.sin( dir )*spd;
-					const sz = g_map_SZ * g_tile_SZ;
+					const sz = g_terrain.reso * g_tile_SZ;
 					if ( u1.x < 0 	) u1.x += sz;
 					if ( u1.x >= sz ) u1.x -= sz;
 					if ( u1.y < 0 	) u1.y += sz;
@@ -2624,12 +3878,14 @@ function game_init( start_x, start_y )
 		}
 	}
 
-	if (0)
+	if (1)
 	{	// テスト用
+				
 		{
 			const cast = g_tblCast.tbl[ "PLAYER1" ];
-			g_unit.unit_create( 0, 1, 1000, 1000, cast.size, rad(-90), cast.tblThink, cast.name, cast.tblTalk );
+			g_unit.unit_create( 0, 1, start_x, start_y, cast.size, rad(-90), cast.tblThink, cast.name, cast.tblTalk );
 		}
+/*
 		{
 			const cast = g_tblCast.tbl[ "DRAGON" ];
 			g_unit.unit_create( 0, 0, 1000-52+20, 900, cast.size, rad(-90), cast.tblThink, cast.name, cast.tblTalk );
@@ -2638,6 +3894,7 @@ function game_init( start_x, start_y )
 			const cast = g_tblCast.tbl[ "DRAGON" ];
 			g_unit.unit_create( 0, 0, 1000+52-20, 900, cast.size, rad(-90), cast.tblThink, cast.name, cast.tblTalk );
 		}
+*/
 	}
 	else
 	{
@@ -2717,6 +3974,7 @@ function main_update()
 {
 	function unit_pad( u1 )
 	{
+
 		if(navigator.getGamepads)
 		{
 			let list = navigator.getGamepads();
@@ -2731,7 +3989,7 @@ function main_update()
 					let ry = pad.axes[3];
 					for ( let i = 0 ; i < pad.buttons.length ; i++ )
 					{
-						//scr_print( 0,20+10*i, ""+i+":"+pad.buttons[i].value, g_flgNight?"#FFF":"#000" );
+						//ctx_scr_print( 0,20+10*i, ""+i+":"+pad.buttons[i].value, g_flgNight?"#FFF":"#000" );
 					}
 					let a  = pad.buttons[ 0].value && !g_prevButtons[ 0].value;
 					let b  = pad.buttons[ 1].value && !g_prevButtons[ 1].value;
@@ -2767,11 +4025,10 @@ function main_update()
 					{
 						if ( r ) 
 						{
-							g_map_gra2.draw_buf( g_map_buf2 );
+							gra2.put_buf( g_map_buf3 );
 						}
 						else
 						{
-							map_genSeed( g_map_SZ );
 							resetAll();
 						}
 					}
@@ -2803,17 +4060,50 @@ function main_update()
 			}
 		}
 	}
+
+	//-----------------------------------------------------------------------------
 	function draw_pole_luna_sun()
+	//-----------------------------------------------------------------------------
 	{// 月と太陽と北極星
-		function draw_sun( px, py, r0, r1, r2 ) 
-		{ // 太陽
-//			circle_col( px, py, r0, g_flgNight?"#000":"#FFF" );
+		// ☆北極星
+		function draw_pole( pr, rot, r0 )
+		{
+			let px = pr * Math.cos( rot ) + g_scr_ofx;
+			let py = pr * Math.sin( rot ) + g_scr_ofy;
+		
+			let st = rad(360*2/5);
+			for ( let th = rad(-90) ; th <= Math.PI*4 ; th += st )
+			{
+				let x1 = r0*Math.cos(th) + px;
+				let y1 = r0*Math.sin(th) + py;
+				let x2 = r0*Math.cos(th-st) + px;
+				let y2 = r0*Math.sin(th-st) + py;
+				gra1.line_col( x1, y1, x2, y2, "black" );
+			}
+		}
+
+		// 🌙月
+		function draw_moon( pr, rot, r0 )
+		{
+			let px = pr * Math.cos( rot ) + g_scr_ofx;
+			let py = pr * Math.sin( rot ) + g_scr_ofy;
 			for ( let i = 0 ; i < r0 ; i+=0.5 )
 			{
-//				circle_col( px, py, i,g_flgNight?"#000":"#FFF" );
-				circle_col( px, py, i, "white" );
+				gra1.circle_col( px, py, i, g_flgNight?"white":"black" );
 			}
-				circle_col( px, py, r0, "black" );
+				gra1.circle_col( px, py, r0,"black" );
+		}
+
+		// 太陽
+		function draw_sun( pr, rot, r0, r1, r2 )
+		{
+			let px = pr * Math.cos( rot ) + g_scr_ofx;
+			let py = pr * Math.sin( rot ) + g_scr_ofy;
+			for ( let i = 0 ; i < r0 ; i+=0.5 )
+			{
+				gra1.circle_col( px, py, i, "white" );
+			}
+				gra1.circle_col( px, py, r0, "black" );
 
 			for ( let th = 0 ; th < Math.PI*2 ; th += rad(30) )
 			{
@@ -2821,88 +4111,47 @@ function main_update()
 				let y1 = r1*Math.sin(th) + py;
 				let x2 = r2*Math.cos(th) + px;
 				let y2 = r2*Math.sin(th) + py;
-//				line_col( x1, y1, x2, y2, g_flgNight?"#000":"#FFF" );
-				line_col( x1, y1, x2, y2, "black" );
+				gra1.line_col( x1, y1, x2, y2, "black" );
 			}
-		}
 
-		// ☆北極星
-		function draw_pole( pr, rot, r )
-		{
-			let px = pr * Math.cos( rot );
-			let py = pr * Math.sin( rot );
-		
-			let st = rad(360*2/5);
-			for ( let th = rad(-90) ; th <= Math.PI*4 ; th += st )
-			{
-				let x1 = r*Math.cos(th) + px;
-				let y1 = r*Math.sin(th) + py;
-				let x2 = r*Math.cos(th-st) + px;
-				let y2 = r*Math.sin(th-st) + py;
-//				line_col( x1, y1, x2, y2, g_flgNight?"#000":"#FFF" );
-				line_col( x1, y1, x2, y2, "black" );
-			}
 		}
-
-		function draw_moon( px, py, r0 ) 
-		{ // 月 29.5日周期で満ち欠け
-			for ( let i = 0 ; i < r0 ; i+=0.5 )
-			{
-//				circle_col( px, py, i,g_flgNight?"#000":"#FFF" );
-				circle_col( px, py, i, g_flgNight?"white":"black" );
-			}
-				circle_col( px, py, r0,"black" );
-		}
-			draw_moon( 185+2, 20+2, 8-2 );
-		if ( g_flgNight ) 
 		{
+			let r = Math.floor( g_scr_radius-10-1+3 );
+			draw_moon( r, rad(-120)+g_scr_rot, 6 );
 		}
-		else
+		if ( !g_flgNight ) 
 		{
+			let r = Math.floor( g_scr_radius-10-1+3 );
 			const s = 5;
-			draw_sun( 83, 83, s+7-2, s+11-4, s+15-4 );
+			draw_sun( r, rad(-160)+g_scr_rot, s+7-2, s+11-4, s+15-4 );
 		}
 
-
 		{
-			ctx.save();
-			ctx.translate(html_canvas.width/2,html_canvas.height/2);
-			{
-				let r = Math.floor( html_canvas.width/2-10-1 );
-				draw_pole( r, rad(-90)+g_scr_rot, 5 );
-			}
-			ctx.restore();
+			let r = Math.floor( g_scr_radius-10-1 );
+			draw_pole( r, rad(-90)+g_scr_rot, 5 );
 		}
 	}
 	
 
-	if ( 0 )
-	{
-		// 背景色設定
-		html_set_backgroundColor( g_flgNight?"#FFF":"#000" );
-
-		cls( g_flgNight?"#FFF":"#000");
-	}
-	else
 	{
 		// メイン画面の周囲をクリア
-		cls( "white" );
+		gra1.cls( "white" );
 	}
 
 	if (0)	// フロアマトリクス
 	{
 		let size= 54;
-		let w = Math.floor(html_canvas.width/size);
-		let g_scr_h = Math.floor(html_canvas.height/size);
-		let sx = (html_canvas.width-w*size)/2+size/2;
-		let sy = (html_canvas.height-g_scr_h*size)/2+size/2;
+		let w = Math.floor(html_canvas1.width/size);
+		let g_scr_h = Math.floor(html_canvas1.height/size);
+		let sx = (html_canvas1.width-w*size)/2+size/2;
+		let sy = (html_canvas1.height-g_scr_h*size)/2+size/2;
 
 
 		for ( let x = 0 ; x < w ; x++ )
 		{
 			for ( let y = 0 ; y < g_scr_h ; y++ )
 			{
-				scr_circle( x*size+sx, y*size+sy, 16+8,1 );
+				gra1.circle( x*size+sx, y*size+sy, 16+8,1 );
 				let s = size-0;
 				let x0 = x*size+sx;
 				let y0 = y*size+sy;
@@ -2910,7 +4159,7 @@ function main_update()
 				let y1 = y0-s/2;
 				let x2 = x0+s/2;
 				let y2 = y0+s/2;
-				box( x1,y1,x2,y2 );
+				gra1.box( x1,y1,x2,y2 );
 			}
 		}
 	}
@@ -2954,18 +4203,18 @@ function main_update()
 
 	if(1)
 	{// 宇宙
-		ctx.save();
-		circle_col( html_canvas.width/2,html_canvas.height/2,255-14,g_flgNight?"#000":"#FFF" );
-		ctx.clip();
-		cls( !g_flgNight?"#000":"#FFF");
-		ctx.restore();
+		gra1.ctx.save();
+		gra1.circle_col( g_scr_ofx,g_scr_ofy,255-14,g_flgNight?"#000":"#FFF" );
+		gra1.ctx.clip();
+		gra1.cls( !g_flgNight?"#000":"#FFF");
+		gra1.ctx.restore();
 	}
 	else
 	{// 宇宙
-		ctx.save();
-		circle_col( html_canvas.width/2,html_canvas.height/2,255-15,"#000" );
-		ctx.clip();
-		ctx.restore();
+		gra1.ctx.save();
+		gra1.circle_col( g_scr_ofx,g_scr_ofy,255-15,"#000" );
+		gra1.ctx.clip();
+		gra1.ctx.restore();
 	}
 
 	
@@ -2975,221 +4224,293 @@ function main_update()
 
 
 	{ // メイン画面表示
-		ctx.save();
-		ctx.translate(html_canvas.width/2,html_canvas.height/2);
 		{
-
-			{ // クリッピング
-				scr_circle( 0,0, (g_scr_w)*g_tile_SZ/2 );
-				ctx.clip();
-				scr_cls();
-			}
-
-			ctx.save();
+			gra1.ctx.save();
+			gra1.ctx.translate(g_scr_ofx,g_scr_ofy);
 			{
-				ctx.rotate( g_scr_rot ) ;
 
-				const ofx = -html_canvas.width/2;	//canvas 左上オフセットx
-				const ofy = -html_canvas.height/2;	//canvas 左上オフセットy
-
-				// 表示エリア確認用
-				box( 
-											g_scr_sx-g_tile_SZ/2	+ofx -0.5,
-											g_scr_sy-g_tile_SZ/2	+ofy -0.5,
-					(g_scr_w-1)*g_tile_SZ+	g_scr_sx+g_tile_SZ/2	+ofx +0.5,
-					(g_scr_h-1)*g_tile_SZ+	g_scr_sy+g_tile_SZ/2	+ofy +0.5	
-				);
-
-				{ // 画面表示
-					let mx = Math.floor( g_scr_cx / g_tile_SZ );
-					let my = Math.floor( g_scr_cy / g_tile_SZ );
-					let nx = (g_scr_cx)%g_tile_SZ;
-					let ny = (g_scr_cy)%g_tile_SZ;
-
-					let wh = Math.floor( html_canvas.width/g_tile_SZ/2 );
-					for ( let y = -wh ; y <= wh+1 ; y++ )
-					{
-						for ( let x = -wh ; x <= wh+1 ; x++ )
-						{
-							let ax = (mx+x);
-							let ay = (my+y);
-							if ( ax >= g_map_SZ	) ax -= g_map_SZ;
-							if ( ay >= g_map_SZ	) ay -= g_map_SZ;
-							if ( ax < 0 		) ax += g_map_SZ;
-							if ( ay < 0 		) ay += g_map_SZ;
-
-							let a = g_map_buf2[ g_map_SZ*ay + ax ];
-
-							g_map_gra2.pseta( ax, ay, a );
-							
-							if ( a > 0 )
-							{
-								let x0 = x*g_tile_SZ -nx;
-								let y0 = y*g_tile_SZ -ny;
-								let x1 = x0-g_tile_SZ/2;
-								let y1 = y0-g_tile_SZ/2;
-								let x2 = x0+g_tile_SZ/2;
-								let y2 = y0+g_tile_SZ/2;
-								if ( a > 0.7 )
-								{
-									fill_hach( x1,y1,x2,y2, 13 );
-								}
-								else
-								{
-									fill_hach( x1,y1,x2,y2, 26 );
-								}
-
-							}
-						}
-					}
+				{ // クリッピング
+					gra1.circle( 0,0, (g_scr_w)*g_tile_SZ/2 );
+					gra1.ctx.clip();
+					gra1.clsb();
 				}
-
-				// エフェクト更新
-				g_effect.effect_update();
-
-				// ユニット更新
-				g_unit.unit_allupdate();
-
-			}
-			ctx.restore();
-
-			{// ユニットセリフ表示
-				for ( let u1 of g_unit.tblUnit ) 
+				gra1.ctx.save();
 				{
-					let c = Math.cos( g_scr_rot );
-					let s = Math.sin( g_scr_rot );
-					let x = u1.x-g_scr_cx;
-					let y = u1.y-g_scr_cy;
+					gra1.ctx.rotate( g_scr_rot ) ;
 
-					let px = x*c - y*s;
-					let py = x*s + y*c;
-					scr_print( px+u1.size, py-u1.size, u1.name, g_flgNight?"#FFF":"#000" );
 
-					// シーケンスのセリフ
-					if ( u1.oneTalk != null )
-					{
-						if ( u1.oneTalk.lim > 0 )
+					// 表示エリア確認用
+					gra1.box( 
+												g_scr_sx-g_tile_SZ/2	-g_scr_ofx -0.5,
+												g_scr_sy-g_tile_SZ/2	-g_scr_ofy -0.5,
+						(g_scr_w-1)*g_tile_SZ+	g_scr_sx+g_tile_SZ/2	-g_scr_ofx +0.5,
+						(g_scr_h-1)*g_tile_SZ+	g_scr_sy+g_tile_SZ/2	-g_scr_ofy +0.5	
+					);
+
+
+					{ // 画面表示
+						let mx = Math.floor( g_scr_cx / g_tile_SZ );
+						let my = Math.floor( g_scr_cy / g_tile_SZ );
+						let nx = (g_scr_cx)%g_tile_SZ;
+						let ny = (g_scr_cy)%g_tile_SZ;
+
+						let wh = Math.floor( g_scr_radius/g_tile_SZ )+1;
+						for ( let y = -wh ; y <= wh+1 ; y++ )
 						{
-							u1.oneTalk.lim--;
-							if ( u1.oneTalk.lim == 0 )
+							for ( let x = -wh ; x <= wh+1 ; x++ )
 							{
-								u1.oneTalk = null;
-							}
-							else
-							{
-								scr_print( px+u1.size+10, py-u1.size+16, u1.oneTalk.str, g_flgNight?"#FFF":"#000" );
-							}
+								let ax = (mx+x);
+								let ay = (my+y);
+								if ( ax >= g_terrain.reso	) ax -= g_terrain.reso;
+								if ( ay >= g_terrain.reso	) ay -= g_terrain.reso;
+								if ( ax < 0 		) ax += g_terrain.reso;
+								if ( ay < 0 		) ay += g_terrain.reso;
 
-						}
-					}
-					else
-					if ( u1.tblTalk != undefined )
-					{
-						if ( u1.limTalk > 0 )
-						{
-							u1.limTalk--;
-							if ( u1.limTalk == 0 )
-							{
-								while( u1.seqTalk < u1.tblTalk.length )
+
 								{
-									u1.seqTalk++;
-									let d = u1.tblTalk[u1.seqTalk];
-									if ( Number.isFinite(d) ) 
+									let idx = g_terrain.tblIndex[ g_terrain.reso*ay + ax ]
+									if ( idx > 0 && idx < g_terrain.points.length-1 )
 									{
-										u1.limTalk = d;
+										let idx0 = idx;
+										let idx1 = idx+1;
+
+
+										let p0 = g_terrain.points[ idx0 ];
+										let p1 = g_terrain.points[ idx1 ];
+
+										let x0 = Math.floor( (p0.x-mx)*g_tile_SZ -nx);
+										let y0 = Math.floor( (p0.y-my)*g_tile_SZ -ny);
+										let x1 = Math.floor( (p1.x-mx)*g_tile_SZ -nx);
+										let y1 = Math.floor( (p1.y-my)*g_tile_SZ -ny);
+
+										if ( p0.end == false )gra1.line( x0,y0,x1,y1 );
+
+
+									}
+								}
+
+
+								let a = g_map_buf3[ g_terrain.reso*ay + ax ];
+								gra2.pset_frgb( ax, ay, [a,a,a] );
+							
+	if(0)
+								if ( a > 0 )
+								{
+									let x0 = x*g_tile_SZ -nx;
+									let y0 = y*g_tile_SZ -ny;
+									let x1 = x0-g_tile_SZ/2;
+									let y1 = y0-g_tile_SZ/2;
+									let x2 = x0+g_tile_SZ/2;
+									let y2 = y0+g_tile_SZ/2;
+									if ( a > 0.7 )
+									{
+										gra1.fill_hach( x1,y1,x2,y2, 13 );
 									}
 									else
 									{
-										break;	
+										gra1.fill_hach( x1,y1,x2,y2, 26 );
 									}
+
 								}
-							}
-							if ( u1.seqTalk < u1.tblTalk.length )
-							{
-								scr_print( px+u1.size, py-u1.size-16, u1.tblTalk[u1.seqTalk], g_flgNight?"#FFF":"#000" );
 							}
 						}
 					}
 
+					// エフェクト更新
+					g_effect.effect_update();
+
+					// ユニット更新
+					g_unit.unit_allupdate();
+
 				}
+				gra1.ctx.restore();
+
+				{// ユニットセリフ表示
+					for ( let u1 of g_unit.tblUnit ) 
+					{
+						let c = Math.cos( g_scr_rot );
+						let s = Math.sin( g_scr_rot );
+						let x = u1.x-g_scr_cx;
+						let y = u1.y-g_scr_cy;
+
+						let px = x*c - y*s;
+						let py = x*s + y*c;
+						gra1.scr_print( px+u1.size, py-u1.size, u1.name, g_flgNight?"#FFF":"#000" );
+
+						// シーケンスのセリフ
+						if ( u1.oneTalk != null )
+						{
+							if ( u1.oneTalk.lim > 0 )
+							{
+								u1.oneTalk.lim--;
+								if ( u1.oneTalk.lim == 0 )
+								{
+									u1.oneTalk = null;
+								}
+								else
+								{
+									gra1.scr_print( px+u1.size+10, py-u1.size+16, u1.oneTalk.str, g_flgNight?"#FFF":"#000" );
+								}
+
+							}
+						}
+						else
+						if ( u1.tblTalk != undefined )
+						{
+							if ( u1.limTalk > 0 )
+							{
+								u1.limTalk--;
+								if ( u1.limTalk == 0 )
+								{
+									while( u1.seqTalk < u1.tblTalk.length )
+									{
+										u1.seqTalk++;
+										let d = u1.tblTalk[u1.seqTalk];
+										if ( Number.isFinite(d) ) 
+										{
+											u1.limTalk = d;
+										}
+										else
+										{
+											break;	
+										}
+									}
+								}
+								if ( u1.seqTalk < u1.tblTalk.length )
+								{
+									gra1.scr_print( px+u1.size, py-u1.size-16, u1.tblTalk[u1.seqTalk], g_flgNight?"#FFF":"#000" );
+								}
+							}
+						}
+
+					}
+				}
+			
 			}
-		
+			gra1.ctx.restore();
 		}
-		ctx.restore();
 	}
 
-	scr_print( 0,8, "units:" + g_unit.tblUnit.length.toString(), "black" );
+	gra1.scr_print( 0,8, "units:" + g_unit.tblUnit.length.toString(), "black" );
 
 	if ( null != document.getElementById("html_canvas2") )
 	{	// 全体地形表示
-		g_map_gra2.streach();
+		gra2.streach();
 
 		// カーソル表示
-		let sc = html_canvas2.height/g_map_SZ;
+		let sc = html_canvas2.height/g_terrain.reso;
 		let x = g_scr_cx/g_tile_SZ*sc+1.5;
 		let y = g_scr_cy/g_tile_SZ*sc+1.5;
 		let r = (g_scr_h/2)*sc;
-		g_map_gra2.scr_circle( x, y, r, "#fff" );
+		gra2.ctx_circle( x, y, r, "#fff" );
 		let ax = r*Math.cos(rad(-90)-g_scr_rot)+x;
 		let ay = r*Math.sin(rad(-90)-g_scr_rot)+y;
-		g_map_gra2.line( x, y, ax,ay, "#fff" );
+		gra2.ctx_line( x, y, ax,ay, "#fff" );
+	}
+	{
+		gra3.streach();
+
+		// カーソル表示
+		let sc = html_canvas3.height/g_terrain.reso;
+		let x = g_scr_cx/g_tile_SZ*sc+1.5;
+		let y = g_scr_cy/g_tile_SZ*sc+1.5;
+		let r = (g_scr_h/2)*sc;
+		gra3.ctx_circle( x, y, r, 0 );
+		let ax = r*Math.cos(rad(-90)-g_scr_rot)+x;
+		let ay = r*Math.sin(rad(-90)-g_scr_rot)+y;
+		gra3.ctx_line( x, y, ax,ay, 0 );
 	}
 
-	requestAnimationFrame( main_update );
+	if ( g_reqId != null) window.cancelAnimationFrame( g_reqId ); // 止めないと多重で実行される
+	g_reqId = requestAnimationFrame( main_update );
 }
-let g_scr_cx = 1664;
-let g_scr_cy = 1664;
-let g_map_buf2;
-let g_map_gra2;
-g_effect = new Effect(100);
+////////////////////////////
+
+//-----------------------------------------------------------------------------
+function map_hotstart()
+//-----------------------------------------------------------------------------
+{
+	if(0)
+	{// 等高線が作られないバグ調査 32x32
+		xorshift.y = -1665690002; 
+		document.getElementById( "html_reso" ).value = 64;
+	}
+		console.log( "xor seed:", xorshift.y );
+
+	gra1 = new GRA_cv( html_canvas1.getContext('2d') );
+
+//	g_terrain.initSeed();
+	g_terrain.initParam();
+	g_map_buf3 = g_terrain.update_map();
+
+//	if ( null != document.getElementById("html_canvas2") )
+	{
+		// キャンバスに描画
+		// 画面作成
+		gra2 = new GRA_img( g_terrain.reso, g_terrain.reso, html_canvas2 );
+		// 画面クリア
+		gra2.cls(255);
+		// 画面描画
+		if(1)
+		{//全マップ開示
+			gra2.put_buf( g_map_buf3 );
+		}
+
+
+		// 画面をキャンバスへ転送
+		gra2.streach();
+
+		// canvasのID表示
+		gra2.ctx_print(0,html_canvas2.height, html_canvas2.id );
+
+
+		// 描画
+		{
+			gra3 = new GRA_img( html_canvas3.width, html_canvas3.height, html_canvas3 );
+
+			calc_rasterize( gra3, g_terrain.points, g_terrain.reso, g_terrain.reso );
+
+			gra3.streach();
+		}
+
+	}
+}
+
+let g_scr_cx;
+let g_scr_cy;
+let gra1;	// for canvas1
+let gra2;	// for canvas2
+let gra3;	// for canvas3
 //-----------------------------------------------------------------------------
 function resetAll()
 //-----------------------------------------------------------------------------
 {
-	map_create();
+	map_hotstart();
 
 	g_effect.effect_reset();
 
 	g_unit.unit_init();
 
 
-	const sx = g_map_SZ/2*g_tile_SZ; 
-	const sy = g_map_SZ/2*g_tile_SZ; 
+	const sx = g_terrain.reso/2*g_tile_SZ; 
+	const sy = g_terrain.reso/2*g_tile_SZ; 
 	game_init(sx,sy);
 
 }
-
+let g_map_buf3;
+let g_reqId;
 //-----------------------------------------------------------------------------
 window.onload = function( e )
 //-----------------------------------------------------------------------------
 {
+//	g_scr_cx = 1664;
+//	g_scr_cy = 1664;
+	g_effect = new Effect(100);
+	
+
 	resetAll();
 
-	requestAnimationFrame( main_update );
+	g_reqId = requestAnimationFrame( main_update );
 }
 
 let g_flgNight = 0;	// 0:day 1:nighit
-//from GUI(HTML)
-//-----------------------------------------------------------------------------
-function html_set_backgroundColor( col )
-//-----------------------------------------------------------------------------
-{
-	let element = document.body;
-	element.style.backgroundColor = col; 
-}
-//-----------------------------------------------------------------------------
-function html_radio_click()
-//-----------------------------------------------------------------------------
-{
-	var list = document.getElementsByName( "html_radio" ) ;
-
-	for ( let l of list )
-	{
-		if ( l.checked ) 
-		{
-		console.log(l.value);
-			g_flgNight = l.value*1;
-			break;
-		}
-	}
-}
