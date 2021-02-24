@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>stg</title>
+	<style>
+		.group
+			{
+				display:inline-block; 
+				padding: 6px; 
+				border-radius: 7px; 
+				border:1px solid #aaa;
+				text-align:right;
+				font-family:monospace;font-size:14px;
+//				display:none;
+			}
+			.button
+			{
+				display:inline-block; 
+				text-align:center;
+				font-family:monospace;font-size:14px; 
+			}
+			.readme
+			{
+				display:inline-block; 
+				text-align:center;
+				font-family:monospace;font-size:12px; 
+			}
+	</style>
+	</head>
+	<body align="center"  >
+		<H1 style="font-family:sans-serif">life Gunner</H1>
+		<p style="font-family:sans-serif">Shooting in Life Game</p>
+
+
+
+
+		<div class="group">
+	
+			<select id="html_reso" class="button" >
+				<option value="32" >32x32</option>
+				<option value="48" >48x48</option>
+				<option value="64" selected>64x64</option>
+				<option value="128" >128x128</option>
+				<option value="256" >256x256</option>
+				<option value="512" >512x512</option>
+			</select>
+			<input type="text" id="html_landval" value="0.3" size="3" class="button" >
+			<input type="button" value="地形変更" onClick="html_updateSize()" class="button" >
+		</div>
+		<div class="group">
+			Life
+			<input type="button" value="クリア" onClick="html_updateClear()" class="button" >
+			<div class="group">
+				<input type="text" id="html_randval" value="0.5" size="3" class="button" >
+				<input type="button" value="ランダム" onClick="html_updateSeed()" class="button" >
+			</div>
+			<input type="button" value="編集保存" onClick="html_updateStore()" class="button" >
+				<input type="checkbox" name="html_bold" >太pen
+				<input type="checkbox" name="html_black" >黒pen
+				<input type="checkbox" name="html_symmetry" >対称pen
+		</div>
+		<div class="group">
+
+
+				int<input type="text" id="html_speed" value="20" size="3" class="button" >ms
+
+
+			<input type="button" value="reset" onClick="html_updateReset()" class="button" >
+
+			<input type="button" value="next" onClick="html_updateNext()" class="button" >
+
+			世代<input type="text" id="html_gen" value="0" size="3" class="button" >
+
+		</div>
+		<div class="group">
+			<input type="button" value="フルスクリーン" onClick="html_updateFullscreen()" class="button" >
+		</div>
+<!--
+				<input type="checkbox" name="html_auto" onchange ="html_updateAuto()" checked>auto
+
+			<div class="group">
+				ペン
+				<input name="html_radio" type="radio" value="0" onchange="html_updatePen(1)" checked>day
+				<input name="html_radio" type="radio" value="1" onchange="html_updatePen(2)" >night
+			</div>
+
+			<input type="button" value="フルスクリーン" onClick="html_updateFullscreen()" class="button" >
+		<canvas id="html_canvas_land"  width="256" height="256" style="border:1px solid" ></canvas>
+		<canvas id="html_canvas_v2"  width="256" height="256" style="border:1px solid" ></canvas>
+		<canvas id="html_canvasB"  width="384" height="384" style="border:1px solid" ></canvas>
+		<canvas id="html_canvas"  width="384" height="384" style="border:1px solid" ></canvas>
+		<canvas id="html_canvasA"  width="384" height="384" style="border:1px solid" ></canvas>
+		<canvas id="html_canvasB"  width="384" height="384" style="border:1px solid" ></canvas>
+		<canvas id="html_canvasB"  width="256" height="256" style="border:1px solid" ></canvas>
+		<br>
+			<input type="button" value="A→Bコピー" onClick="html_updateCopy()" class="button" >
+		<br>
+		<canvas id="html_canvasC"  width="256" height="256" style="border:1px solid" ></canvas>
+-->
+		
+		<br>
+		<canvas id="html_canvas"  width="480" height="384" style="border:0px solid" ></canvas>
+		<br>
+		<br>
+		<br>
+
+		<div class="readme">
+			<p>～ストーリー～</p>
+<p>「ライフゲームってどこがゲームなん？」「私の前でも同じことが言えるかな？」「は！？」</p>
+<p>気が付くとあなたはライフゲームの中にいた。得点を稼いで１位になれば脱出できるらしい・・・</p>
+<p>ライフガンを片手に、ライフキングを倒せ！</p>
+		<br>
+
+
+			<p>～操作方法～</p>
+			<p>※このゲームにはゲームパッドが必要です。</p>
+			<p>左レバー：移動</p>
+			<p>ショット：Ａor×ボタン</p>
+			<p>ボンバー：Ｘor□ボタン</p>
+			<br>
+			<p>～遊び方～</p>
+			<p>ライフキングはライフを無尽蔵に生み出す敵のボスです。こいつをやっつけないことにはライフは収まりません/p>
+
+			
+
+			</p>
+
+		</div>
+
+		<script src="main.js"></script>
+	</body>
+</html>

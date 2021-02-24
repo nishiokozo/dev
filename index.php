@@ -40,6 +40,8 @@
 						$path = $files[$i];
 						if ( $path == "index.php" ) continue;
 						if ( $path == "reject" ) continue;
+						if ( strrchr( $path, '.')===".txt" ) continue; 
+						if ( strrchr( $path, '.')===".md" ) continue; 
 						echo '<div><a href="' .$path. '" rel="nofollow">' .$path. '</a></div>';
 					}
 				?>

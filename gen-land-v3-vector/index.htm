@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>wld</title>
+		<style>
+			.group
+			{
+				display:inline-block; 
+				padding: 6px; 
+				border-radius: 7px; 
+				border:1px solid #aaa;
+				text-align:right;
+			}
+			.readme
+			{
+				display:inline-block; 
+				text-align:center;
+				font-size:12px;
+				font-family:monospace;
+			}
+		</style>
+	</head>
+	<body align="center" style="font-family:monospace">
+		<H2 style="font-family:sans-serif">地形生成-v3 ベクタライズ</H2>
+
+
+	<div class="group">
+
+		<div class="group">
+			<div class="group">
+			  blur
+				A:<input type="text" id="html_blur1" value="400" size="3" >
+				B:<input type="text" id="html_blur2" value="40" size="3" >
+				C:<input type="text" id="html_blur3" value="1" size="3" >
+			</div>
+			<div class="group">
+			合成比率
+				A:<input type="text" id="html_bp1" value="8" size="3" >
+				B:<input type="text" id="html_bp2" value="4" size="3" >
+				C:<input type="text" id="html_bp3" value="1" size="3" >
+			</div>
+	<!--
+
+		  雨量
+			<input type="text" id="html_rain" value="1" size="3" >
+		  雨数
+			<input type="text" id="html_rain2" value="3" size="3" >
+	-->
+		  地面
+			<input type="text" id="html_low" value="0.5" size="3" >
+		  諧調
+			<input type="text" id="html_col" value="6" size="3" >
+
+			<input type="button" value="param更新" onClick="html_updateParam()">
+		</div>
+
+
+	
+			reso
+			<select id="html_reso">
+				
+				<option value="32" >32x32</option>
+				<option value="64" >64x64</option>
+				<option value="128" selected>128x128</option>
+				<option value="192" >192x192</option>
+				<option value="384" >384x384</option>
+<!--
+				<option value="200" >200x200</option>
+-->
+			</select>
+
+	  <input type="button" value="更新" onClick="html_updateAll()">
+	</div>
+
+<br>
+<!--
+		<canvas id="html_canvas5"  width="256" height="256" style="border:1px solid" ></canvas>
+-->
+		<canvas id="html_canvas1"  width="128" height="128" style="border:1px solid" ></canvas>
+		<canvas id="html_canvas2"  width="128" height="128" style="border:1px solid" ></canvas>
+		<canvas id="html_canvas3"  width="128" height="128" style="border:1px solid" ></canvas>
+<br>
+		<canvas id="html_canvas4"  width="384" height="384" style="border:1px solid" ></canvas>
+		<canvas id="html_canvas6" width="384" height="384"  style="border:1px solid" ></canvas>
+
+<br>
+
+		<script src="main.js"></script>
+		<br>
+
+		<div class="readme">
+			<p>～概要～</p>
+			<p>山岳地形のベクタライズ実験</p>
+			<p>ベクタライズし</p>
+			<p>解像度を上げてラスタライズ</p>
+			<p>高低差を等高線として描画</p>
+			<br/>
+			<p>～操作～</p>
+			<p>カーソル左右上下</p>
+			<br/>
+			<p>～履歴～</p>
+			<p>2021/02/23 カーソルキースクロールに対応</p>
+
+		</div>
+
+	</body>
+</html>

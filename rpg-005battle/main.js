@@ -1566,200 +1566,6 @@ function calc_rasterize( gra, points, W, H )
 
 }
 
-
-///// 開発用 /////
-
-
-class Terrain
-{
-
-	bufA = [];
-	bufB = [];
-	bufC = [];
-
-	blur1;
-	blur2;
-	blur3;
-	bp1;
-	bp2;
-	bp3;
-	
-	tblIndex = [];
-	points = [];
-
-	low;	// 地面
-	col;	// 諧調
-	reso;	// マップテクスチャサイズ
-
-	//-----------------------------------------------------------------------------
-	initParam()
-	//-----------------------------------------------------------------------------
-	{
-		this.blur1 = document.getElementById( "html_blur1" ).value*1;
-		this.blur2 = document.getElementById( "html_blur2" ).value*1;
-		this.blur3 = document.getElementById( "html_blur3" ).value*1;
-		this.bp1 = document.getElementById( "html_bp1" ).value*1;
-		this.bp2 = document.getElementById( "html_bp2" ).value*1;
-		this.bp3 = document.getElementById( "html_bp3" ).value*1;
-		this.col =  document.getElementById( "html_col" ).value * 1.0;
-		this.low =  document.getElementById( "html_low" ).value * 1.0;
-
-		this.reso =  document.getElementById( "html_reso" ).value * 1.0;
-
-		this.bufA = [];
-		this.bufB = [];
-		this.bufC = [];
-
-
-		for ( let i = 0 ; i < this.reso*this.reso ; i++ )
-		{
-			this.bufA[i] = rand(1);
-			this.bufB[i] = rand(1);
-			this.bufC[i] = rand(1);
-		}
-	}
-	//-----------------------------------------------------------------------------
-	update_map()
-	//-----------------------------------------------------------------------------
-	{
-		let SZ = this.reso;
-
-		// 3x3ブラーフィルタ作成
-		let pat33 = calc_pat_normalize(
-		[
-			[1,2,1],
-			[2,4,2],
-			[1,2,1],
-		]);
-		// 5x5ガウスブラーフィルタ作成
-	//	let pat55 = calc_pat_normalize( calc_pat_gauss2d( 5, 1 ) );
-		// 9x9ガウスブラーフィルタ作成
-		let pat99 = calc_pat_normalize( calc_pat_gauss2d( 9, 2 ) );
-
-
-		//-----------------------------------------------------------------------------
-		function drawCanvas( canvas, buf, str=null )
-		//-----------------------------------------------------------------------------
-		{
-			//-----------------------------------------------------------------------------
-			function put_buf( gra, buf )
-			//-----------------------------------------------------------------------------
-			{
-				let h = gra.img.height;
-				let w = gra.img.width
-				for ( let y = 0 ; y < h ; y++ )
-				{
-					for ( let x = 0 ; x < w ; x++ )
-					{
-						let v = buf[ w*y + x ];
-						gra.pset_frgb( x, y, [v,v,v] );
-					}
-				}
-			}
-			// 画面作成
-			{
-				let gra = new GRA_img( SZ, SZ, canvas );
-				// 画面クリア
-				gra.cls(0);
-				// 画面描画
-				put_buf( gra, buf );
-				// 画面をキャンバスへ転送
-				gra.streach();
-
-				// canvasのID表示
-				if ( str == null ) str = canvas.id;
-				gra.print(1,gra.cv.height-1, str );
-			}
-		}
-		
-		//--
-		
-		// ランダムの種をコピー
-		let buf1 = Array.from(this.bufA);
-		let buf2 = Array.from(this.bufB);
-		let buf3 = Array.from(this.bufC);
-
-		if(0)
-		{
-			// ベクター化しやすいように縁取り
-			buf1 = calc_makeedge( buf1, SZ, SZ, 0,0 );
-			buf2 = calc_makeedge( buf2, SZ, SZ, 0,0 );
-			buf3 = calc_makeedge( buf3, SZ, SZ, 0,0 );
-		}
-		if(0)
-		{
-			// 中央に穴をあける
-			buf1 = calc_makecylinder( buf1, SZ, SZ, SZ/2, SZ/2, SZ/8/2, 0 );
-			buf2 = calc_makecylinder( buf2, SZ, SZ, SZ/2, SZ/2, SZ/8/2, 0 );
-			buf3 = calc_makecylinder( buf3, SZ, SZ, SZ/2, SZ/2, SZ/8/2, 0 );
-		//	drawCanvas( html_canvas6, buf1, "A" );
-		}
-
-		// 鞣し
-		// ブラーフィルタn回適用
-		for ( let i = 0 ; i < this.blur1 ; i++ ) buf1 = calc_blur( buf1, pat33, SZ, SZ, this.blur1 );
-		buf1 = calc_autolevel(buf1, SZ,SZ);
-
-		for ( let i = 0 ; i < this.blur2 ; i++ ) buf2 = calc_blur( buf2, pat33, SZ, SZ, this.blur2 );
-		buf2 = calc_autolevel(buf2, SZ,SZ);
-
-		for ( let i = 0 ; i < this.blur3 ; i++ ) buf3 = calc_blur( buf3, pat33, SZ, SZ, this.blur3 );
-		buf3 = calc_autolevel(buf3, SZ,SZ);
-
-		let buf4= [];
-
-		{//合成
-			for ( let x = 0 ; x < SZ*SZ ; x++ )
-			{
-				buf4[x] =(buf1[x]*this.bp1+buf2[x]*this.bp2+buf3[x]*this.bp3)/(this.bp1+this.bp2+this.bp3);
-			}
-		}
-
-		// 自動レベル調整
-		buf4 = calc_autolevel(buf4, SZ, SZ);
-
-		// ローパスフィルタ
-		buf4 = calc_lowpass( buf4, SZ, SZ, this.low );
-
-		// 自動レベル調整
-		buf4 = calc_autolevel( buf4, SZ,SZ, 0 );
-
-		{
-//			let [x,y,w] = [SZ/2-1,SZ/2-1,3];
-			let [x,y,w] = [13,15,2];
-			buf4 = calc_makebox( buf4, SZ, SZ, x, y, x+w, y+w, 0.8 );
-		}
-
-
-		[this.points,this.tblIndex] = calc_vectorize( buf4, SZ, SZ, this.col );
-
-		buf4 = calc_parapolize( buf4, SZ, SZ, this.col );
-
-
-	if(0)
-		// 雨削られるシミュレーション
-		{
-			let rate = document.getElementById( "html_rain" ).value*1;
-			let num = document.getElementById( "html_rain2" ).value*1;
-			for ( let i = 0 ; i < num ; i++ ) buf4 = pat_calc_rain( buf2, pat33, SZ, SZ, rate );
-
-			// 自動レベル調整 fill:0～1.0の範囲に正規化 up:ハイレベルを1.0に合わせて底上げ
-			buf4 = calc_autolevel( buf4, SZ*SZ );
-		}
-
-		
-		return buf4;
-
-	}
-}
-
-let g_terrain = new Terrain;
-
-
-
-/////////////////////////
-
-
 class GRA_cv // 直接キャンバスに描画する
 {
 	//-----------------------------------------------------------------------------
@@ -1956,6 +1762,200 @@ class GRA_cv // 直接キャンバスに描画する
 	}
 
 }
+
+///// 開発用 /////
+
+
+class Terrain
+{
+
+	bufA = [];
+	bufB = [];
+	bufC = [];
+
+	blur1;
+	blur2;
+	blur3;
+	bp1;
+	bp2;
+	bp3;
+	
+	tblIndex = [];
+	points = [];
+
+	low;	// 地面
+	col;	// 諧調
+	reso;	// マップテクスチャサイズ
+
+	//-----------------------------------------------------------------------------
+	initParam()
+	//-----------------------------------------------------------------------------
+	{
+		this.blur1 = document.getElementById( "html_blur1" ).value*1;
+		this.blur2 = document.getElementById( "html_blur2" ).value*1;
+		this.blur3 = document.getElementById( "html_blur3" ).value*1;
+		this.bp1 = document.getElementById( "html_bp1" ).value*1;
+		this.bp2 = document.getElementById( "html_bp2" ).value*1;
+		this.bp3 = document.getElementById( "html_bp3" ).value*1;
+		this.col =  document.getElementById( "html_col" ).value * 1.0;
+		this.low =  document.getElementById( "html_low" ).value * 1.0;
+
+		this.reso =  document.getElementById( "html_reso" ).value * 1.0;
+
+		this.bufA = [];
+		this.bufB = [];
+		this.bufC = [];
+
+
+		for ( let i = 0 ; i < this.reso*this.reso ; i++ )
+		{
+			this.bufA[i] = rand(1);
+			this.bufB[i] = rand(1);
+			this.bufC[i] = rand(1);
+		}
+	}
+	//-----------------------------------------------------------------------------
+	update_map()
+	//-----------------------------------------------------------------------------
+	{
+		let SZ = this.reso;
+
+		// 3x3ブラーフィルタ作成
+		let pat33 = calc_pat_normalize(
+		[
+			[1,2,1],
+			[2,4,2],
+			[1,2,1],
+		]);
+		// 5x5ガウスブラーフィルタ作成
+	//	let pat55 = calc_pat_normalize( calc_pat_gauss2d( 5, 1 ) );
+		// 9x9ガウスブラーフィルタ作成
+		let pat99 = calc_pat_normalize( calc_pat_gauss2d( 9, 2 ) );
+
+
+		//-----------------------------------------------------------------------------
+		function drawCanvas( canvas, buf, str=null )
+		//-----------------------------------------------------------------------------
+		{
+			//-----------------------------------------------------------------------------
+			function put_buf( gra, buf )
+			//-----------------------------------------------------------------------------
+			{
+				let h = gra.img.height;
+				let w = gra.img.width
+				for ( let y = 0 ; y < h ; y++ )
+				{
+					for ( let x = 0 ; x < w ; x++ )
+					{
+						let v = buf[ w*y + x ];
+						gra.pset_frgb( x, y, [v,v,v] );
+					}
+				}
+			}
+			// 画面作成
+			{
+				let gra = new GRA_img( SZ, SZ, canvas );
+				// 画面クリア
+				gra.cls(0);
+				// 画面描画
+				put_buf( gra, buf );
+				// 画面をキャンバスへ転送
+				gra.streach();
+
+				// canvasのID表示
+				if ( str == null ) str = canvas.id;
+				gra.print(1,gra.cv.height-1, str );
+			}
+		}
+		
+		//--
+		
+		// ランダムの種をコピー
+		let buf1 = Array.from(this.bufA);
+		let buf2 = Array.from(this.bufB);
+		let buf3 = Array.from(this.bufC);
+
+		if(0)
+		{
+			// ベクター化しやすいように縁取り
+			buf1 = calc_makeedge( buf1, SZ, SZ, 0,0 );
+			buf2 = calc_makeedge( buf2, SZ, SZ, 0,0 );
+			buf3 = calc_makeedge( buf3, SZ, SZ, 0,0 );
+		}
+		if(0)
+		{
+			// 中央に穴をあける
+			buf1 = calc_makecylinder( buf1, SZ, SZ, SZ/2, SZ/2, SZ/8/2, 0 );
+			buf2 = calc_makecylinder( buf2, SZ, SZ, SZ/2, SZ/2, SZ/8/2, 0 );
+			buf3 = calc_makecylinder( buf3, SZ, SZ, SZ/2, SZ/2, SZ/8/2, 0 );
+		//	drawCanvas( html_canvas6, buf1, "A" );
+		}
+
+		// 鞣し
+		// ブラーフィルタn回適用
+		for ( let i = 0 ; i < this.blur1 ; i++ ) buf1 = calc_blur( buf1, pat33, SZ, SZ, this.blur1 );
+		buf1 = calc_autolevel(buf1, SZ,SZ);
+
+		for ( let i = 0 ; i < this.blur2 ; i++ ) buf2 = calc_blur( buf2, pat33, SZ, SZ, this.blur2 );
+		buf2 = calc_autolevel(buf2, SZ,SZ);
+
+		for ( let i = 0 ; i < this.blur3 ; i++ ) buf3 = calc_blur( buf3, pat33, SZ, SZ, this.blur3 );
+		buf3 = calc_autolevel(buf3, SZ,SZ);
+
+		let buf4= [];
+
+		{//合成
+			for ( let x = 0 ; x < SZ*SZ ; x++ )
+			{
+				buf4[x] =(buf1[x]*this.bp1+buf2[x]*this.bp2+buf3[x]*this.bp3)/(this.bp1+this.bp2+this.bp3);
+			}
+		}
+
+		// 自動レベル調整
+		buf4 = calc_autolevel(buf4, SZ, SZ);
+
+		// ローパスフィルタ
+		buf4 = calc_lowpass( buf4, SZ, SZ, this.low );
+
+		// 自動レベル調整
+		buf4 = calc_autolevel( buf4, SZ,SZ, 0 );
+
+		{
+//			let [x,y,w] = [SZ/2-1,SZ/2-1,3];
+			let [x,y,w] = [13,15,2];
+			buf4 = calc_makebox( buf4, SZ, SZ, x, y, x+w, y+w, 0.8 );
+		}
+
+
+		[this.points,this.tblIndex] = calc_vectorize( buf4, SZ, SZ, this.col );
+
+		buf4 = calc_parapolize( buf4, SZ, SZ, this.col );
+
+
+	if(0)
+		// 雨削られるシミュレーション
+		{
+			let rate = document.getElementById( "html_rain" ).value*1;
+			let num = document.getElementById( "html_rain2" ).value*1;
+			for ( let i = 0 ; i < num ; i++ ) buf4 = pat_calc_rain( buf2, pat33, SZ, SZ, rate );
+
+			// 自動レベル調整 fill:0～1.0の範囲に正規化 up:ハイレベルを1.0に合わせて底上げ
+			buf4 = calc_autolevel( buf4, SZ*SZ );
+		}
+
+		
+		return buf4;
+
+	}
+}
+
+let g_terrain = new Terrain;
+
+
+
+/////////////////////////
+
+
 
 
 //////////////////////
@@ -4430,12 +4430,6 @@ function main_update()
 function map_hotstart()
 //-----------------------------------------------------------------------------
 {
-	if(0)
-	{// 等高線が作られないバグ調査 32x32
-		xorshift.y = -1665690002; 
-		document.getElementById( "html_reso" ).value = 64;
-	}
-		console.log( "xor seed:", xorshift.y );
 
 	gra1 = new GRA_cv( html_canvas1.getContext('2d') );
 
