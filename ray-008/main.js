@@ -477,11 +477,17 @@ function Raytrace( P, I, nest, lgt )
 			if ( sur2.flg )
 			{
 				// 影の中
-				d	*=  sur2.valTransmittance;
-
-//				let C = Raytrace( sur.Q, mL, nest+1, lgt );
+				if ( 1 )
+				{
+					d	*=  sur2.valTransmittance;
+				}
+				else
+				{	//透明体の影のレンダリング実験。視点からのレイトレ―スで集光は計算できないような。
+					//
+					let C = Raytrace( sur.Q, mL, nest+1, lgt );
+					d = C.y;//影のレンダリング実験。
+				}
 				
-//				d = C.y;//影のレンダリング実験。球体の反射が影にも映りこむ。おかしく感じる。反射成分は10%ほど。透過光の方がずっと明るいはず。
 			}
 		}
 
@@ -550,15 +556,15 @@ function initScene( n )
 			// アクリル	屈折率	1.49~1.53
 			// ガラス	屈折率	1.51	一般的なガラス
 			// ダイヤ	屈折率	2.4195
-		if(1)
-		{
+		if(0)
+		{//真正面
 			g_tblPlate.push( new Plate( new vec3( 0   ,  0 ,  0    ), normalize(new vec3(0, 1,0))  , new vec3(0.8, 0.8, 0.8), 0.0, 1.0, 20, 0.0, 0.0,fn=0.0 ) );
 			g_tblSphere.push( new Sphere(new vec3( 0.0 , 1.0 ,-1),   1.0 , new vec3(1.0, 1.0, 1.0), rl=0.1, rr=1.5, pw=200, 0.0, tm=0.5,fn=0.0 ) );
 			g_tblLight.push( new Light( new vec3( 20   ,  12 , -20 ), new vec3(1800, 1800, 1800) ) );
 
 		}
 		else
-		{
+		{//伸びる影
 			g_tblPlate.push( new Plate( new vec3( 0   ,  0 ,  0    ), normalize(new vec3(0, 1,0))  , new vec3(0.8, 0.8, 0.8), 0.0, 1.0, 20, 0.0, 0.0,fn=0.0 ) );
 			g_tblSphere.push( new Sphere(new vec3( 2.0 , 1.0 ,2),   1.0 , new vec3(1.0, 1.0, 1.0), rl=0.1, rr=1.5, pw=200, 0.0, tm=0.5,fn=0.0 ) );
 			g_tblLight.push( new Light( new vec3( 20   ,  12 , 20 ), new vec3(1800, 1800, 1800) ) );
