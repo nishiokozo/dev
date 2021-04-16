@@ -16,7 +16,7 @@ function update()
 		{
 			case 3:
 				{
-					g_str0 = "国際松濤館";
+					g_str0 = "国際松濤館(式)";
 					g_str1 = "一本組手";
 					g_str2 = "";
 				}
@@ -106,6 +106,89 @@ let	g_str1 = "";
 let	g_str2 = "";
 let	g_set = 0;
 
+
+//-----------------------------------------------------------------------------
+function shuffle( src )	// すべてをシャッフル
+//-----------------------------------------------------------------------------
+{
+	let dst = [];
+
+	while( src.length > 0 )
+	{
+		let k = Math.floor( Math.random() * src.length );
+
+		dst.push( src[k] );
+		src.splice( k, 1 );
+	}
+	return dst;
+}
+//-----------------------------------------------------------------------------
+function shuffle_num( src, num ) // 必ずnum 個だけシャッフルする
+//-----------------------------------------------------------------------------
+{
+
+	//-----------------------------------------------------------------------------
+	function shuffle_n( src, n ) // n 個だけシャッフルする
+	//-----------------------------------------------------------------------------
+	{
+		// ①リストaから無作為にn個抜き出す->list_b
+		let list_a=[];
+		for ( let i = 0 ; i < src.length ; i++ )
+		{
+			list_a[i] = { rnd:Math.random(), idx:i, flg:false };
+		}
+		list_a.sort( function(a,b){return ( a.rnd>b.rnd )?1:-1;} );
+		for ( let i = 0 ; i < src.length ; i++ )
+		{
+			if ( i < n ) list_a[i].flg = true;	// シャッフル対象
+		}
+		let list_b = [];
+		for ( let a of list_a )
+		{
+			if ( a.flg )
+			{
+				list_b.push( { rnd:a.rnd, idx:a.idx, flg:a.flg } );
+			}
+		}
+		list_a.sort( function(a,b){return ( a.idx>b.idx )?1:-1;} );
+
+	//console.table(list_a);
+	//console.table(list_b);
+
+		// ②混ぜたリストを空いている所に順に戻してゆく
+		let s = 0;
+		for ( let i = 0 ; i < list_a.length ; i++ )
+		{
+			if ( list_a[i].flg )
+			{
+				list_a[i].idx = list_b[s++].idx;
+			}
+		}
+
+		// ③出力
+		let dst = [];
+		for ( let a of list_a ) 
+		{
+			dst.push( src[ a.idx ] );
+		}
+		return dst;
+	}
+
+	// main
+
+	let cnt = 0;
+	let dst=[];
+	while( cnt != num )
+	{
+		cnt = 0;
+		dst = shuffle_n(src,num);
+		for ( let i = 0 ; i < src.length ; i++ )
+		{
+			if ( src[i] != dst[i] ) cnt++;
+		}
+	}
+	return dst
+}
 //-----------------------------------------------------------------------------
 function set_param( flgShuffle )
 //-----------------------------------------------------------------------------
@@ -166,7 +249,6 @@ function set_param( flgShuffle )
 
 
 
-//		if ( false == document.getElementsByName( "html_jshort" )[0].checked )
 		{
 			if ( document.getElementsByName( "html_jnum1b" )[0].checked ) tblJyuu.push( ["自由一本","後ろ蹴り","一番"] );
 			if ( document.getElementsByName( "html_jnum2b" )[0].checked ) tblJyuu.push( ["自由一本","後ろ蹴り","二番"] );
@@ -184,38 +266,8 @@ function set_param( flgShuffle )
 
 	if ( flgShuffle )
 	{
-
-		function shuffle( tblSrc )
-		{
-			let tblDst = [];
-
-			while( tblSrc.length > 0 )
-			{
-				n = tblSrc.length;
-				k = Math.floor( Math.random() * n );
-
-				tblDst.push( tblSrc[k] );
-				tblSrc.splice( k, 1 );
-			}
-			return tblDst;
-		}
-
-		function shuffle_half( tbl, n )
-		{
-//console.log(Math.floor(tbl.length/4),n);
-//console.log(tbl);
-			for ( let i = 0 ; i < n ; i++ )	// 適当な回数入れ替え
-			{
-				let a = Math.floor( Math.random() * tbl.length );
-				let b = Math.floor( Math.random() * tbl.length );
-
-				[ tbl[b], tbl[a] ] = [ tbl[a], tbl[b] ];
-
-			}
-			return tbl;
-		}
-		tblKihon = shuffle_half( tblKihon, Math.floor(tblKihon.length/4) );
-		tblJyuu = shuffle_half( tblJyuu, Math.floor(tblJyuu.length/4) );
+		tblKihon = shuffle_num( tblKihon, Math.floor(tblKihon.length/4) );
+		tblJyuu = shuffle_num( tblJyuu, Math.floor(tblJyuu.length/4) );
 	}
 
 	g_tblWaza = tblKihon.concat( tblJyuu );
@@ -248,6 +300,14 @@ function reset()
 
 
 }
+
+	let src=[11,22,33,44,55];
+	let dst=shuffle_num(src,3);
+
+		console.log( src );
+		console.log( dst );
+
+
 
 reset();
 
