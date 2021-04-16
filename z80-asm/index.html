@@ -1,0 +1,46 @@
+<title>Z80 Assembler</title>
+<meta charset="utf-8">
+<link rel="stylesheet" type="text/css" media="screen" href="style.css" />
+
+
+	<body>
+			<h2>Z80 Assembler</h2>
+		<input type="button" value="Assemble" onClick="assemble(1)">
+
+	<br>
+		<div align="center" style="font-family:monospace">output
+			<input name="html_radio" type="radio" value="1" onchange="html_radio_click()" checked>Intel Hex
+			<input name="html_radio" type="radio" value="2" onchange="html_radio_click()" >dump Hex
+			<input name="html_radio" type="radio" value="4" onchange="html_radio_click()" >cmd Hex
+			<br>
+
+		<textarea id="src" cols="52" rows="16" style="font-family:monospace">; Z80 code</textarea>
+		<textarea id="dst" cols="52" rows="16" style="font-family:monospace"></textarea>
+
+		<script type="text/javascript" src="asm.js"></script>
+		</div>
+
+		<div align="center" style="font-family:monospace">
+
+			<p>《概要》</p>
+<p>Z80アセンブリをIntelHexに変換<p>
+<p>構文解析を正規解析で行うというシンプル実装を思いついて実験的に作ってみたもの。<p>
+			<br>
+			<p>《機能》</p>
+			<p>IntelHEX出力<p>
+			<p>ラベル<p>
+			<p>ORG擬似命令<p>
+			<p>EQU擬似命令<p>
+			<p>DEFB擬似命令<p>
+			<p>『;』コメント<p>
+			<p>『:』セパレータ<p>
+			<br>	
+			<p>《メモ》</p>
+			<p>2021/01/13 ラベル値にORGが反映されてなかったバグを取る</p>
+			<p>2021/01/10 数百ほどあったバグを取る</p>
+			<p>2021/01/09 数十ほどあったバグを取る</p>
+			<p>2021/01/07 数百ほどあったバグを取る</p>
+
+		</div>
+	</body>
+</html>

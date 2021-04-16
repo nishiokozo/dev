@@ -1,0 +1,52 @@
+body
+{
+	text-align:center;
+//	border:solid 1px #ddd;
+}
+
+table
+{
+//	width:640;
+	margin:0 auto;
+	text-align:center;
+	border:solid 1px #ddd;
+}
+
+td
+{
+//3:45 2014/08/24	width:640;
+	text-align:center;
+	border:solid 1px #ddd;
+}
+
+trx
+{
+	padding:10px;
+	border-bottom:solid 1px #ddd;
+//	text-align:center;
+	text-color:#ddd;
+}
+
+#navi 
+{
+//	border-bottom:solid 1px #ddd;
+}
+
+.post {
+	padding:10px;
+}
+
+#foot {
+//	border-top:solid 1px #ccc;
+	text-align:center;
+	padding:10px;
+}
+
+msg
+{
+    border:1px solid #888888;
+    width:100%;
+    height:80%;
+    margin:0px 0px;
+    padding:0px;
+}
