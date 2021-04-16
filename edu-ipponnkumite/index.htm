@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>edu</title>
+		<style>
+			@font-face 
+			{
+				font-family: 'MyFont';
+//				src: url(KouzanMouhituFontOTF.otf);
+				src: url(aoyagireisyosimo_ttf_2_01.ttf);
+//				src: url(ReggaeOne-Regular.ttf);
+			}
+			font2
+			{
+				font-size: 40px;
+				font-family: MyFont;
+//				display:none;
+			}
+			font4
+			{
+				font-size: 200px;
+				font-family: MyFont;
+			}
+
+			.groupC
+			{
+				display:inline-block; 
+				padding: 6px; 
+				border-radius: 7px; 
+				border:1px solid #aaa;
+				text-align:center;
+			}
+			.groupR
+			{
+				display:inline-block; 
+				padding: 6px; 
+				border-radius: 7px; 
+				border:1px solid #aaa;
+				text-align:right;
+			}
+			.groupL
+			{
+				display:inline-block; 
+				padding: 6px; 
+				border-radius: 7px; 
+				border:1px solid #aaa;
+				text-align:left;
+			}
+			.readme
+			{
+				display:inline-block; 
+				text-align:center;
+				font-size:12px;
+				font-family:monospace;
+			}
+			.button
+			{
+				display:inline-block; 
+				text-align:center;
+				font-size:14px;
+				font-family:monospace;
+			}
+		</style>
+
+		
+	</head>
+	<body align="center">
+		<div class="groupR">
+			<div class="groupL">
+				<input type="checkbox" name="html_kall"   			>基本一本<br>
+				<input type="checkbox" name="html_knum1"  checked	>一番：上段・中段・前蹴り・横蹴込み・回蹴り<br>
+				<input type="checkbox" name="html_knum2"  checked	>二番：上段・中段・前蹴り・横蹴込み・回蹴り<br>
+				<input type="checkbox" name="html_knum3"  			>三番：上段・中段・前蹴り<br>
+				<input type="checkbox" name="html_knum4"  			>四番：上段・中段・前蹴り<br>
+			</div>
+			<div class="groupL">
+				<input type="checkbox" name="html_jall"   checked	>自由一本<br>
+				<input type="checkbox" name="html_jnum1"  checked	>一番：上段・中段・前蹴り・横蹴り・回蹴り<input type="checkbox" name="html_jnum1b"  checked	>後蹴り・刻み突き・逆突き<br>
+				<input type="checkbox" name="html_jnum2"  checked	>二番：上段・中段・前蹴り・横蹴り・回蹴り<input type="checkbox" name="html_jnum2b"  checked	>後蹴り・刻み突き・逆突き<br>
+				<input type="checkbox" name="html_jnum3"  			>三番：上段・中段・前蹴り・横蹴り・回蹴り<input type="checkbox" name="html_jnum3b"          >後蹴り・刻み突き・逆突き<br>
+				<input type="checkbox" name="html_jnum4"  			>四番：上段・中段・前蹴り<br>
+			</div>
+				<input type="text" id="html_interval" value="4" size="3" class="button" >
+				秒間隔
+			<input type="button" value="リセット" onClick="html_updateReset()" class="button" >
+			<input type="button" value="スタート" onClick="html_updateStart()" class="button" >
+		</div><br> 
+
+		<script src="main.js"></script>
+			<h1 id="html_set">0</h1>
+
+		<font2>
+			<span id="html_message0"></span>
+		</font2>
+		<br>
+		<br>
+		<br>
+		<font4>
+			<span id="html_message1"></span>
+		</font4>
+		<br>
+		<br>
+		<br>
+		<br>
+		<font4>
+			<span id="html_message2"></span>
+		</font4>
+
+
+
+	</body>
+</html>
