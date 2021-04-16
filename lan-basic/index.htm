@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>bas</title>
+		<style>
+
+			.group
+			{
+				display:inline-block; 
+				padding: 6px; 
+				border-radius: 7px; 
+				border:1px solid #aaa;
+				text-align:right;
+			}
+			.readme
+			{
+				display:inline-block; 
+				text-align:center;
+				font-size:12px;
+				font-family:monospace;
+				
+			}
+			.button
+			{
+				display:inline-block; 
+				text-align:center;
+				font-size:14px;
+				font-family:monospace;
+			}
+
+			body
+			{
+				overflow: hidden ;
+				font-family:monospace;
+			}
+
+			.backface
+			{
+			  display: none;
+			}
+					
+			table,td,thead,tfoot 
+			{
+				border: 1px solid;
+			}
+
+		</style>
+	</head>
+	<body align="center"  style="font-family:monospace">
+		<h2>js BASIC実験</h2>
+		<canvas id="html_canvasG" width="640" height="360"  class="backface" ></canvas>
+		<canvas id="html_canvasT"  width="640" height="360" class="backface" ></canvas>
+		<canvas id="html_canvas"  width="640" height="360" style="border:0px solid;background-color: #000;" ></canvas>
+		<br>
+<!--
+			<input type="button" value="フルスクリーン" onClick="html_setFullscreen()" >
+		<br>
+-->
+		<div class="readme">
+			<br>
+			<br>
+			～C言語風スクリプト言語メモ・実装予定～<br>
+			<br>
+			文字列<br>
+			if/while/switch<br>
+			論理演算:not/mod/and/or/xor/neg<br>
+			コメント<br>
+			変数<br>
+			配列<br>
+			文字入力<br>
+			サウンド<br>
+			SAVE/LOAD/LIST/RUN<br>
+			<br>
+			ローカル変数<br>
+			関数定義<br>
+			構造体<br>
+			多次元配列<br>
+			ＭＭＬ<br>
+			通信<br>
+			マウス、ゲームパッド入力<br>
+			EDIT命令、編集操作強化<br>
+			割り込み/callback<br>
+			連想配列<br>
+			マトリクス、ベクトル、クォータニオン、3D関連<br>
+			タッチパネル、カメラ<br>
+			日本語入力<br>
+			HELP命令<br>
+			roundup / rounddown / floor / ceil<br>
+			atan2 / ceil / floor / log10 / rexp
+			
+			<br>
+			<br>
+
+			<table align="center">
+			    <thead>
+			        <tr>
+			            <th colspan="2">実装・機能</th>
+			        </tr>
+			    </thead>
+			    <tbody>
+			        <tr><td>定数・π</td> 			<td>PI/RND </td>														</tr>
+			        <tr><td>四則演算/累乗/括弧</td>	<td>+ - * / ^ ()</td> 													</tr>
+			        <tr><td>テキスト</td>			<td>print/cls/locate/list/tab/fs/screen</td> 							</tr>
+			    	<tr><td>グラフィック</td>		<td>paint/circle/line/rgb/pset/box/fill/wipe</td> 						</tr>
+			    	<tr><td>三角関数</td>			<td>sin/cos/tan/asin/acos/atan/sinh/cosh/tanh/asinh/acosh/atanh</td> 	</tr>
+			    	<tr><td>算術</td>				<td>sqrt/cbrt/log/exp/abs/rad</td> 										</tr>
+			    </tbody>
+			</table>
+
+
+			<p>～コンセプト～</p>
+			<p>グラフィック、通信機能、サウンド、マウス、タブレット、キーボード、ゲームパッドを手軽に扱える</p>
+			<p>BASICに対して、ローカル変数・関数・構造体の追加、行番号の廃止。文法はC風。</p>
+			<p>コンセプトは、学習コストが低く環境構築が不要</p>
+			<p>1命令1機能で分かり易い</p>
+			<p>命令[enter]で機能確認が容易</p>
+			<p>デバッガも兼ねて合理的</p>
+			<p>編集画面と実行画面が重なって表示されるので場所をを取らないし画面切替も不要。</p>
+			<p>すべてのデータを点として扱える。数字、配列、関数、ネット情報を、a=...の形で一つの変数として扱える。</p>
+		</div>
+		<script src="main.js"></script>
+	</body>
+</html>
