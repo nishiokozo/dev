@@ -43,21 +43,30 @@
 		<input type="button" value="param更新" onClick="hotstart()">
 			<input type="button" value="フルスクリーン" onClick="html_setFullscreen()" >
 -->
-	  col
-		<input type="text" id="html_col" value="100" size="3" >
-	  地面
-		<input type="text" id="html_low" value="0.5" size="3" >
-	  隆起
-		<input type="text" id="html_rate" value="0.2" size="3" >
+		<div class="group">
+		  col
+			<input type="text" id="html_col" value="16" size="3" >
+		  地面
+			<input type="text" id="html_low" value="0.5" size="3" >
+		  隆起
+			<input type="text" id="html_rate" value="0.15" size="3" >
 
-		<input type="button" value="param更新" onClick="hotstart()">
+			<input type="button" value="param更新" onClick="hotstart()">
+
+			dot
+				<input type="checkbox" name="html_dot" ">
+			line
+				<input type="checkbox" name="html_line" " checked>
+		</div>
+
+
 
 		<select id="html_reso">
 			<option value="64" >64x64</option>
 			<option value="128" selected >128x128</option>
-			<option value="256" >256x256</option>
-			<option value="512">512x512</option>
+			<option value="192" >192x192</option>
 		</select>
+
 
 	  <input type="button" value="seed更新" onClick="window.onload()">
 
@@ -66,8 +75,9 @@
 		<canvas id="html_canvas2"  width="128" height="128" style="border:1px solid" ></canvas>
 		<canvas id="html_canvas3"  width="128" height="128" style="border:1px solid" ></canvas>
 		<canvas id="html_canvas4"  width="128" height="128" style="border:1px solid" ></canvas>
+		<canvas id="html_canvas5"  width="128" height="128" style="border:1px solid" ></canvas>
 <br>
-		<canvas id="html_canvas6"  width="720" height="360" style="border:1px solid" ></canvas>
+		<canvas id="html_canvas6"  width="720" height="480" style="border:1px solid" ></canvas>
 
 <br>
 
@@ -76,10 +86,17 @@
 
 		<div class="readme">
 			<p>～概要～</p>
-			<p>ランダムで生成したデータを</p>
-			<p>ABC/大中小の周波数で凸凹を作り合成</p>
-			<p>周波数が違う三つの画像を重ねることで、高低差とディティールのある山岳っぽい画面を作る実験</p>
+			<p>ABC/大中小の周波数の画像を重ね、高低差とディティールのある山岳を作る実験</p>
 			<p>地形を簡易に3D化</p>
+			<br>
+
+			<p>～操作～</p>
+			<p>マウスドラッグで回転</p>
+			<p>マウスホイールで拡大</p>
+			<br>
+
+			<p>～履歴～</p>
+			<p>2021/02/25 ベクタライズした等高線を描画</p>
 		</div>
 
 	</body>

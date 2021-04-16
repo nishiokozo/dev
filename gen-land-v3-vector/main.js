@@ -403,8 +403,8 @@ function rand( n ) // n=3以上が正規分布
 {
 
 	let r = 0;
-	for ( let j = 0 ; j < n ; j++ ) r += Math.random();
-//	for ( let j = 0 ; j < n ; j++ ) r += xorshift.random();
+//	for ( let j = 0 ; j < n ; j++ ) r += Math.random();
+	for ( let j = 0 ; j < n ; j++ ) r += xorshift.random();
 	return r/n;
 }
 
@@ -501,7 +501,7 @@ class GRA_img // イメージバッファに描画する
 		}
 
 		//-----------------------------------------------------------------------------
-		this.pset_frgb = function( x, y, [r,g,b] )
+		this.pset_rgbf = function( x, y, [r,g,b] )
 		//-----------------------------------------------------------------------------
 		{
 			r*=255;
@@ -540,7 +540,7 @@ class GRA_img // イメージバッファに描画する
 		}
 
 		//-----------------------------------------------------------------------------
-		this.line_frgb = function( x1, y1, x2, y2, [r,g,b] ) 
+		this.line_rgbf = function( x1, y1, x2, y2, [r,g,b] ) 
 		//-----------------------------------------------------------------------------
 		{
 			let col = ((((r*255)&0xff)<<16)|(((g*255)&0xff)<<8)|(((b*255)&0xff)<<0))
@@ -823,7 +823,7 @@ class GRA_img // イメージバッファに描画する
 			for ( let x = 0 ; x < w ; x++ )
 			{
 				let v = buf[ w*y + x ];
-				this.pset_frgb( x, y, [v,v,v] );
+				this.pset_rgbf( x, y, [v,v,v] );
 			}
 		}
 	}
@@ -1323,62 +1323,89 @@ function calc_vectorize( buf, W, H, col )
 { // ベクトル化
 
 	//-----------------------------------------------------------------------------
+	function isedge( [x, y], W, H )
+	//-----------------------------------------------------------------------------
+	{
+		if ( x < 0  ) return true;
+		else
+		if ( x >= W ) return true;
+
+		if ( y < 0  ) return true;
+		else
+		if ( y >= H ) return true;
+
+		return false;
+	}
+
+	//-----------------------------------------------------------------------------
 	function vec_search( points, buf, msk, sx, sy,  ax, ay, lvl )
 	//-----------------------------------------------------------------------------
 	{
 		let x = sx;
 		let y = sy;
 		let cnt = 0;
-		let c = 0;
+		let c = lvl;
 
 //console.log("<start>");
 		let cnt_r = 0;
 
+		function isedge( x, y, W, H , lvl )
+		{
+			if ( buf[W*y+x] > lvl && x>=0 && x <W && y>=0 && y <H ) return true;
+			return false;
+		}
+
+		// 最の頂点
+		points.push( {x:x, y:y, c:c, end:0} );
+		msk[W*y+x]=1;
 		while(1)
 		{	
 if ( cnt > 3000) console.log("",sx,sy,"->",x,y);
-			let [x1,y1] = vec_round( [x+ax, y+ay], W, H );
-			if ( buf[W*y1+x1] > lvl )
-			{//前方に崖が無かったら、左手前方を調べる
+//console.log(x,y,ax,ay);
+			{
+				let [x1,y1] = vec_round( [x+ax, y+ay], W, H );
+				if ( isedge( x+ax, y+ay, W, H, lvl ) )
+				{//前方に崖が無かったら、左手前方を調べる
 
-				let [x2,y2] = vec_round( [x+ax+ay, y+ay-ax], W, H);
-				if ( buf[W*y2+x2] > lvl )
-				{//左手にも崖が無かったら前進＆左ターン＆前進
-if ( cnt > 3000) console.log("l");
-					[x,y]=[x2,y2];
-					[ax,ay]=[ay,-ax];
-					points.push( {x:x, y:y, c:c, end:0} );
-					msk[W*y+x]=1;
+					let [x2,y2] = vec_round( [x+ax+ay, y+ay-ax], W, H);
+					if ( isedge( x+ax+ay, y+ay-ax, W, H, lvl ) )
+					{//左手にも崖が無かったら前進＆左ターン＆前進
+	if ( cnt > 3000) console.log("l");
+						[x,y]=[x2,y2];
+						[ax,ay]=[ay,-ax];
+						points.push( {x:x, y:y, c:c, end:0} );
+						msk[W*y+x]=1;
+					}
+					else
+					{//左手が別の色だったら	そのまま前進移動
+	if ( cnt > 3000) console.log("f");
+						[x,y]=[x1,y1];
+					}
+					//--
+					if ( sx == x && sy== y )  // 元の場所
+					{
+						points.push( {x:x, y:y, c:c, end:1} );
+						msk[W*y+x]=1;
+						break;
+					}
+					else
+					{
+						points.push( {x:x, y:y, c:c, end:0} );
+						msk[W*y+x]=1;
+					}
+					cnt_r=0;
 				}
 				else
-				{//左手が別の色だったら	そのまま前進移動
-if ( cnt > 3000) console.log("f");
-					[x,y]=[x1,y1];
-				}
-				//--
-				if ( sx == x && sy== y ) 
-				{
-					points.push( {x:x, y:y, c:c, end:1} );
-					msk[W*y+x]=1;
-					break; // 必ず元の場所に戻ってくる。
-				}
-				else
-				{
-					points.push( {x:x, y:y, c:c, end:0} );
-					msk[W*y+x]=1;
-				}
-				cnt_r=0;
-			}
-			else
-			{//前進できなければ右ターン
-if ( cnt > 3000) console.log("r");
-				[ax,ay]=[-ay,ax];
-				cnt_r++;
-				if ( cnt_r>=4 ) 
-				{
-					points.push( {x:x, y:y, c:c, end:1} );
-					msk[W*y+x]=1;
-					break; // 4連続右折は１ドットピクセル
+				{//前進できなければ右ターン
+	if ( cnt > 3000) console.log("r");
+					[ax,ay]=[-ay,ax];
+					cnt_r++;
+					if ( cnt_r>=4 ) 
+					{
+						points.push( {x:x, y:y, c:c, end:1} );
+						msk[W*y+x]=1;
+						break; // 4連続右折は１ドットピクセル
+					}
 				}
 			}
 			if ( ++cnt > 3000+100 ) {console.log("warn toomuch vec_serch()>",cnt);break;}
@@ -1391,11 +1418,9 @@ if ( cnt > 3000) console.log("r");
 
 	let points = [];
 
-	
 	function vec_make( lvl )
 	{
 		let msk = Array( buf.length ).fill(0);
-		let prev = false;
 
 		for ( let y = 0 ; y < H ; y++ )
 		{
@@ -1410,37 +1435,6 @@ if ( cnt > 3000) console.log("r");
 				prev = flg;
 			}
 		}
-
-		// 横一直線に横断する面の検出用。１
-		{
-			let x = 0;
-			let prev = (buf[W*(H-1)+x] >= lvl);
-			for ( let y = 0 ; y < H ; y++ )
-			{
-				let flg = (buf[W*y+x] >= lvl);
-				if ( !prev && flg && msk[W*y+x] == 0 ) 
-				{
-					points = vec_search( points, buf, msk, x, y, 1,0,lvl );
-				}
-				prev = flg;
-			}
-		}
-		// 横一直線に横断する面の検出用。２
-		{
-			let x = 0;
-			let prev = (buf[W*(0)+x] >= lvl);
-			for ( let y = H-1 ; y >= 0 ; y-- )
-			{
-				let flg = (buf[W*y+x] >= lvl);
-				if ( !prev && flg && msk[W*y+x] == 0 ) 
-				{
-					points = vec_search( points, buf, msk, x, y,-1,0,lvl );
-				}
-				prev = flg;
-			}
-		}
-
-		console.log(points.length);
 	}
 	for ( let j = 0 ; j < col-1 ; j++ ) // j=col=1.0に等高線は無いはずなのでcol-1にしておく。
 	{
@@ -1448,24 +1442,14 @@ if ( cnt > 3000) console.log("r");
 
 		vec_make( lvl ); 
 	}
-	
-//	vec_make( func_lvl( 0, col ) );
-
 	return points;
 }
 
 //-----------------------------------------------------------------------------
-function calc_rasterize( gra, points, W, H, pos )
+function draw_rasterize( gra, points, W, H, pos, scale )
 //-----------------------------------------------------------------------------
 {// ベクター描画2
 
-	function line(sx,sy,ex,ey,c)
-	{
-		if ( Math.abs(ex-sx)+Math.abs(ey-sy) < (gra.img.width+gra.img.height)/10 ) 
-		{
-			gra.line_frgb( sx, sy, ex, ey, [c,c,c] ); 
-		}
-	}
 
 	let sw = gra.img.width / W;
 	let sh = gra.img.height / H;
@@ -1477,14 +1461,12 @@ function calc_rasterize( gra, points, W, H, pos )
 	let flgFirst = true;
 	for( let [i,p] of points.entries() )
 	{
-		let ex = Math.floor(p.x*sw)+pos.x;
-		let ey = Math.floor(p.y*sh)+pos.y;
-
-		[ex,ey] = vec_round( [ex,ey], gra.img.width, gra.img.height );
+		let ex = scale*Math.floor(p.x*sw)+pos.x*gra.cv.width;
+		let ey = scale*Math.floor(p.y*sh)+pos.y*gra.cv.height;
 
 		if ( flgFirst == false )
 		{
-			line(sx,sy,ex,ey,p.c);
+			gra.line_rgbf( sx, sy, ex, ey, [p.c,p.c,p.c] ); 
 		}
 		else
 		{
@@ -1496,7 +1478,6 @@ function calc_rasterize( gra, points, W, H, pos )
 		if ( p.end == 1 ) 
 		{
 			flgFirst = true;
-			line(st_x,st_y,ex,ey,p.c);
 		}
 		sx = ex;
 		sy = ey;
@@ -1507,20 +1488,22 @@ function calc_rasterize( gra, points, W, H, pos )
 
 ///// 開発用 /////
 
-
-class Terrain
+class Terrain2
 {
+	//2021/02/24 Terrain2	ベクタライズ機能が追加。中間データを外部表示。
 
 	bufA = [];
 	bufB = [];
 	bufC = [];
 
+	buf4 = [];
+
 	blur1;
 	blur2;
 	blur3;
-	p1;
-	p2;
-	p3;
+	bp1;
+	bp2;
+	bp3;
 
 	low;	// 地面
 	col;	// 諧調
@@ -1528,41 +1511,29 @@ class Terrain
 
 	points = [];
 	pos = {};
-
+	scale;
 	//-----------------------------------------------------------------------------
-	initParam()
+	initParam( blur1, blur2, blur3, bp1, bp2, bp3, col, low )
 	//-----------------------------------------------------------------------------
 	{
-
-
-		this.blur1 = document.getElementById( "html_blur1" ).value*1;
-		this.blur2 = document.getElementById( "html_blur2" ).value*1;
-		this.blur3 = document.getElementById( "html_blur3" ).value*1;
-		this.p1 = document.getElementById( "html_bp1" ).value*1;
-		this.p2 = document.getElementById( "html_bp2" ).value*1;
-		this.p3 = document.getElementById( "html_bp3" ).value*1;
-		this.col =  document.getElementById( "html_col" ).value * 1.0;
-		this.low =  document.getElementById( "html_low" ).value * 1.0;
-
+		this.blur1 = blur1;
+		this.blur2 = blur2;
+		this.blur3 = blur3;
+		this.bp1 = bp1;
+		this.bp2 = bp2;
+		this.bp3 = bp3;
+		this.col =  col;
+		this.low =  low;
 	}
 	//-----------------------------------------------------------------------------
-	initSeed()
+	initSeed( reso )
 	//-----------------------------------------------------------------------------
 	{
-		this.reso =  document.getElementById( "html_reso" ).value * 1.0;
+		this.reso = reso;
 
 		this.pos = {x:0,y:0}
-		//g_x=0;
-		//g_y=0;
+		this.scale =1;
 
-
-//xorshift.y = -772164425; // ワニ口
-//xorshift.y = 1563712943; // 上下ループ島
-//xorshift.y = -1473361349; // 島二つ
-
-//xorshift.y = -1134099774; // OF
-console.log( "seed="+xorshift.y );
-		
 		for ( let i = 0 ; i < this.reso*this.reso ; i++ )
 		{
 			this.bufA[i] = rand(1);
@@ -1588,39 +1559,6 @@ console.log( "seed="+xorshift.y );
 		// 9x9ガウスブラーフィルタ作成
 		let pat99 = calc_pat_normalize( calc_pat_gauss2d( 9, 2 ) );
 
-
-		//-----------------------------------------------------------------------------
-		function drawCanvas( canvas, buf, str=null )
-		//-----------------------------------------------------------------------------
-		{
-			//-----------------------------------------------------------------------------
-			function draw_buf( gra, buf )
-			//-----------------------------------------------------------------------------
-			{
-				let h = gra.img.height;
-				let w = gra.img.width
-				for ( let y = 0 ; y < h ; y++ )
-				{
-					for ( let x = 0 ; x < w ; x++ )
-					{
-						let v = buf[ w*y + x ];
-						gra.pset_frgb( x, y, [v,v,v] );
-					}
-				}
-			}
-			// 画面作成
-			let gra = new GRA_img( SZ, SZ, canvas );
-			// 画面クリア
-			gra.cls(0);
-			// 画面描画
-			draw_buf( gra, buf );
-			// 画面をキャンバスへ転送
-			gra.streach();
-
-			// canvasのID表示
-			if ( str == null ) str = canvas.id;
-			gra.ctx_print(1,gra.cv.height-1, str );
-		}
 		
 		//--
 		
@@ -1648,28 +1586,24 @@ console.log( "seed="+xorshift.y );
 		// ブラーフィルタn回適用
 		for ( let i = 0 ; i < this.blur1 ; i++ ) buf1 = calc_blur( buf1, pat33, SZ, SZ, this.blur1 );
 		buf1 = calc_autolevel(buf1, SZ,SZ);
-		drawCanvas( html_canvas1, buf1, "A" );
 
 		for ( let i = 0 ; i < this.blur2 ; i++ ) buf2 = calc_blur( buf2, pat33, SZ, SZ, this.blur2 );
 		buf2 = calc_autolevel(buf2, SZ,SZ);
-		drawCanvas( html_canvas2, buf2, "B" );
 
 		for ( let i = 0 ; i < this.blur3 ; i++ ) buf3 = calc_blur( buf3, pat33, SZ, SZ, this.blur3 );
 		buf3 = calc_autolevel(buf3, SZ,SZ);
-		drawCanvas( html_canvas3, buf3, "C" );
 
 		let buf4= [];
 
 		{//合成
 			for ( let x = 0 ; x < SZ*SZ ; x++ )
 			{
-				buf4[x] =(buf1[x]*this.p1+buf2[x]*this.p2+buf3[x]*this.p3)/(this.p1+this.p2+this.p3);
+				buf4[x] =(buf1[x]*this.bp1+buf2[x]*this.bp2+buf3[x]*this.bp3)/(this.bp1+this.bp2+this.bp3);
 			}
 		}
 
 		// 自動レベル調整
 		buf4 = calc_autolevel(buf4, SZ, SZ);
-		//drawCanvas( html_canvas5, buf4, "合成" );
 
 		// ローパスフィルタ
 		buf4 = calc_lowpass( buf4, SZ, SZ, this.low );
@@ -1693,12 +1627,10 @@ console.log( "seed="+xorshift.y );
 
 
 		// 自動レベル調整
-		buf4 = calc_autolevel( buf4, SZ,SZ, 0 );
-		drawCanvas( html_canvas4, buf4, "A+B+C" );
+		buf4 = calc_autolevel( buf4, SZ,SZ );
 
 		// パラポライズ
-		let buf5 = calc_parapolize( buf4, SZ,SZ, this.col );
-//		drawCanvas( html_canvas5, buf5, "" );
+		buf4 = calc_parapolize( buf4, SZ,SZ, this.col );
 
 		// ベクタライズ
 		this.points = calc_vectorize( buf4, SZ, SZ, this.col );
@@ -1714,21 +1646,90 @@ console.log( "seed="+xorshift.y );
 			buf4 = calc_autolevel( buf4, SZ*SZ );
 		}
 
-		return buf4;
+		this.buf4 = buf4;
+		return [buf1,buf2,buf3,buf4];
 
 	}
 }
 
-let g_terrain = new Terrain;
+
+let g_terrain;
 
 
 
+//-----------------------------------------------------------------------------
+function reset()
+//-----------------------------------------------------------------------------
+{
+//xorshift.y = -772164425; // ワニ口
+//xorshift.y = 1563712943; // 上下ループ島
+//xorshift.y = -1473361349; // 島二つ
+
+//xorshift.y = -1134099774; // 128 横断
+//xorshift.y =-973406952 ;//128 島x1
+console.log( "seed="+xorshift.y );
+
+	g_terrain.initSeed( document.getElementById( "html_reso" ).value * 1.0);
+}
 //-----------------------------------------------------------------------------
 function start()
 //-----------------------------------------------------------------------------
 {
-	g_terrain.initParam();
-	let buf = g_terrain.update_map();
+	g_terrain.initParam(
+		 document.getElementById( "html_blur1" ).value*1
+		,document.getElementById( "html_blur2" ).value*1
+		,document.getElementById( "html_blur3" ).value*1
+		,document.getElementById( "html_bp1" ).value*1
+		,document.getElementById( "html_bp2" ).value*1
+		,document.getElementById( "html_bp3" ).value*1
+		,document.getElementById( "html_col" ).value * 1.0
+		,document.getElementById( "html_low" ).value * 1.0
+		
+	);
+
+	let [buf1,buf2,buf3,buf4] = g_terrain.update_map();
+	{
+		//-----------------------------------------------------------------------------
+		function drawCanvas( cv, buf,W,H, str=null )
+		//-----------------------------------------------------------------------------
+		{
+			//-----------------------------------------------------------------------------
+			function put_buf( gra, buf )
+			//-----------------------------------------------------------------------------
+			{
+				let h = gra.img.height;
+				let w = gra.img.width
+				for ( let y = 0 ; y < h ; y++ )
+				{
+					for ( let x = 0 ; x < w ; x++ )
+					{
+						let v = buf[ w*y + x ];
+						gra.pset_rgbf( x, y, [v,v,v] );
+					}
+				}
+			}
+			// 画面作成
+			{
+				let gra = new GRA_img( W, H, cv );
+				// 画面クリア
+				gra.cls(0);
+				// 画面描画
+				put_buf( gra, buf );
+				// 画面をキャンバスへ転送
+				gra.streach();
+
+				// canvasのID表示
+				if ( str == null ) str = cv.id;
+				gra.ctx_print(1,gra.cv.height-1, str );
+			}
+		}
+/*
+		drawCanvas( html_canvas1, buf1,g_terrain.reso,g_terrain.reso, "A" );
+		drawCanvas( html_canvas2, buf2,g_terrain.reso,g_terrain.reso, "B" );
+		drawCanvas( html_canvas3, buf3,g_terrain.reso,g_terrain.reso, "C" );
+*/
+		drawCanvas( html_canvas4, buf4,g_terrain.reso,g_terrain.reso, "A+B+C" );
+	}
 
 }
 
@@ -1736,16 +1737,31 @@ function start()
 function update_scene()
 //-----------------------------------------------------------------------------
 {
-	if ( g_key[KEY_LEFT] )	g_terrain.pos.x = (g_terrain.pos.x-1) % html_canvas6.width;
-	if ( g_key[KEY_RIGHT] )	g_terrain.pos.x = (g_terrain.pos.x+1) % html_canvas6.width;
-	if ( g_key[KEY_UP] )	g_terrain.pos.y = (g_terrain.pos.y-1) % html_canvas6.height;
-	if ( g_key[KEY_DOWN] )	g_terrain.pos.y = (g_terrain.pos.y+1) % html_canvas6.height;
+	let cv = html_canvas6;
+	let W = g_terrain.reso;
+	let H = g_terrain.reso;
+	//--
 	
-	let gra2 = new GRA_img( html_canvas6.width, html_canvas6.height, html_canvas6 );
+	if ( g_key[KEY_LEFT] )	g_terrain.pos.x -= 1/cv.width;
+	if ( g_key[KEY_RIGHT] )	g_terrain.pos.x += 1/cv.width;
+	if ( g_key[KEY_UP] )	g_terrain.pos.y -= 1/cv.height;
+	if ( g_key[KEY_DOWN] )	g_terrain.pos.y += 1/cv.height;
+	
+	let gra2 = new GRA_img( cv.width, cv.height, cv );
 
 	gra2.cls( 0xffffff );
 
-	calc_rasterize( gra2, g_terrain.points, g_terrain.reso, g_terrain.reso, g_terrain.pos );
+	g_terrain.pos.x %= cv.width;
+	g_terrain.pos.y %= cv.height;
+
+	{
+		let [x,y] = vec_round( [ g_terrain.pos.x+cv.width/2, g_terrain.pos.x+cv.height/2], cv.width, cv.height );
+		document.getElementById( "html_pos_x" ).value = x;
+		document.getElementById( "html_pos_y" ).value = y;
+		document.getElementById( "html_scale" ).value = g_terrain.scale.toFixed(2);
+	}
+
+	draw_rasterize( gra2, g_terrain.points, g_terrain.reso, g_terrain.reso, g_terrain.pos, g_terrain.scale );
 
 	gra2.streach();
 
@@ -1758,12 +1774,15 @@ function update_scene()
 window.onload = function( e )
 //-----------------------------------------------------------------------------
 {
-	g_terrain.initSeed();
+	g_terrain = new Terrain2;
+
+	reset();
 	start();
 	update_scene();
 }
 
-// HTML制御 / Keybord制御
+
+// HTML/マウス/キーボード制御
 //-----------------------------------------------------------------------------
 window.onkeyup = function( ev )
 //-----------------------------------------------------------------------------
@@ -1782,20 +1801,114 @@ window.onkeydown = function( ev )
 
 
 }
-//let g_x;
-//let g_y;
+
+document.onmousedown = mousemovedown;
+document.onmousemove = mousemovedown;
+let g_prevButtons = 0;
+let g_prev_fx = null;
+let g_prev_fy = null;
+let g_prev_fx2 = null;
+let g_prev_fy2 = null;
+//let g_scale;
+//-----------------------------------------------------------------------------
+document.addEventListener("wheel" , function (e)
+//-----------------------------------------------------------------------------
+{
+	let cv = html_canvas6;
+	let W = g_terrain.reso;
+	let H = g_terrain.reso;
+	//--
+
+	if ( e.deltaY < 0 )g_terrain.scale *= 1.5;
+	if ( e.deltaY > 0 )g_terrain.scale /= 1.5;
+//console.log(g_scale);
+	// 出力テスト
+//	console.log(e, e.deltaY);
+
+
+	{
+	    var rect = cv.getBoundingClientRect();
+        let x= Math.floor((e.clientX - rect.left) / cv.width  * W);
+        let y= Math.floor((e.clientY - rect.top ) / cv.height * H);
+
+		if ( x >= 0 && x < W && y >= 0 && y < H )
+		{
+//			paint_mandelbrot( 0,0, g_scale );
+		
+		}
+
+	}
+
+});
+//-----------------------------------------------------------------------------
+function mousemovedown(e)
+//-----------------------------------------------------------------------------
+{
+	let cv = html_canvas6;
+	let W = g_terrain.reso;
+	let H = g_terrain.reso;
+	let sw = cv.width / W;
+	let sh = cv.height / H;
+	//--
+	
+	if ( e.buttons==1 )
+	{
+	    var rect = cv.getBoundingClientRect();
+        let x= Math.floor((e.clientX - rect.left) / cv.width  * W);
+        let y= Math.floor((e.clientY - rect.top ) / cv.height * H);
+
+
+		if ( g_prevButtons == 0 )
+		{
+			g_prev_fx2 = x;
+			g_prev_fy2 = y;
+			g_prev_fx = x;
+			g_prev_fy = y;
+		}
+		
+		if ( x >= 0 && x < W && y >= 0 && y < H )
+		{
+		
+			let fx1 = (x/W)-0.5;
+			let fy1 = (y/H)-0.5;
+			let fx2 = (g_prev_fx/W)-0.5;
+			let fy2 = (g_prev_fy/H)-0.5;
+			let fxa = fx1-fx2;
+			let fya = fy1-fy2;
+/*
+			let fxb1 = (x/W)-0.5;
+			let fyb1 = (y/H)-0.5;
+			let fxb2 = (g_prev_fx2/W)-0.5;
+			let fyb2 = (g_prev_fy2/H)-0.5;
+			let fxb = fxb1-fxb2;
+			let fyb = fyb1-fyb2;
+
+			g_terrain.pos.x += (fxa+(fxb+fxb)/4)/2;
+			g_terrain.pos.y += (fya+(fyb+fyb)/4)/2
+*/
+			g_terrain.pos.x += fxa;
+			g_terrain.pos.y += fya;
+		}
+			g_prev_fx2 = g_prev_fx;	
+			g_prev_fy2 = g_prev_fy;	
+			g_prev_fx = x;	
+			g_prev_fy = y;	
+
+	}
+
+	g_prevButtons = e.buttons;
+}
 //-----------------------------------------------------------------------------
 function html_updateParam()
 //-----------------------------------------------------------------------------
 {
-	g_terrain.initParam();
 	start();
 }
 //-----------------------------------------------------------------------------
 function html_updateAll()
 //-----------------------------------------------------------------------------
 {
-	g_terrain.initSeed();
+	reset();
 	start();
 }
 //-----------------------------------------------------------------

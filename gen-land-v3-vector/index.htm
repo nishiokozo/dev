@@ -9,6 +9,9 @@
 				display:inline-block; 
 				padding: 6px; 
 				border-radius: 7px; 
+
+				padding: 4px; 
+				border-radius: 5px; 
 				border:1px solid #aaa;
 				text-align:right;
 			}
@@ -17,6 +20,19 @@
 				display:inline-block; 
 				text-align:center;
 				font-size:12px;
+				font-family:monospace;
+			}
+			.button
+			{
+				display:inline-block; 
+				text-align:center;
+				font-size:14px;
+				font-family:monospace;
+			}
+
+			body
+			{
+				overflow: hidden ;
 				font-family:monospace;
 			}
 		</style>
@@ -50,7 +66,7 @@
 		  地面
 			<input type="text" id="html_low" value="0.5" size="3" >
 		  諧調
-			<input type="text" id="html_col" value="6" size="3" >
+			<input type="text" id="html_col" value="2" size="3" >
 
 			<input type="button" value="param更新" onClick="html_updateParam()">
 		</div>
@@ -60,9 +76,9 @@
 			reso
 			<select id="html_reso">
 				
-				<option value="32" >32x32</option>
+				<option value="32" selected>32x32</option>
 				<option value="64" >64x64</option>
-				<option value="128" selected>128x128</option>
+				<option value="128" >128x128</option>
 				<option value="192" >192x192</option>
 				<option value="384" >384x384</option>
 <!--
@@ -76,15 +92,32 @@
 <br>
 <!--
 		<canvas id="html_canvas5"  width="256" height="256" style="border:1px solid" ></canvas>
--->
+
+		  (
+			    <a id="html_pos_x" size="3" >aa</a>
+			,
+			    <a id="html_pos_y"size="3"  >bb</a>
+			)
 		<canvas id="html_canvas1"  width="128" height="128" style="border:1px solid" ></canvas>
 		<canvas id="html_canvas2"  width="128" height="128" style="border:1px solid" ></canvas>
 		<canvas id="html_canvas3"  width="128" height="128" style="border:1px solid" ></canvas>
+
+-->
 <br>
-		<canvas id="html_canvas4"  width="384" height="384" style="border:1px solid" ></canvas>
-		<canvas id="html_canvas6" width="384" height="384"  style="border:1px solid" ></canvas>
+		<canvas id="html_canvas4"  width="256" height="256" style="border:1px solid" ></canvas>
+		<canvas id="html_canvas6" width="256" height="256"  style="border:1px solid" ></canvas>
 
 <br>
+		<div class="group">
+		  center 
+		  <input type="text" id="html_pos_x" value="0" size="3" disabled>
+		  <input type="text" id="html_pos_y" value="0" size="3" disabled>
+		 scale
+		  <input type="text" id="html_scale" value="0" size="3" disabled>
+		
+		</div>
+		<br>
+
 
 		<script src="main.js"></script>
 		<br>
