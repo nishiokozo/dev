@@ -12,9 +12,20 @@ function update()
 	{
 		document.getElementById("html_set").innerHTML = g_set+1;
 
+
+		{ // 下限設定
+			let val = document.getElementById( "html_interval" ).value*1;
+			if ( val < 1 )
+			{
+				document.getElementById( "html_interval" ).value = 1;
+			}
+		}
+
+		let timer_case1 = 0.5;
+
 		switch( g_step )
 		{
-			case 3:
+			case 3:	 // タイトル
 				{
 					g_str0 = "国際松濤館(式)";
 					g_str1 = "一本組手";
@@ -47,7 +58,7 @@ function update()
 				{
 					g_step = 1;
 					let val = document.getElementById( "html_interval" ).value*1;
-					g_timer = 60*val;
+					g_timer = 60*val - 60*timer_case1;
 
 					g_str0 = g_tblWaza[g_cntWawa][0];
 					g_str1 = g_tblWaza[g_cntWawa][1];
@@ -75,7 +86,7 @@ function update()
 			case 1:	// 技表示インターバル
 				{
 					g_step = 0;
-					g_timer = 60*0.5;
+					g_timer = 60*timer_case1;
 					g_str1 = "";
 					g_str2 = "";
 				}	
@@ -266,8 +277,10 @@ function set_param( flgShuffle )
 
 	if ( flgShuffle )
 	{
-		tblKihon = shuffle_num( tblKihon, Math.floor(tblKihon.length/4) );
-		tblJyuu = shuffle_num( tblJyuu, Math.floor(tblJyuu.length/4) );
+		let rate = document.getElementById( "html_shuffle" ).value*1;
+
+		tblKihon = shuffle_num( tblKihon, Math.floor(tblKihon.length*rate) );
+		tblJyuu = shuffle_num( tblJyuu, Math.floor(tblJyuu.length*rate) );
 	}
 
 	g_tblWaza = tblKihon.concat( tblJyuu );
