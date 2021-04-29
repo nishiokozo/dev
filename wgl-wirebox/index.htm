@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>wld</title>
+		<style>
+			.group
+			{
+				display:inline-block; 
+				padding: 6px; 
+				border-radius: 7px; 
+				border:1px solid #aaa;
+				text-align:right;
+			}
+			.readme
+			{
+				display:inline-block; 
+				text-align:center;
+				font-size:12px;
+				font-family:monospace;
+			}
+		</style>
+	</head>
+	<body align="center" style="font-family:monospace">
+		<H2 style="font-family:sans-serif">webGL でワイヤーフレーム</H2>
+
+
+
+
+
+		<canvas id="html_canvas_gl" width="360" height="200"  style="border: 1px solid" ></canvas>
+		<canvas id="html_canvas_2d" width="360" height="200"  style="border: 1px solid" ></canvas>
+
+<br>
+		<script src="main.js"></script>
+		<br>
+
+		<div class="readme">
+			<p>～概要～</p>
+			<p>左がWeb/GLSL、右がcanvas/2dによる描画</p>
+			<p>どちらも同じProjection matrix / View matrix / Model matrix で計算されている</p>
+
+			
+		</div>
+
+	</body>
+</html>
