@@ -290,8 +290,8 @@ function mperspective( fovy, aspect, n, f ) // 2021/05/02 fovyで入力に変更
 	return	new	mat4(
 		sc/aspect	,	0			,	0			,	0				,
 		0			,	sc			,	0			,	0				,
-		0			,	0			,	-(f+n)/(f-n),	-(2.0*f*n)/(f-n),	// z:この値がwとして透視変換が行われる
-		0			,	0			,	-1			,	0				);	// w:この行は実際は不要
+		0			,	0			,	-(f+n)/(f-n),	-(2.0*f*n)/(f-n),
+		0			,	0			,	-1			,	0				);
 }
 
 
@@ -451,13 +451,9 @@ function vmul_vM( v, M ) // 列優先
 	return new vec4( m[3], m[7], m[11] );
 }
 //-----------------------------------------------------------------------------
-function mlookat( vecEye, vecAt )	
+function mlookat( vecEye, vecAt )
 //-----------------------------------------------------------------------------
 {
-
-	let eye = new vec3( -vecEye.x, -vecEye.y, -vecEye.z );
-	let at = new vec3( -vecAt.x, -vecAt.y, -vecAt.z );
-
 	let mv = midentity();
 	// 視点・注視点から、viewマトリクスの生成
 	let [rx,ry] = function(v)
@@ -466,13 +462,13 @@ function mlookat( vecEye, vecAt )
 		let ry = -Math.atan2( v.x , -v.z ); 
 		let rx =  Math.atan2( v.y, yz ); 
 		return [rx,ry];
-	}( vsub(eye, at) ); 
-	mv = mmul( mv, mtrans( new vec3( eye.x, eye.y, eye.z ) ) );
-	mv = mmul( mv, mrotY( ry ) ); 
-	mv = mmul( mv, mrotX( rx ) );
-
+	}( vsub(vecAt, vecEye) ); 
+	mv = mtrans( new vec3( -vecEye.x, -vecEye.y, -vecEye.z ) );
+	mv = mroty_gl( mv, ry );
+	mv = mrotx_gl( mv, rx );
 	return mv;
 }
+
 ///// canvas
 
 class G_2d
@@ -604,7 +600,8 @@ class G_webgl
 				//	+	"	      0.0,      sc,          0.0,              0.0,"
 				//	+	"	      0.0,     0.0, -(f+n)/(f-n), -(2.0*f*n)/(f-n),"
 				//	+	"	      0.0,     0.0,         -1.0,              0.0);"
-					+   "gl_Position = vec4(pos.xy,0,pos.z);"	// v*M*V*Pの結果 wにはzでz代用
+//					+   "gl_Position = vec4(pos, 1.0)*P;"
+					+   "gl_Position = pos.xyzz;"
 					+   "vColor = col;"
 					+"}"
 				;
@@ -772,10 +769,12 @@ class Model
 	{
 		this.tblIndex = tblIndex;
 		this.drawtype = drawtype;
-		this.tblVertex = tblVertex;
-		this.tblColor = tblColor;
+		this.tblVertex = tblVertex;	// canvas/2d描画用 wglだけなら保存しなくてよい
+		this.tblColor = tblColor;	// canvas/2d描画用 wglだけなら保存しなくてよい
 
-		this.M = mtrans( vecOfs );
+		this.flg = true;	
+		this.vecOfs = vecOfs;
+		this.M = mtrans( this.vecOfs );
 	}
 
 	//-----------------------------------------------------------------------------
@@ -787,7 +786,7 @@ class Model
 		{
 			for ( let i = 0 ; i < this.tblVertex.length/3 ; i++ )
 			{
-				// 透視変換	//pos = v*M*V*P;
+				// 透視変換	//gl_Position = vec4(pos, 1.0)*M*V*P;
 				let v = new vec3(
 					this.tblVertex[i*3+0],
 					this.tblVertex[i*3+1],
@@ -802,8 +801,18 @@ class Model
 
 		// 描画
 		{
-			let sx = g1.ctx.canvas.width/2;
-			let sy = g1.ctx.canvas.height/2;
+			let sx = g2.ctx.canvas.width/2;
+			let sy = g2.ctx.canvas.height/2;
+
+			let tmp2=[];
+			for ( let i = 0 ; i < tmp.length ; i++ )
+			{
+				tmp2[i] = 
+				{
+					x:tmp[i].x / tmp[i].z,
+					y:tmp[i].y /-tmp[i].z
+				}
+			}
 
 			if ( this.drawtype == "LINES" )
 			{
@@ -814,7 +823,22 @@ class Model
 					g1.lineZ( v.x, v.y, v.z, p.x, p.y, p.z );
 				}
 			}
-	
+
+
+			if ( this.drawtype == "LINES" )
+			{
+				for ( let i = 0 ; i< this.tblIndex.length/2 ; i++ )
+				{
+					let v = tmp2[this.tblIndex[i*2+0]];
+					let p = tmp2[this.tblIndex[i*2+1]];					
+					let x1 = v.x*sx+sx;
+					let y1 = v.y*sy+sy;
+					let x2 = p.x*sx+sx;
+					let y2 = p.y*sy+sy;
+					g2.line( x1, y1,x2, y2 );
+				}
+			}
+			
 		}
 
 
@@ -823,6 +847,50 @@ class Model
 };
 
 ///// main
+
+let g_flg1 = 0;
+//---------------------------------------------------------------------
+function	update_paint(time)
+//---------------------------------------------------------------------
+{
+	// プロジェクション計算
+	let P = mperspective( g_fovy,  g2.ctx.canvas.width/ g2.ctx.canvas.height, 0.0, -1.0);
+
+	// ビュー計算
+	g_yaw+=radians(0.1263);
+	let V = midentity();
+	V = mmul( V, mrotY( g_yaw )  );
+	V = mmul( V, mtrans( g_posEye ) );
+
+	// モデル計算
+	for ( let m of g_tblModel )
+	{
+//		m.M = mmul( m.M, mrotX( radians(-1.5) )  );
+	}
+	{
+		let m = g_tblModel[1];
+		m.M = mmul( m.M, mrotY( radians(-0.5) )  );
+	}
+
+	g1.cls();
+	g2.cls();
+
+	for ( let m of g_tblModel )
+	{
+		m.drawModel_canvas( P, V );
+	}
+
+	{
+		{
+			let sw = g1.ctx.canvas.width;
+			let sh = g1.ctx.canvas.height;
+			let P = mortho(  -0, sw,sh, 0, -1.0, 100.0);
+			g1.drawLists( P );
+		}
+	}
+	if ( g_reqId ) window.cancelAnimationFrame( g_reqId ); // 止めないと多重で実行される可能性がある
+	g_reqId = window.requestAnimationFrame( update_paint );
+}
 
 //-----------------------------------------------------------------------------
 function int_model()
@@ -935,89 +1003,39 @@ function int_model()
 		
 	{
 		let [ tblIndex, tblVertex, tblColor, drawtype] = makeWireBox( 2.0 );
-		let m = new Model( new vec3( 0.1,2.0,0), tblIndex, tblVertex, tblColor, drawtype );
+		let m = new Model( new vec3( 0,2.0,0), tblIndex, tblVertex, tblColor, drawtype );
 		g_tblModel.push( m );
 	}
 	{
 		let [ tblIndex, tblVertex, tblColor, drawtype] = makeWireBox( 1.0 );
-		let m = new Model( new vec3( 8,1,1), tblIndex, tblVertex, tblColor, drawtype );
+		let m = new Model( new vec3( 11,2,1), tblIndex, tblVertex, tblColor, drawtype );
 		g_tblModel.push( m );
 	}
 	if(1)
 	{
-		let [ tblIndex, tblVertex, tblColor, drawtype] = makeWireGrid( 10.0, 2.0 );
+		let [ tblIndex, tblVertex, tblColor, drawtype] = makeWireGrid( 8.0, 2.0 );
 		g_tblModel.push( new Model( new vec3( 0,0,0), tblIndex, tblVertex, tblColor, drawtype ) );
 	}
 
 }
 
-
 let g_yaw = 0;
 let g_tblModel = [];
+let g_posEye;
+let g_fovy;
+let g_matCam;
+let g_prevButtons;
 let g_reqId;
 
-let g1 = new G_webgl( html_canvas.getContext('webgl') );
-
-class Camera
-{
-	constructor( pos, at, fovy )
-	{
-		this.pos	= pos;
-		this.at		= at;
-		this.fovy	= fovy;
-	}
-	
-};
-let g_cam;
+let g1 = new G_webgl( html_canvas_glb.getContext('webgl') );
+let g2 = new G_2d( html_canvas_2d.getContext('2d') );
 
 //-----------------------------------------------------------------------------
 window.onload = function( e )
 //-----------------------------------------------------------------------------
 {
-	//---------------------------------------------------------------------
-	function	update_paint(time)
-	//---------------------------------------------------------------------
-	{
-		// プロジェクション計算
-		let P = mperspective( g_cam.fovy,  g1.ctx.canvas.width/ g1.ctx.canvas.height, 0.0, -1.0);
-
-		// ビュー計算
-		g_yaw+=radians(0.1263);
-		let V = midentity();
-		V = mmul( V, mrotY( g_yaw )  );
-		V = mmul( V, mtrans( g_cam.pos ) );
-
-		V = mlookat( g_cam.pos, g_cam.at );
-
-		// モデル計算
-		{
-			let m = g_tblModel[1];
-			m.M = mmul( m.M, mrotY( radians(-0.5) )  );
-		}
-
-		g1.cls();
-
-		for ( let m of g_tblModel )
-		{
-			m.drawModel_canvas( P, V );
-		}
-
-		{
-			let sw = g1.ctx.canvas.width;
-			let sh = g1.ctx.canvas.height;
-			let P = mortho(  -0, sw,sh, 0, -1.0, 100.0);
-			g1.drawLists( P );
-		}
-		if ( g_reqId ) window.cancelAnimationFrame( g_reqId ); // 止めないと多重で実行される可能性がある
-		g_reqId = window.requestAnimationFrame( update_paint );
-	}
-
-	g_cam = new Camera( 
-		new vec3( 8,8, 26), 
-		new vec3( 0,2,0), 
-		radians(28)
-	);
-
+	g_posEye = new vec3( 0,-3,-12.5);
+	g_fovy = radians(45);
 	g_reqId = null;
 
 	int_model();

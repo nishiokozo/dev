@@ -2,7 +2,7 @@
 <html>
 	<head>
 		<meta charset="UTF-8">
-		<title>wld</title>
+		<title>wgl</title>
 		<style>
 			.group
 			{
@@ -25,22 +25,18 @@
 		<H2 style="font-family:sans-serif">webGL でワイヤーフレーム</H2>
 
 
-
-
-
-		<canvas id="html_canvas_gl" width="360" height="200"  style="border: 1px solid" ></canvas>
-		<canvas id="html_canvas_2d" width="360" height="200"  style="border: 1px solid" ></canvas>
+		<canvas id="html_canvas" width="520" height="360"  style="border: 1px solid" ></canvas>
 
 <br>
 		<script src="main.js"></script>
 		<br>
 
 		<div class="readme">
-			<p>～概要～</p>
-			<p>左がWeb/GLSL、右がcanvas/2dによる描画</p>
-			<p>どちらも同じProjection matrix / View matrix / Model matrix で計算されている</p>
-
-			
+			<p>～概要 2021/05/02 ～</p>
+			<p>GLSLでのProjection matrix / View matrix / Model matrix の計算と同等の処理をCPUで行う実験</p>
+			<p>ハードウェア側でnear&farクリップの後.z値で透視変換が行われる</p>
+			<p>GLSL側ではは入ってきた頂点データをそのまま出力しているだけ</p>
+			<p>可能な限りCPU側で計算することで自由な部分を増やす試み</p>
 		</div>
 
 	</body>
