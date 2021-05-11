@@ -413,12 +413,10 @@ function do_enter()
 		{
 			//			do_exec( str ); // Enterが押された行の文字をコマンドとして実行する
 			{
-//				g_token = new Token( str, g_tblVarobj );
 				g_token = new Token( str );
 				g_token.execScript_obj();
 
 			}
-//			[x,y] = getpos( g_cur_adr );cur_move( getadr(0,y+1) );
 			cmd_print("Ok\n");		console.log("-ok-");
 		}
 	}
@@ -523,6 +521,7 @@ function cmd_init( w, h )
 	cmd_print( "text   :"+g_W+"x"+g_H+"\n" );
 
 }
+
 class Token
 {
 
@@ -731,590 +730,29 @@ class Token
 		//	console.log((++g_cntToken)+":token ["+word+"]",type1);
 		return {atr:type1,val:word};
 	}
-	//-----------------------------------------------------------------------------
-	getTokenX()
-	//-----------------------------------------------------------------------------
-	{
-
-		let word = "";
-		let type1 = "tNON";
-
-		while( this.adr < this.str.length )
-		{
-			let c = this.str[ this.adr++ ];
-			
-			function func( c )
-			{
-				let	atr = "tNON"; 
-				// tNON	処理対象外
-				// t_sp	スペース
-				// W:	単語
-				// C:	演算子
-				// tSTR	文字列
-				// t_2n	保留（続く二文字目で判断される）
-				// tCtr	1文字制御 [] {} () , ;
-				
-
-				let cd = c.charCodeAt();
-				
-				     if ( cd <=  8  )	atr = "tNON";	// (TT)
-				else if ( cd ==  9  )	atr = "t_sp";	// tab
-				else if ( cd <= 31  )	atr = "tNON";	// (TT)
-				else if ( c  == " " )	atr = "t_sp";	// (space)
-				else if ( c  == "!" )	atr = "C:";	// !
-				else if ( c  == '"' )	atr = "tSTR";	// '"'
-				else if ( c  == "." )	atr = "N:";	// '.'
-//				else if ( cd <= 47  )	atr = "C:";	// #$%&'()*+,-/
-				else if ( c  == "#" )	atr = "tNON";	// 
-				else if ( c  == "$" )	atr = "tNON";	// 
-				else if ( c  == "%" )	atr = "tNON";	// 
-				else if ( c  == "&" )	atr = "C:";	// 
-				else if ( c  == "'" )	atr = "tNON";	// 
-				else if ( c  == "(" )	atr = "tCtr";	// 
-				else if ( c  == ")" )	atr = "tCtr";	// 
-				else if ( c  == "*" )	atr = "C:";	// 
-				else if ( c  == "+" )	atr = "C:";	// 
-				else if ( c  == "," )	atr = "tCtr";	// 
-				else if ( c  == "-" )	atr = "C:";	// 
-				else if ( c  == "/" )	atr = "C:";	// 
-				else if ( cd <= 57  )	atr = "N:";	// 0123456789
-				else if ( c  == ":" ) 	atr = "C:";
-				else if ( c  == ";" ) 	atr = "S:";
-				else if ( c  == "<" ) 	atr = "C:";
-				else if ( c  == "=" ) 	atr = "C:";
-				else if ( c  == ">" ) 	atr = "C:";
-				else if ( c  == "?" ) 	atr = "C:";
-				else if ( c  == "@" ) 	atr = "tNON";
-				else if ( cd <= 90  )	atr = "W:";	// ABCDEFGHIJKLMNOPQRSTUVWXYZ
-				else if ( c  == "[" ) 	atr = "tCtr";
-				else if ( c  == "\\") 	atr = "C:";
-				else if ( c  == "]" ) 	atr = "tCtr";
-				else if ( c  == "^" ) 	atr = "C:";
-				else if ( c  == "_" ) 	atr = "W:";
-				else if ( c  == "`" ) 	atr = "tNON";
-				else if ( cd <=122  )	atr = "W:";	// abcdefghijklmnopqrstuvwxyz
-//				else if ( cd <=126  )	atr = "C:";	// {|}~
-				else if ( c  == "{" ) 	atr = "tCtr";
-				else if ( c  == "|" ) 	atr = "C:";
-				else if ( c  == "}" ) 	atr = "tCtr";
-				else 					atr = "W:";	// あいう...unicode
-
-				return atr;
-			};
-			// <string> 	"123"
-			// <word> 		ABC	 _123  .ABC
-			// <numeric>	123  1.23  .123  -123  0x123 
-			// <calculator>	+ - / * ^ & | ( ) ,
-
-			if ( type1 == "W:" )	//単語
-			{
-				let type2 = func(c);
-
-				if ( type2 == "W:" || type2 == "N:" )
-				{
-					// トークン継続
-					word += c;
-				}
-				else
-				{
-					// トークン完成
-					this.adr--;
-					break;
-				}
-			}
-			else
-			if ( type1 == "C:" )	//演算子
-			{
-				let type2 = func(c);
-
-			     if ( type2 != "C:" )
-			     {
-					// トークン完成
-					this.adr--;
-					break;
-			     }
-			     else
-			     {
-					word += c;
-			     }
-			}
-			else						//
-			if ( type1 == "tSTR" )	//文字列
-			{
-			     if ( c == '"' )
-			     {
-					// トークン完成
-					break;
-			     }
-			     else
-			     {
-					word += c;
-			     }
-			}
-			else						//
-			if ( word.length == 0 ) 		// 最初の一文字目
-			{
-				type1 = func(c);
-				if ( type1 == "tSTR" ) continue;
-				else 
-				if ( type1 == "tNON" ) continue;
-				else 
-				if ( type1 == "t_sp" ) continue;
-
-				word = c;
-
-				if ( c=="{" || c=="[" || c=="(" || c=="}" || c=="]" || c==")" || c=="," || c==";" )	// 一文字のみの集合構文
-				{
-					break;
-				}
-				continue;
-			}
-			else							// ２文字目以降
-			{
-				let type2 = func(c);
-
-				let bAbandon = false;	// c 放棄フラグ
-				let bComp = false;		// トークン完成フラグ
-
-				if(0){}
-		
-				else if ( type2 == "tSTR" || type2 == "C:" )		
-				{
-					// トークン完成
-					this.adr--;
-					break;
-				}	
-				else if ( type2 == "tNON" )		{bComp = true;bAbandon = true;}
-				else if ( type2 == "t_sp" )		{bComp = true;bAbandon = true;}
-				else if ( type2 != type1 )			bComp = true;
-
-				if ( bComp  )
-				{
-					// トークン完成
-
-
-					if ( bAbandon ) 
-					{
-						// 放棄
-					}
-					else
-					{
-						this.adr--;
-					}
-					break;
-				}
-				else
-				{
-					// トークン継続
-					word += c;
-				}
-			}
-		}
-		//	console.log((++g_cntToken)+":token ["+word+"]",type1);
-		return {val:word, atr:type1};
-	}
-
-
 
 	//-----------------------------------------------------------------------------
-	execScript_sub( name, nest )
+	pers()
 	//-----------------------------------------------------------------------------
 	{
-
-		let st = 0;
-		let oc = [];
 		let arr = [];
 
-// abc			オブジェクト
-// 123			数列オブジェクト
-// "123"		文字列オブジェクト
-//
-// ()				()優先演算子
-// {,,,}			配列オブジェクト
-// (obj)			変数オブジェクト
-// (obj) + {,,,}	関数オブジェクト
-// (obj) + []		配列変数
-// (obj) + (obj)	(obj);(obj)	
-
-// atr:
-//	float		1.0
-//	float[n]	{1.0,1.0}
-//	string		"abc"
-//	string[n]	{"abc","abc"}
-/*
-	(
-		string			name,
-		(
-			string		str,
-			float		val,
-		)[4]			param
-	) atr
-
-	(float,float) func(string a, float b)
-	{
-		return 
-	}
-*/
-//	(atr) function array[n]
-
-	//	I	Integer Object
-	//	F	Float Object
-	//	S	String Object
-	//	P	Program Object
-	//	V	Variable Object
-	//	R	Reserve Object
-	//	N	New Object
-	//	T	Type Object
-	//	B	Block Object (){}[],;
-	//	A:	Array Object
-	//	C:	Calcurator
-	//	I:	IF Object
-	//	E:	ELSE Object
-	//	N:	Number Object
-	//	S:	Seperator Object
-	//	L:	labelblock Object
-	//	W:	Word Object
-	
-	
-		function oc_dump()
-		{
-			//if( nest==0) 
-			{
-				let str = name +"."+nest+","+oc.length+") ";
-				for ( let o of oc )
-				{
-					if ( o.atr == "A:" )
-					{
-						str += o.atr+"["+o.val.length+"]"+" ";
-					}
-					else
-					{
-						str += o.atr+o.val+" ";
-					}
-				}
-				console.log( str );
-			}
-		}
-
-		//-----------------------------------------------------------------------------
-		function exVar( THIS, name )
-		//-----------------------------------------------------------------------------
-		{
-		
-			if ( undefined != THIS.tblVarobj[ name ] )
-			{
-				name = THIS.tblVarobj[ name ].val;		// 変数取り出し
-			}
-			if ( Array.isArray(name) )
-			{
-			}
-			else
-			if ( isFinite(name) )	//Number.isFinite(name)では"123"はfalse
-			{
-				name = Number( name );
-			}
-			else
-			{
-				sys_message2( "Undefined error " + '"'+name+'"' + " line in " + get_line(1) + " in " + get_line(2) );
-			}
-		
-			return name;
-		}
-		//-----------------------------------------------------------------------------
-		function setVal( THIS, v1, v2 )
-		//-----------------------------------------------------------------------------
-		{
-			let val = v2.val;						
-			let atr = v2.atr;						
-			if ( undefined != THIS.tblVarobj[ val ] )		// 変数取り出し
-			{
-				atr = THIS.tblVarobj[ val ].atr;
-				val = THIS.tblVarobj[ val ].val;
-			}
-
-			if ( undefined != THIS.tblVarobj[ v1.val ] )	// 変数代入
-			{
-				if ( THIS.tblVarobj[ v1.val ].atr == atr )
-				{
-					THIS.tblVarobj[ v1.val ] = {val:val,atr:atr};	
-				}
-				else
-				{
-					sys_message2( "Invalid type error " + '"'+v1.val+'"' + " line in " + get_line(1) );
-				}
-			}
-			else										// 変数宣言＆代入
-			{
-				THIS.tblVarobj[ v1.val ] = {val:val, atr:atr};	
-			}
-	
-			//val = Number(val);
-			return {val:val, atr:"N:"};
-			 
-		}
-
-		//-----------------------------------------------------------------------------
-		function getObj( THIS )
-		//-----------------------------------------------------------------------------
-		{
-			let tkn = THIS.getToken();
-
-			if ( tkn.atr == "W:" )	// void float など規定ワード処理
-			{
-				let obj = g_tblVarobj[ tkn.val ];
-				if ( obj != undefined )
-				{
-					tkn.obj = obj.val;
-					tkn.atr = obj.atr;
-				};
-			}
-			return tkn;
-		}
-	
-		while(1)
-		{
-			let tkn = getObj( this );
-			 
-
-			if ( tkn.val == "var" )	{cmd_var(g_tblVarobj);continue;}
-
-/*
-			if ( tkn.val == "{" )	// プログラムオブジジェクト
-			{
-				let str="";
-				tkn = this.getToken();
-				while ( tkn.val != "}" && tkn.val !="" )
-				{
-					str += tkn.val
-					tkn = this.getToken();
-
-				}
-				tkn.val = str;
-				tkn.atr = "P:";
-			}
-			if ( tkn.val == "(" )	// 型
-			{
-				let str="";
-				tkn = this.getToken();
-				while ( tkn.val != ")" && tkn.val !="" )
-				{
-					str += tkn.val
-					tkn = tknhis.getToken();
-
-				}
-				tkn.val = str;
-				tkn.atr = "T:";
-			}
-*/
-			if ( tkn.val == "(" )
-			{
-				tkn  = this.execScript_sub( name, nest+1 );
-			}
-			if ( tkn.val == "{" )
-			{
-				tkn  = this.execScript_sub( name, nest+1 );
-			}
-			if ( tkn.val == "[" )
-			{
-				tkn  = this.execScript_sub( name, nest+1 );
-			}
-
-
-			{// progブロック取得
-				let flg = false;
-				
-				if ( oc.length == 2 && oc[0].val == "if" && oc[1].atr == "N:" )	flg = true;
-				if ( oc.length == 4 && oc[3].val == "else" )	flg = true;
-
-				if ( flg ) 
-				{
-					let str="";
-					while ( tkn.val != ";" && tkn.val !="" )
-					{
-						str += tkn.val
-						tkn = this.getToken();
-					}
-					tkn.val = str;
-					tkn.atr = "P:";
-				}
-			}
-
-
-			oc.push( tkn );
-			oc_dump();
-
-
-			//--数式解析
-			if ( oc.length >= 4 && oc[oc.length-3].atr == "C:"  )
-			{
-				let pri = { "*":3, "+":2, "==":1, "=":0 };
-				let p1 = pri[oc[oc.length-1].val];
-				if ( p1==undefined ) p1 = 0;
-
-				console.log("-C--:演算",pri[oc[oc.length-3].val],p1);
-				while ( oc.length >= 4 && pri[oc[oc.length-3].val] >= p1 )
-				{
-//			oc_dump();
-					let c2 = oc.pop();
-					let v2 = oc.pop();
-					let c1 = oc.pop();
-					let v1 = oc.pop();
-
-					console.log("calc",v1.val,c1.val,v2.val,c2.val);
-					switch( c1.val )
-					{
-						case "=":	v1 = setVal( this, v1, v2 );	break;
-						case "==":	v1.val = exVar(this,v1.val) == exVar(this,v2.val)?1:0;	break;
-						case "+":	v1.val = exVar(this,v1.val) +  exVar(this,v2.val);	break;
-						case "*":	v1.val = exVar(this,v1.val) *  exVar(this,v2.val);	break;
-						default:	console.log("err`"+c1.val+"`");
-					}
-					oc.push(v1);
-					oc.push(c2);
-				}
-			}
-			//--
-
-			// 文法解析
-
-			if ( oc.length == 4 && oc[0].val == "if" && oc[1].atr == "N:" && oc[2].atr == "P:" && oc[3].val != "else" )
-			{
-				console.log("INP^I:if実行");
-				let o1		= oc.pop();	//	^else
-				let prog	= oc.pop();	//	prog
-				let cond	= oc.pop();	//	cond
-				let	_if		= oc.pop();	//	if
-
-				if ( cond )
-				{
-					let token = new Token( prog.val );
-					token.execScript( _if.val.val );	//
-				}		
-			}
-			if ( oc.length == 5 && oc[0].val == "if" && oc[1].atr == "N:" && oc[2].atr == "P:" && oc[3].val == "else" && oc[4].atr == "P:" )
-			{
-				console.log("INPI:if~else実行");
-				let prog2	= oc.pop();	//	prog
-				let _else	= oc.pop();	//	else
-				let prog1	= oc.pop();	//	prog
-				let cond	= oc.pop();	//	cond
-				let	_if		= oc.pop();	//	if
-				cond.val=Number( cond.val);
-				if ( cond.val )
-				{
-					let token = new Token( prog1.val );
-					token.execScript( _if.val.val );	//
-				}
-				else
-				{
-					let token = new Token( prog2.val );
-					token.execScript( _else.val );	//
-				}
-			}
-
-			if ( oc.length == 3 && oc[0].atr == "T:" && oc[1].atr == "W:" && oc[2].atr != "T:"  )
-			{
-				console.log("TW~T:変数定義");
-				let	o1		= oc.pop();	//	~A:
-				let	name	= oc.pop();	//	a
-				let type	= oc.pop();	//	float
-
-				g_blVarobj[ name.val ] = {val:0, atr:type.val};
-
-			}
-			if ( oc.length == 4 && oc[0].atr == "T:" && oc[1].atr == "W:" && oc[2].atr == "T:" && oc[3].atr == "P:" )
-			{
-				console.log("TWTP:関数定義");
-				let prog	= oc.pop();	//	{}
-				let form	= oc.pop();	//	()	
-				let	name	= oc.pop();	//	foo
-				let type	= oc.pop();	//	func
-
-				let arg=[];
-				arg.push( { name:form.val, val:0,atr:"F:"} );
-
-				g_blVarobj[ name.val ] = {val:prog.val, atr:type.val, arg:arg} ;
-
-			}
-
-			if ( oc.length == 2 && oc[0].atr == "W:" && oc[1].atr == "A:" )
-			{
-				console.log("WA:関数実行");
-				let param	= oc.pop();	//	[]
-				let	name	= oc.pop();	//	foo
-				let prog	= g_blVarobj[ name.val ].val;
-				let arg		= g_blVarobj[ name.val ].arg;
-
-
-				console.log( param );
-				for ( let i = 0 ; i < param.val.length && i < arg.length ; i++ )
-				{
-					let p = param.val[i];
-					let a = arg[i];
-//					p.val
-
-					g_blVarobj[ a.name ] = {val:p.val, atr:"F:"};
-
-				}
-
-
-				{
-					let token = new Token( prog );
-					token.execScript( name.val );	//
-				}
-			}
-
-
-			if (tkn.val == "," )	
-			{
-				oc.pop();
-				arr.push( oc[oc.length-1] );
-			}
-			if (tkn.val == "]" )	
-			{
-				oc.pop();
-				if ( oc.length > 0 ) arr.push( oc[oc.length-1] );
-				return {val:arr,atr:"A:"};
-			}
-			if (tkn.val == "}" )	
-			{
-				oc.pop();
-				if ( oc.length > 0 ) arr.push( oc[oc.length-1] );
-				return {val:arr,atr:"P:"};
-			}
-			if (tkn.val == ")" )	
-			{
-/*
-				oc.pop();
-				if ( oc.length > 0 ) arr.push( oc[oc.length-1] );
-				return {val:arr,atr:"T:"};
-*/
-				return oc[0];
-			}
-			if (tkn.val == ";" )	return oc[0];
-			if (tkn.val === ""  )	
-			{
-			oc_dump();
-				return oc[0];
-			}
-//console.log("tkn.val>",tkn.val);
-
-
-		}
-	}
-	
-	//-----------------------------------------------------------------------------
-	execScript( name ) // ト
-	//-----------------------------------------------------------------------------
-	{
 		while( this.isActive() )
 		{
-			let val = this.execScript_sub( name, 0);
-//console.log( name+"--");
+			let obj = this.getToken();
+
+			if ( obj.val == "," ) continue;
+			if ( obj.val == ";" ) break;
+			if ( obj.val == "(" ) obj.val = this.pers();
+			if ( obj.val == "{" ) obj.val = this.pers();
+			if ( obj.val == ")" ) break;
+			if ( obj.val == "}" ) break;
+
+
+			arr.push( obj.val );
 		}
-
+		return arr;
 	}
-
 
 
 	//-----------------------------------------------------------------------------
@@ -1326,8 +764,6 @@ class Token
 			let str = name +"."+nest+","+oc.length+") ";
 			for ( let o of oc )
 			{
-//console.log(o)
-//if ( o == undefined ) break;
 				if ( o.atr == "A:" )
 				{
 					str += o.atr+"["+o.val.length+"]"+" ";
@@ -1339,51 +775,6 @@ class Token
 			}
 			console.log( str );
 		}
-
-		//-----------------------------------------------------------------------------
-		function analisys( THIS, name, nest, tblVarObj )
-		//-----------------------------------------------------------------------------
-		{
-			let oc = [];
-
-			while( THIS.isActive() )
-			{
-				let obj = THIS.getToken();
-				
-				if ( obj.val == "var" )	{cmd_var( tblVarObj );continue;}
-
-				if ( obj.val == "{" )	
-				{
-					let varobj ={};
-					analisys( THIS, "blok", nest+1, varobj );
-					
-				}
-				if ( obj.val == "}" )
-				{
-					return;
-				}
-
-
-				oc.push( obj );
-				dump_obj( oc, name, nest );
-
-				if ( oc.length == 4 && oc[1].val == "=" )
-				{
-console.log("=\n");
-					let d = oc.pop();	// ;
-					let c = oc.pop();	// 123
-					let b = oc.pop();	// =
-					let a = oc.pop();	// a
-
-					let o = {val:c.val, atr:"N:"};
-					tblVarObj[ a.val ] = o;
-				}
-
-
-			}
-		}
-
-
 
 		//-----------------------------------------------------------------------------
 		function obj_dump( obj, nest )
@@ -1399,73 +790,8 @@ console.log("=\n");
 			}
 		}
 
-		let tblobj2 = 
-		[
-			{atr:"(prog)", val:"a=1"},
-			{atr:"(prog)", val:
-				[
-					{atr:"(cmnd)", val:"if"},
-					{atr:"(cond)", val:"a==1"},
-					{atr:"(prog)", val:
-						[
-							{atr:"(prog)", val:"foo1()"},
-							{atr:"(prog)", val:"foo2()"},
-						]
-					},
-					{atr:"(prog)", val:"bar()"},
-				]
-			},
-		]
-		
 		let tblobj1 = [];
-		//-----------------------------------------------------------------------------
-		function pers( THIS, type, nest )
-		//-----------------------------------------------------------------------------
-		{
-			let tbl = [];
-
-			while( THIS.isActive() )
-			{
-				let obj = THIS.getToken();
-
-				if ( obj.val == "}" ) return { atr:type, val:tbl };
-
-				if ( obj.val == "{" ) 
-				{
-					obj = pers( THIS,"(progt)", nest+1 );
-					tbl.push( obj ); 
-					return { atr:type, val:tbl };
-				}
-
-
-				if ( type == "(cond)" )
-				{
-					if ( obj.val == ")" ) return { atr:type, val:tbl };
-					
-				}
-				else	// (prog)
-				{
-					if ( obj.val == ";" ) return { atr:type, val:tbl };
-
-					if ( obj.val == "if" ) 
-					{
-						tbl.push( { atr:"(cmnd)", val:obj.val} );
-						let a = THIS.getToken(); // (
-						tbl.push( pers( THIS,"(cond)", nest+1 ) );
-						tbl.push( pers( THIS,"(prog)", nest+1 ) );
-						let b = THIS.getToken(); // else
-						tbl.push( pers( THIS,"(prog)", nest+1 ) );
-						return { atr:type, val:tbl };
-					}
-				}
-
-				tbl.push( obj ); 
-			}
-		}
-
-		tblobj1.push( pers( this,"(prog1)", 0 ) );
-		tblobj1.push( pers( this,"(prog2)", 0 ) );
-
+		tblobj1.push( this.pers() );
 
 		obj_dump( tblobj1, 0 );
 
@@ -1473,102 +799,6 @@ console.log("=\n");
 
 
 }
-
-
-
-/*
-
-
-	cmd_print("\a=1;if(a==1)foo();else bar();");
-
-	let tbl = 
-	[
-		{atr:"(prog)", val:"a=1"},
-		{atr:"(prog)", val:
-			[
-				{atr:"(prog)", val:"if"},
-				{atr:"(cond)", val:"a==1"},
-				{atr:"(prog)", val:"foo()"},
-				{atr:"(prog)", val:"bar()"},
-			]
-		},
-	]
-*/
-	
-/*
-
-	$if			if ( $value ) $prog ; !else
-	$ifelse		if ( $value ) $prog1 ; else $prog2 ;
-
-	$switch		switch ( $value ) $prog
-
-
-
-
-
-	$switch		switch ( $value ) {	$swbrock }
-	$swbrock	$labelblock	.rep
-	
-	labelblock:	case $value
-	$case		case $value	: ~ case:
-	$default	default	: $prog
-
-	while		while ( $value ) $prog
-
-	$prog		
-
-	//$switch
-	if( w[0]=="switch" && w[1]=="(" && w[2]=="$value" && w[3]==")" && w[4]=="{" && w[5]=="$swbody"}" )
-	{
-		let obj = exObj( w[5] );
-		pers( obj, w[2] );
-	}
-
-
-	
-*/
-
-
-/*
-			// 実行
-			if ( oc[0].atr == "if" && oc[1].atr =="cond" && oc[2].atr =="prog" && oc[3].atr =="end" )
-			{
-				console.log("Yes! if \n)");
-			}
-*/
-
-
-
-let g_tblVarobj = 
-{
-
-	"void"		:{atr:"T:"	,val:0},
-	"string"	:{atr:"T:"	,val:0},
-	"float"		:{atr:"T:"	,val:0},
-	"true"		:{atr:"N:"	,val:1},
-	"false"		:{atr:"N:"	,val:0},
-
-	"if"		:{atr:"I:"	,from:["if"		,"cond"		,"prog"] 					},	// if (cond) {prog}
-	"else"		:{atr:"I:"	,from:["if"		,"cond"		,"prog", "else","prog"]	},	// (if構文) else (prog) 
-	"switch"	:{atr:"I:"	,from:["switch"	,"value"	,"case"]					},	// swith (cond) { (case構文)
-	"case"		:{atr:"I:"	,from:["case"	,"cond"		,"prog"]					},	// case (N:)	":"
-	"default"	:{atr:"I:"	,from:["default","cond"		,"prog"]					},	// default	":"
-	"break"		:{atr:"I:"	,from:["if"		,"cond"		,"prog"]					},	// break
-	"continue"	:{atr:"I:"	,from:["if"		,"cond"		,"prog"]					},	// continue
-	"for"		:{atr:"I:"	,from:["if"		,"cond"		,"prog"]					},	// for ( (prog)[] ; (cond) ; (prog)[] ) (prog)
-	"while"		:{atr:"I:"	,from:["if"		,"cond"		,"prog"]					},	// while (cond) (prog)
-	"return"	:{atr:"I:"	,from:["if"		,"cond"		,"prog"]					},	// return (param)[]
-	"struct"	:{atr:"I:"	,from:["if"		,"cond"		,"prog"]					},	// struct (type) (word)
-	"print"		:{atr:"I:"	,from:["if"		,"cond"		,"prog"]					},	// print (obj)
-
-// form[3]	(a;b;c)
-// param[3]	(a,b,c)
-// prog[3]	(a,b,c)
-// type		(word)(type[]);
-// lavel	(word):
-
-// error	(N
-};
 
 
 //-----------------------------------------------------------------------------
@@ -1613,8 +843,10 @@ window.onload = function( e )
 //	cmd_print("\nvoid foo(n){a=n;var}");						 //	
 //	cmd_print("\na=1;if ( a == 1 ) a=2 ; else a=3;");						 //	
 //	cmd_print("\nswitch(1){case 1:a=1;break;default:a=3;break;}");						 //	
-//	cmd_print("\a=1;if(a==1)foo1();else bar();");						 //	
-	cmd_print("\a=1;if(a==1){foo1();foo2();}else bar();");						 //	
+//	cmd_print("\na=1;if(a==1)foo1();else bar();");						 //	
+	cmd_print("\na=1;if(a==1){foo1();foo2();}else bar();");						 //	
+	cmd_print("\na=1;");						 //	
+	cmd_print("\nif(1)foo();");						 //	
 //	cmd_print("\nif (1) a=2;");						 //	
 //	cmd_print("\n");
 //	cmd_print("\nfoo[1]");						 //	
