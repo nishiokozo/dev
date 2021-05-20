@@ -426,8 +426,6 @@ function model_craete( vecOfs, index_wire, index_flat, vertexes, color, drawtype
 
 			let v3 = body.vertexes[body.index_wire[i*2+0]];
 			let p3 = body.vertexes[body.index_wire[i*2+1]];
-//			if ( g_param_raph ) raph_line3d( P, v3, p3, colset.wire, 1 );
-
 		}
 	}
 
@@ -734,7 +732,7 @@ function create_mot( filename )
 	}
 
 	//------------------------------------------------------------------------------
-	mot.update = function()// gra, P, V, colset, scale, numframe )
+	mot.update = function()
 	//------------------------------------------------------------------------------
 	{
 		switch( m_step )
@@ -1101,21 +1099,38 @@ function main()
 	let m_stepFrame = 1;
 	let m_flgPlay = true;
 
+	let m_ft = 1/60;	
+
 	let c_mot = create_mot( "nocchi.bvh" );
 	let b_mot = create_mot( "aachan.bvh" );
+//	let a_mot = create_mot( "05_05.bvh" );
 	let a_mot = create_mot( "kashiyuka.bvh" );
 
 	init_testmodel();
-	
+
+	update_paint();	
 	//---------------------------------------------------------------------
-	function	update_paint( now )
+	function	update_paint()
 	//---------------------------------------------------------------------
 	{
-		const deltaTime = ( now - then )/1000;
+		let now = performance.now();
+		const deltaTime = ( now - then );///1000;
 		then = now;
 
-		// 描画
+		update_frame( deltaTime );
 
+		let time = performance.now();			// 実際に掛かったフレームタイム
+		let t = (time-g_time)-m_ft;				// 差
+		let t2 = ((t>0)?m_ft-t:m_ft);			// 次のフレームタイムの指定値
+		g_time = time;
+		g_reqId2 = setTimeout( update_paint, t2 );
+	}
+	//---------------------------------------------------------------------
+	function update_frame( delta )
+	//---------------------------------------------------------------------
+	{
+		if ( b_mot.m_mot ) m_ft = b_mot.m_mot.MOTION.FrameTime*1000;	// bvhの指定フレームタイムに書き換え
+		// 描画
 		cam.fovy	= g_param_fovy;
 		cam.pos.z	= g_param_zoom;
 		cam.pos.y	= g_param_high;
@@ -1124,7 +1139,7 @@ function main()
 		let P = mperspective( cam.fovy, html_canvas.width/html_canvas.height, cam.near, cam.far );
 		let V= mlookat( cam.pos, cam.at );
 
-		g_yaw += radians( -0.11  );
+		g_yaw += radians( -0.004*delta  );
 		V = mmul( V, mrotate( g_yaw, vec3( 0,1,0 ) ) );
 
 		// ステージ表示
@@ -1143,8 +1158,7 @@ function main()
 		gra.cls( g_param_colset.back );
 		gra.draw_flat();
 		gra.draw_wire();
-
-		if ( a_mot.m_mot && b_mot.m_mot && c_mot.m_mot )
+		if ( a_mot.m_mot )//&& b_mot.m_mot && c_mot.m_mot )
 		{
 			// フレーム制御
 			{
@@ -1175,24 +1189,10 @@ function main()
 			}
 
 
-			let ft = a_mot.m_mot.MOTION.FrameTime*1000;	// bvhの指定フレームタイム
-			let time = performance.now();			// 実際に掛かったフレームタイム
-			let t = (time-g_time)-ft;				// 差
-			let t2 = ((t>0)?ft-t:ft);				// 次のフレームタイムの指定値
-
-			g_time = time;
-
-			g_reqId2 = setTimeout( update_paint, t2 );
 		}
-		else
-		{
-			g_reqId1 = window.requestAnimationFrame( update_paint );
-		}
+
 	}
 
-
-	
-	update_paint(0);
 }
 
 
