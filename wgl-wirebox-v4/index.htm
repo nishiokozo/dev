@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>wf3</title>
+		<style>
+			.group
+			{
+				display:inline-block; 
+				padding: 6px; 
+				border-radius: 7px; 
+				border:1px solid #aaa;
+				text-align:right;
+			}
+			.readme
+			{
+				display:inline-block; 
+				text-align:center;
+				font-size:12px;
+				font-family:monospace;
+			}
+			.readme-left
+			{
+				display:inline-block; 
+				text-align:left;
+				font-size:12px;
+				font-family:monospace;
+			}
+		</style>
+	</head>
+	<body align="center" style="font-family:monospace">
+		<H2 style="font-family:sans-serif">ドームレンダリング</H2>
+
+
+		<canvas id="html_canvas" width="640" height="360"  style="border: 1px solid" ></canvas>
+
+		<br>
+		<div class="group">
+			色
+<!--
+			<input type="checkbox" name="html_noblur">ブラーを使わない
+
+			<div class="group">
+				縮小バッファ
+				<input type="radio" name="html_small" value="nosmall" onchange="html_onchange();">使わない
+				<input type="radio" name="html_small" value="small4"  onchange="html_onchange();"checked>1/4
+				<input type="radio" name="html_small" value="small16" onchange="html_onchange();">1/16
+				<input type="radio" name="html_small" value="small64" onchange="html_onchange();">1/64
+			</div>
+				<input type="text" id="html_sigma" value="9" size="3" onchange="html_onchange();" >sigma
+				<input type="text" id="html_rate" value="0.3" size="3" onchange="html_onchange();">rate
+			<input type="checkbox" name="html_paint" onchange="html_onchange();" checked>paint
+			<input type="checkbox" name="html_line" onchange="html_onchange();" checked>line
+			<input type="checkbox" name="html_undome"  onchange="html_onchange();">非ドーム
+-->
+			<input type="radio" name="html_color" value="White" onchange="html_onchange();" checked>白
+			<input type="radio" name="html_color" value="Blue" 	onchange="html_onchange();" >青
+			<input type="radio" name="html_color" value="Red" 	onchange="html_onchange();" >赤
+			<input type="radio" name="html_color" value="Green" onchange="html_onchange();" 		>緑
+			<input type="radio" name="html_color" value="Yello" onchange="html_onchange();" 		>黄
+			<input type="radio" name="html_color" value="Purple" onchange="html_onchange();" 		>紫
+			<input type="radio" name="html_color" value="Black" onchange="html_onchange();" >黒
+
+
+		</div>
+			<div class="group">
+			 画角 <input type="text" id="html_fovy" value="32.0" size="3" onchange="html_onchange();">
+			 ZOOM <input type="text" id="html_zoom" value="16.0" size="3" onchange="html_onchange();">
+			</div>
+			<input type="button" value="更新" onClick="html_update()">
+			<input type="button" value="フルスクリーン" onClick="html_setFullscreen()" >
+			<input type="checkbox" name="html_normal"  onchange="html_onchange();">平行奥行
+
+<br>
+		<script src="lib.js"></script>
+		<script src="util.js"></script>
+		<script src="main.js"></script>
+		<br>
+
+		<div class="readme">
+							<p>～概要 2021/05/14～</p>
+		<div class="readme">
+			<p>平行の奥行ではなく頂点の距離で透視変換をする実験</p>
+			<p>通常ポリゴン描画ではZ深度で透視変換を行うが</p>
+			<p>レイトレと同じように視点からの距離で透視変換を行うようにしたもの</p>
+			<p>画面の端のオブジェクトのゆがみが少ない</p>
+			<p>ニアクリップの値も頂点毎に補正することで行えている。方法は以下</p>
+			<p>①Pvの前にvの距離dを求め</p>
+			<p>②Pvの後にv.z*=d/v.w; v.w=d;</p>
+		</div>
+	</body>
+</html>
