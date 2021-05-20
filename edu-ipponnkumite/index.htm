@@ -15,6 +15,13 @@
 				font-family: MyFont;
 //				display:none;
 			}
+			font3
+			{
+				font-size: 40px;
+				font-family: 'メイリオ';
+//				font-family: MyFont;
+//				display:none;
+			}
 			font4
 			{
 				font-size: 200px;
@@ -66,7 +73,7 @@
 	<body align="center">
 		<div class="groupR">
 			<div class="groupL">
-				<input type="checkbox" name="html_kall"   			>基本一本<br>
+				<input type="checkbox" name="html_kall"   checked			>基本一本<br>
 				<input type="checkbox" name="html_knum1"  checked	>一番：上段・中段・前蹴り・横蹴込み・回蹴り<br>
 				<input type="checkbox" name="html_knum2"  checked	>二番：上段・中段・前蹴り・横蹴込み・回蹴り<br>
 				<input type="checkbox" name="html_knum3"  			>三番：上段・中段・前蹴り<br>
@@ -80,6 +87,7 @@
 				<input type="checkbox" name="html_jnum4"  			>四番：上段・中段・前蹴り<br>
 			</div>
 			<br>
+			<input type="checkbox" name="html_explain"   checked			>説明
 			<input type="text" id="html_shuffle" value="0.25" size="3" class="button" > シャッフル率
 			<input type="text" id="html_interval" value="4" size="3" class="button" > 秒間隔
 			<input type="button" value="リセット" onClick="html_updateReset()" class="button" >
@@ -105,6 +113,16 @@
 		<font4>
 			<span id="html_message2"></span>
 		</font4>
+		<br>
+		<br>
+		<br>
+		<br>
+		<br>
+		<br>
+		
+		<font3>
+			<span id="html_message3"></span>
+		</font3>
 
 
 
