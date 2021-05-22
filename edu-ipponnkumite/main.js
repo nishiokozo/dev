@@ -219,24 +219,24 @@ function set_param( flgShuffle )
 	{
 		if ( document.getElementsByName( "html_knum1" )[0].checked ) tblKihon.push( ["基本一本","上段突き","一番"	,"（右脚↓）左揚げ受け、右逆突き"] );
 		if ( document.getElementsByName( "html_knum2" )[0].checked ) tblKihon.push( ["基本一本","上段突き","二番"	,"（右脚＼↓）後屈立ち左縦手刀受け、前屈立ち右手刀打ち"] );
-		if ( document.getElementsByName( "html_knum3" )[0].checked ) tblKihon.push( ["基本一本","上段突き","三番"	,"左横移動閉塞立ち、右揚げ受け右前蹴り右肘打ち"] );
-		if ( document.getElementsByName( "html_knum4" )[0].checked ) tblKihon.push( ["基本一本","上段突き","四番"	,"（右脚↓）上段十字受け右回し蹴り左裏肘打ち、左周り戻り"] );
+		if ( document.getElementsByName( "html_knum3" )[0].checked ) tblKihon.push( ["基本一本","上段突き","三番"	,"（閉塞立ち／←）右揚げ受け、右前蹴り、右肘打ち"] );
+		if ( document.getElementsByName( "html_knum4" )[0].checked ) tblKihon.push( ["基本一本","上段突き","四番"	,"（右脚↓）上段十字受け、右回し蹴り、左裏肘打ち"] );
 
 		if ( document.getElementsByName( "html_knum1" )[0].checked ) tblKihon.push( ["基本一本","中段突き","一番"	,"（右脚↓）左外受け、右逆突き"] );
 		if ( document.getElementsByName( "html_knum2" )[0].checked ) tblKihon.push( ["基本一本","中段突き","二番"	,"（左脚↓）右外受け、右肘打ち"] );
-		if ( document.getElementsByName( "html_knum3" )[0].checked ) tblKihon.push( ["基本一本","中段突き","三番"	,"（右脚↓）左内受け左刻み突き右逆突き"] );
-		if ( document.getElementsByName( "html_knum4" )[0].checked ) tblKihon.push( ["基本一本","中段突き","四番"	,"（右／右↓）後屈立ち左手刀打ち掴んで左回し蹴り右貫き手"] );
+		if ( document.getElementsByName( "html_knum3" )[0].checked ) tblKihon.push( ["基本一本","中段突き","三番"	,"（右脚↓）左内受け、左刻み突き、右逆突き"] );
+		if ( document.getElementsByName( "html_knum4" )[0].checked ) tblKihon.push( ["基本一本","中段突き","四番"	,"（右／右↓）後屈立ち左手刀打ち、（掴んで）左回し蹴り、右貫手"] );
 
 		if ( document.getElementsByName( "html_knum1" )[0].checked ) tblKihon.push( ["基本一本","前蹴り"  ,"一番"	,"（右脚↓）左下段払い、右逆突き"] );
 		if ( document.getElementsByName( "html_knum2" )[0].checked ) tblKihon.push( ["基本一本","前蹴り"  ,"二番"	,"（右脚↓）右逆下段払い、左刻み突き、右逆突き"] );
-		if ( document.getElementsByName( "html_knum3" )[0].checked ) tblKihon.push( ["基本一本","前蹴り"  ,"三番"	,"（左脚↓）十字受け溜めて両手手刀打ち"] );
-		if ( document.getElementsByName( "html_knum4" )[0].checked ) tblKihon.push( ["基本一本","前蹴り"  ,"四番"	,"（左＼右）逆下段払い猫足立右肘打ち"] );
+		if ( document.getElementsByName( "html_knum3" )[0].checked ) tblKihon.push( ["基本一本","前蹴り"  ,"三番"	,"（左脚↓）十字受け、両手手刀打ち"] );
+		if ( document.getElementsByName( "html_knum4" )[0].checked ) tblKihon.push( ["基本一本","前蹴り"  ,"四番"	,"（閉塞立ち←）右下段払い、右肘打ち"] );
 
 		if ( document.getElementsByName( "html_knum1" )[0].checked ) tblKihon.push( ["基本一本","横蹴込み","一番"	,"（右脚／↓）左外受け、右逆突き"] );
 		if ( document.getElementsByName( "html_knum2" )[0].checked ) tblKihon.push( ["基本一本","横蹴込み","二番"	,"（右脚↓）左下段背腕受け、右手背刀打ち"] );
 
 		if ( document.getElementsByName( "html_knum1" )[0].checked ) tblKihon.push( ["基本一本","回し蹴り","一番"	,"（右脚→）左上段背腕受け、右逆突き"] );
-		if ( document.getElementsByName( "html_knum2" )[0].checked ) tblKihon.push( ["基本一本","回し蹴り","二番"	,"（左脚＼）両手刀受け、右肘打ち左添え"] );
+		if ( document.getElementsByName( "html_knum2" )[0].checked ) tblKihon.push( ["基本一本","回し蹴り","二番"	,"（左脚＼）両手手刀受け、右肘打ち左添え"] );
 
 
 	}
@@ -245,7 +245,7 @@ function set_param( flgShuffle )
 	if ( document.getElementsByName( "html_jall" )[0].checked )
 	{
 		if ( document.getElementsByName( "html_jnum1" )[0].checked ) tblJyuu.push( ["自由一本","上段突き","一番"	,"（右脚＼↓）左縦手刀受け、右逆突き"] );
-		if ( document.getElementsByName( "html_jnum2" )[0].checked ) tblJyuu.push( ["自由一本","上段突き","二番"	,"左流し受け、右裏突き（右脚／↓）"] );
+		if ( document.getElementsByName( "html_jnum2" )[0].checked ) tblJyuu.push( ["自由一本","上段突き","二番"	,"左流し受け、右裏突き"] );
 		if ( document.getElementsByName( "html_jnum3" )[0].checked ) tblJyuu.push( ["自由一本","上段突き","三番"	,"（右脚／↓右上段揚げ受け、右回し蹴り、左逆突き"] );
 		if ( document.getElementsByName( "html_jnum4" )[0].checked ) tblJyuu.push( ["自由一本","上段突き","四番"	,"左掌底払い打ち右掌底、左←"] );
 
@@ -275,12 +275,12 @@ function set_param( flgShuffle )
 			if ( document.getElementsByName( "html_jnum3b" )[0].checked ) tblJyuu.push( ["自由一本","後ろ蹴り","三番"	,"（左脚↓）右払い左後ろ蹴り"] );
 
 			if ( document.getElementsByName( "html_jnum1b" )[0].checked ) tblJyuu.push( ["自由一本","刻み突き","一番"	,"（左脚←）右裏拳突き、左逆突き"] );
-			if ( document.getElementsByName( "html_jnum2b" )[0].checked ) tblJyuu.push( ["自由一本","刻み突き","二番"	,"左刻み足払い左流し受け、右裏突き（←右脚）"] );
-			if ( document.getElementsByName( "html_jnum3b" )[0].checked ) tblJyuu.push( ["自由一本","刻み突き","三番"	,"前進右裏拳打ち両手突き放し（左＼左脚↓）"] );
+			if ( document.getElementsByName( "html_jnum2b" )[0].checked ) tblJyuu.push( ["自由一本","刻み突き","二番"	,"左刻み足払い、左流し受け、右裏突き"] );
+			if ( document.getElementsByName( "html_jnum3b" )[0].checked ) tblJyuu.push( ["自由一本","刻み突き","三番"	,"右裏拳打ち、両手突き放し"] );
 
 			if ( document.getElementsByName( "html_jnum1b" )[0].checked ) tblJyuu.push( ["自由一本","逆突き"  ,"一番"	,"（右脚／↓）左刻み突き、右逆突き"] );
-			if ( document.getElementsByName( "html_jnum2b" )[0].checked ) tblJyuu.push( ["自由一本","逆突き"  ,"二番"	,"（左脚＼↑）右下段払い、右回し蹴り、（右脚↑）右手刀打ち、（左回転）"] );
-			if ( document.getElementsByName( "html_jnum3b" )[0].checked ) tblJyuu.push( ["自由一本","逆突き"  ,"三番"	,"正面後退左下段払い左裏拳打ち"] );
+			if ( document.getElementsByName( "html_jnum2b" )[0].checked ) tblJyuu.push( ["自由一本","逆突き"  ,"二番"	,"（左脚＼↑）右下段払い、右回し蹴り、（右脚↑）右手刀打ち）"] );
+			if ( document.getElementsByName( "html_jnum3b" )[0].checked ) tblJyuu.push( ["自由一本","逆突き"  ,"三番"	,"（左↓）左下段払い、左裏拳打ち"] );
 		}
 	}
 
