@@ -1731,7 +1731,7 @@ function asfamc_create( asf_filename, amc_filename )
 			asf.m_mot={};
 			asf.m_mot.asf = asf_hash;
 			asf.m_mot.amc = amc_hash;
-console.log(asf.m_mot);
+//console.log(asf.m_mot);
 			m_step++;
 
 		case 5:	
@@ -1831,21 +1831,32 @@ console.log(asf.m_mot);
 						}
 					}
 					let L=midentity();
-					let N=midentity();
+//					let N=midentity();
 
-					M = mmul( C, mmul( M, minvers(C) ) );// L = Cinv * M * C * B	の逆順
+if(0)
+{
+					// L = Cinv * M * C * B	の逆順
+					M = mmul( M, minvers(C) );
+					M = mmul( C, M );
 					L = mmul( M, B );
-					N = mmul( P, L ); 
-
-					if(1)
+					L = mmul( P, L ); 
+}
+else
+{
+					// L = Cinv * M * C * B	の逆順	t
+					L = mmul( B, L );
+					L = mmul( minvers(C), L );
+					L = mmul( M, L );
+					L = mmul( C, L );
+					L = mmul( P, L ); 
+}
 					{
 						let p = vmul_Mv( P , vec3(0,0,0) );
-						let v = vmul_Mv( N , vec3(0,0,0) );	//vM の逆順
+						let v = vmul_Mv( L , vec3(0,0,0) );	//vM の逆順
 						drawbone( p, v, scale, colset.wire);
-//						drawbone( p, v, scale, vec3(1,0,0));
 					}
 
-					asf_subB( N, bones[bone] );
+					asf_subB( L, bones[bone] );
 				}
 			}
 			{

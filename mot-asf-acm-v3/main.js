@@ -175,7 +175,15 @@ function main()
 function html_onchange( valRequest )
 //-----------------------------------------------------------------------------
 {
-
+	if(1)
+	{
+		let A = mrotz( radians(45) );
+		let T = mtrans( vec3(1,2,3) );
+		console.table(A);
+		console.table(T);
+		console.table(mmul(A,T));
+		console.table(mmul(T,A));
+	}
 	{
 		g_param_fovy = window.document.getElementById( "html_fovy" ).value*1;
 		g_param_look = window.document.getElementById( "html_look" ).value*1;
