@@ -11,8 +11,8 @@ function gra_create( cv )	//2021/06/01 window関数実装
 
 	let sx = 0; 
 	let sy = 0; 
-	let ex = html_canvas.width; 
-	let ey = html_canvas.height; 
+	let ex = gra.ctx.canvas.width; 
+	let ey = gra.ctx.canvas.height; 
 	let ox = 0;
 	let oy = 0;
 	//-------------------------------------------------------------------------
@@ -31,16 +31,16 @@ function gra_create( cv )	//2021/06/01 window関数実装
 	{
 		let w = ex-sx;
 		let h = ey-sy;
-		x = (x+ox)/w * html_canvas.width;
-		y = (y+oy)/h * html_canvas.height;
+		x = (x+ox)/w * gra.ctx.canvas.width;
+		y = (y+oy)/h * gra.ctx.canvas.height;
 		return [x,y];
 	}
 	function cvrange( x, y )
 	{
 		let w = Math.abs(ex-sx);
 		let h = Math.abs(ey-sy);
-		x = (x)/w * html_canvas.width;
-		y = (y)/h * html_canvas.height;
+		x = (x)/w * gra.ctx.canvas.width;
+		y = (y)/h * gra.ctx.canvas.height;
 		return [x,y];
 	}
 	//-------------------------------------------------------------------------
