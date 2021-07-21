@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>pys</title>
+		<style>
+
+			.group
+			{
+				display:inline-block; 
+				padding: 6px; 
+				border-radius: 7px; 
+				border:1px solid #aaa;
+				text-align:center;
+				vertical-align: top;
+			}
+			.readme
+			{
+				display:inline-block; 
+				text-align:center;
+				font-size:12px;
+				font-family:monospace;
+			}
+			.readme-left
+			{
+				display:inline-block; 
+				text-align:left;
+				font-size:12px;
+				font-family:monospace;
+			}
+.gamearea
+ {
+//  cursor: none;
+}
+/*
+html,body,a{
+  cursor: none;
+}
+#cursor{
+  transform: translate(0,0);
+    pointer-events: none;
+    position: fixed;
+    top: -4px;    //座標調節（カーソル位置と円の中心を合わせる）
+    left: -4px;   //座標調節（カーソル位置と円の中心を合わせる）
+    width: 8px;   //カーソルの直径
+    height: 8px;  //カーソルの直径
+    background: rgba(0,0,0,0.75);
+    border-radius: 50%;
+    z-index: 999;
+    transition: width .3s, height .3s, top .3s, left .3s;
+  
+  &.hov_{
+    top: -12px;    //大きくなった分の座標調節
+    left: -12px;   //大きくなった分の座標調節
+    width: 32px;   //カーソルの直径
+    height: 32px;  //カーソルの直径
+    background: rgba(200,50,50,0.75);
+  }
+}
+
+// 以下、カーソルに関係ない部分
+.btn {
+    display: block;
+    width: 160px;
+    margin: 40px auto;
+    text-align: center;
+    font-size: 14px;
+    line-height: 1;
+
+    a {
+      display: block;
+      color: #fff;
+      text-decoration: none;
+      padding: 8px;
+      background-color: #007adf;
+    }
+
+}
+*/
+
+		</style>
+	</head>
+	<body align="center">
+		<H1>丸いブロック崩しv1.0</H1>
+		<canvas class="gamearea" id="html_canvas"  width="384" height="384" style="border:1px solid" ></canvas>
+<!--
+		<canvas class="gamearea" id="html_canvas"  width="640" height="360" style="border:1px solid" ></canvas>
+-->
+		<script src="lib.js"></script>
+		<script src="main.js"></script>
+		<br>
+
+				<input type="radio" name="html_stage" onchange="html_onchange('normal');">normal
+				<input type="radio" name="html_stage" onchange="html_onchange('mitu');"checked>mitu
+				<input type="radio" name="html_stage" onchange="html_onchange('super');">super
+				<input type="radio" name="html_stage" onchange="html_onchange('dot');">dot
+				<input type="radio" name="html_stage" onchange="html_onchange('hex');">hex
+
+			<input type="button" value="reset" onClick="main()" >
+
+			<input type="checkbox" name="html_info"  >info
+
+
+<!--
+					<input type="button" value="フルスクリーン" onClick="html_onchange('fullscreen')" >
+
+		<div class="group">
+			速度計算
+			<br>
+			<input type="radio" name="html_reso" value="1" onchange="html_onchange('v^2');" checked 	>衝撃＝速度の二乗
+			<br>
+			<input type="radio" name="html_reso" value="0.5" onchange="html_onchange('v');" 	>衝撃＝速度
+		</div>
+			<input type="button" value="play/stop" onClick="html_onchange('play/stop')" >
+			<input type="button" value="info" onClick="html_onchange('info')" >
+-->
+			
+			<br>
+
+	<br>～概要 2021/07/22～<br>
+			ブロックが丸い、ラケットも丸い<br>
+			ブラックボールは味方のボール。落としてもペナルティにならないヨ！<br>
+			クリアしてもボールはそのまま残る、すると・・・<br>
+
+	</body>
+</html>

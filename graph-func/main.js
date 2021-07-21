@@ -1,6 +1,7 @@
 "use strict";
 let g=html_canvas.getContext('2d');
 
+/*
 //-----------------------------------------------------------------------------
 function rad( deg )
 //-----------------------------------------------------------------------------
@@ -30,7 +31,6 @@ let fill= function( sx,sy, ex,ey )
 	g.stroke();
 
 }
-
 //-----------------------------------------------------------------------------
 let line = function( sx,sy, ex,ey )
 //-----------------------------------------------------------------------------
@@ -43,7 +43,6 @@ let line = function( sx,sy, ex,ey )
 	g.closePath();
 	g.stroke();
 }
-
 //-----------------------------------------------------------------------------
 function print( tx, ty, str )
 //-----------------------------------------------------------------------------
@@ -70,13 +69,14 @@ function cls()
 	g.fillStyle = "#ffffff";
 	g.fillRect( 0, 0, html_canvas.width, html_canvas.height );
 }
+*/
 
 //-----------------------------------------------------------------------------
 function update_paint()
 //-----------------------------------------------------------------------------
 {
 
-	cls();
+	gra.cls();
 
 	let xmax = document.getElementById( "html_xmax" ).value;
 	let xmin = document.getElementById( "html_xmin" ).value;
@@ -333,49 +333,117 @@ console.log(strFunc,":",y);
 	let scrn_y1 = 0;
 	let scrn_x2 = html_canvas.width;
 	let scrn_y2 = html_canvas.height -32;
-	
-	{// 基本軸描画
 
-		// 縦軸
-		line( scrn_x1, 0, scrn_x1, html_canvas.height );
-		print( scrn_x1-30,10, ymax.toString());
-		print( scrn_x1-30,scrn_y2-2, ymin.toString());
+	if(1)
+	{	
 
-		// 横軸
-		line( 0, scrn_y2, scrn_x2, scrn_y2 );
-		print( scrn_x1+2,scrn_y2+12, xmin.toString());
-		print( scrn_x2-30,scrn_y2+12, xmax.toString());
-	}
+		{// 基本軸描画
 
-	{// グラフ描画
-		let W = scrn_x2-scrn_x1;
-		let H = scrn_y2-scrn_y1;
+			// 縦軸
+			gra.line( scrn_x1, 0, scrn_x1, html_canvas.height );
+			gra.print( ymax.toString(), scrn_x1-30,10);
+			gra.print( ymin.toString(), scrn_x1-30,scrn_y2-2 );
 
-		let st = (xmax-xmin)/W;
-		let sc = (ymax-ymin);
+			// 横軸
+			gra.line( 0, scrn_y2, scrn_x2, scrn_y2 );
+			gra.print( xmin.toString(), scrn_x1+2,scrn_y2+12);
+			gra.print( xmax.toString(), scrn_x2-30,scrn_y2+12);
 
-		let rx = scrn_x1;
-		let ry = scrn_y2- (calcFunc( strFunc, 0 )-ymin)/sc*H;
-		for ( let x = xmin ; x <= xmax ; x+= st )
-		{
-			let y = calcFunc( strFunc, x );
+			// 0横
+	//		gra.line( scrn_x1, scrn_y2/2, scrn_x2, scrn_y2/2 );
+		}
 
-			//--	
-			let px = scrn_x1+ (x-xmin)/st;
-			let py = scrn_y2- (y-ymin)/sc*H;
-			line( px, py, rx, ry );
+		{// グラフ描画
+			let W = scrn_x2-scrn_x1;
+			let H = scrn_y2-scrn_y1;
 
-			if ( x == xmin )
+			let st = (xmax-xmin)/W;
+			let sc = (ymax-ymin);
+
+
+			function cvx(x)
 			{
-				print( scrn_x1-30,py, y.toFixed(2));
+				return scrn_x1+ (x-xmin)/st;
 			}
-			rx = px;
-			ry = py;
+			function cvy(y)
+			{
+				return scrn_y2- (y-ymin)/sc*H;
+			}
+			gra.alpha(0.2);
+			gra.line( cvx(0), scrn_y1, cvx(0), scrn_y2 );
+			gra.line( scrn_x1, cvy(0), scrn_x2, cvy(0) );
+			gra.alpha(1.0);
+
+			let rx = scrn_x1;
+			let ry = scrn_y2- (calcFunc( strFunc, 0 )-ymin)/sc*H;
+			for ( let x = xmin ; x <= xmax ; x+= st )
+			{
+				let y = calcFunc( strFunc, x );
+
+				//--	
+//				let px = scrn_x1+ (x-xmin)/st;
+//				let py = scrn_y2- (y-ymin)/sc*H;
+				let px = cvx(x);
+				let py = cvy(y);
+				gra.line( px, py, rx, ry );
+
+				if ( x == xmin )
+				{
+					gra.print( y.toFixed(2), scrn_x1-30,py);
+				}
+				rx = px;
+				ry = py;
+			}
 		}
 	}
+	else
+	{	
+		{// 基本軸描画
 
+			// 縦軸
+			gra.line( scrn_x1, 0, scrn_x1, html_canvas.height );
+			gra.print( ymax.toString(), scrn_x1-30,10);
+			gra.print( ymin.toString(), scrn_x1-30,scrn_y2-2 );
+
+			// 横軸
+			gra.line( 0, scrn_y2, scrn_x2, scrn_y2 );
+			gra.print( xmin.toString(), scrn_x1+2,scrn_y2+12);
+			gra.print( xmax.toString(), scrn_x2-30,scrn_y2+12);
+
+			// 0横
+	//		gra.line( scrn_x1, scrn_y2/2, scrn_x2, scrn_y2/2 );
+		}
+
+		{// グラフ描画
+			let W = scrn_x2-scrn_x1;
+			let H = scrn_y2-scrn_y1;
+
+			let st = (xmax-xmin)/W;
+			let sc = (ymax-ymin);
+
+			let rx = scrn_x1;
+			let ry = scrn_y2- (calcFunc( strFunc, 0 )-ymin)/sc*H;
+			for ( let x = xmin ; x <= xmax ; x+= st )
+			{
+				let y = calcFunc( strFunc, x );
+
+				//--	
+				let px = scrn_x1+ (x-xmin)/st;
+				let py = scrn_y2- (y-ymin)/sc*H;
+				gra.line( px, py, rx, ry );
+
+				if ( x == xmin )
+				{
+					gra.print( y.toFixed(2), scrn_x1-30,py);
+				}
+				rx = px;
+				ry = py;
+			}
+		}
+	}
 }
 
+	let gra = gra_create( html_canvas );
 //-----------------------------------------------------------------------------
 window.onload = function( e )
 //-----------------------------------------------------------------------------
