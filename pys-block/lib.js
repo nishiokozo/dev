@@ -36,8 +36,9 @@ function gra_create( cv )	//2021/06/01
 
 	gra.col = "#000000";
 	gra.backcol = "#FFFFFF";
-	gra.ctx.font = "12px monospace";	// iOSだとCourierになる
-//	gra.ctx.font = "16px Courier";	// iOSでも使えるモノスペースフォントただし漢字はダメ
+//	gra.ctx.font = "12px monospace";	// iOSだとCourierになる	読める限界の小ささ
+//	gra.ctx.font = "14px monospace";	// iOSだとCourierになる 程よい小ささ
+	gra.ctx.font = "16px Courier";	// iOSでも使えるモノスペースフォントただし漢字はモノスペースにはならない 見栄えもある
 	gra.fontw = gra.ctx.measureText("|").width;
 
 	//-------------------------------------------------------------------------
@@ -152,8 +153,8 @@ function gra_create( cv )	//2021/06/01
 		[x1,y1]=win_abs(x1,y1);
 		func( str, x1, y1 );
 
-			gra.x = x1;
-			gra.y = y1+16;
+		gra.x = x1;
+		gra.y = y1+16;
 	}
 	//-----------------------------------------------------------------------------
 	gra.alpha = function( fa=1.0, func='none' ) // 2021/07/10 追加
@@ -235,7 +236,7 @@ function gra_create( cv )	//2021/06/01
 		{
 			gra.ctx.beginPath();
 			gra.ctx.setLineDash([]);
-			gra.ctx.strokeStyle = gra.col;
+//			gra.ctx.strokeStyle = gra.col;
 			let rotation = 0;
 			let startAngle = st;
 			let endAngle = en;
@@ -243,7 +244,7 @@ function gra_create( cv )	//2021/06/01
 			gra.ctx.closePath();
 			gra.ctx.fillStyle = gra.col;// 2021/07/19 修正 "rgba(0,0,0,1)" ;
 			gra.ctx.fill();
-			gra.ctx.stroke();
+//			gra.ctx.stroke();	// 2021/07/22 fillとstrokeを併用すると半透明と相性が悪いので消す
 		};
 		[x1,y1]=win_abs(x1,y1);
 		let [rw,rh] = win_range(r,r);
