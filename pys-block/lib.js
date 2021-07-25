@@ -1,26 +1,82 @@
-// 2021/07/24	KEY追加
-// 2021/07/23	半直線と点との距離,	線分と点との距離,直線と直線の距離,半直線と線分の距離,線分と線分の距離 関数追加
-// 2021/07/23	pad_create ゲームパッド入力ライブラリ追加
-// 2021/07/22	フルスクリーン用にアスペクト機能を追加
-// 2021/07/19	ver1.12 gra backcolor()追加
-// 2021/07/10	ver1.11 フォント送りサイズ変更
-// 2021/07/10	ver1.10 gra.alpha追加
-// 2021/07/02	ver1.09 geom 2021/07/02 vec2追加 gra_create 追加
-// 2021/05/28	ver1.08	行列式のコメント追加
-// 2021/05/26	ver1.07	minvers再びアルゴリズム交換
-// 2021/05/25	ver1.06	minvers別のアルゴリズムに交換
-// 2021/05/24	ver1.05	行列のコメントを修正
-// 2021/05/23	ver1.04	列優先バグ修正vec4->vec3
-// 2021/05/17	ver1.03	mrotx / vrotx 等、名称変更
-// 2021/05/09	ver1.02	minverts追加、mlookat変更
-// 2021/05/07	ver1.01	デバッグ、vec3対応
-// 2021/05/06	ver1.00	分離
+// 2021/07/26 効果音ライブラリ
+// 2021/07/24 KEY追加
+// 2021/07/23 半直線と点との距離,	線分と点との距離,直線と直線の距離,半直線と線分の距離,線分と線分の距離 関数追加
+// 2021/07/23 pad_create ゲームパッド入力ライブラリ追加
+// 2021/07/22 フルスクリーン用にアスペクト機能を追加
+// 2021/07/19 ver1.12 gra backcolor()追加
+// 2021/07/10 ver1.11 フォント送りサイズ変更
+// 2021/07/10 ver1.10 gra.alpha追加
+// 2021/07/02 ver1.09 geom 2021/07/02 vec2追加 gra_create 追加
+// 2021/05/28 ver1.08	行列式のコメント追加
+// 2021/05/26 ver1.07	minvers再びアルゴリズム交換
+// 2021/05/25 ver1.06	minvers別のアルゴリズムに交換
+// 2021/05/24 ver1.05	行列のコメントを修正
+// 2021/05/23 ver1.04	列優先バグ修正vec4->vec3
+// 2021/05/17 ver1.03	mrotx / vrotx 等、名称変更
+// 2021/05/09 ver1.02	minverts追加、mlookat変更
+// 2021/05/07 ver1.01	デバッグ、vec3対応
+// 2021/05/06 ver1.00	分離
 //
 //	行列ライブラリコンセプト
 //	GLSLと同じ数式同じ行列がメインプログラムでも同様に機能する
 //
 // OpenGL® Programming Guide: The Official Guide 
 // https://www.cs.utexas.edu/users/fussell/courses/cs354/handouts/Addison.Wesley.OpenGL.Programming.Guide.8th.Edition.Mar.2013.ISBN.0321773039.pdf
+
+//-----------------------------------------------------------------------------
+function se_create()	// 2021/07/26 効果音ライブラリ
+//-----------------------------------------------------------------------------
+{
+	let se = {};
+	let	audioctx
+	let analyser;
+
+	//-----------------------------------------------------------------------------
+	se.play = function( freq1,len1,freq2,len2, type = 'square', vol=0.5) 
+	//-----------------------------------------------------------------------------
+	{
+		// 二つの周波数の音を繋げて鳴らす、簡易効果音再生
+		// 音程周波数1(Hz),長さ1(s),音程周波数2(Hz),長さ2(s),音色タイプ,ボリューム
+
+		//type = "triangle";
+		//type = "sawtooth";
+		//type = "sine";
+		//type = "square";
+		// 最初の初期化。起動時に同時に行うとwarnningが出るため、最初に鳴らすときに行う
+		if ( audioctx == undefined )
+		{
+			let	func = window.AudioContext || window.webkitAudioContext;
+			audioctx = new func();
+		}
+		if ( analyser == undefined )
+		{
+			analyser = audioctx.createAnalyser();
+			analyser.connect( audioctx.destination );
+		}
+		//--
+
+		let t0 = audioctx.currentTime;			// コンテクストが作られてからの経過時間(s)
+		let t1 = t0 + len1;
+		let t2 = t1 + len2;
+
+		let oscillator = audioctx.createOscillator();
+		let gain = audioctx.createGain();
+
+		oscillator.type = type;
+		oscillator.frequency.setValueAtTime( freq1, t0 );
+		oscillator.frequency.setValueAtTime( freq2, t1 );
+		oscillator.start( t0 );
+		oscillator.stop( t2 );
+		oscillator.connect( gain );
+
+		gain.gain.setValueAtTime( vol, t0 );
+		gain.gain.setValueAtTime( vol, t1 );
+		gain.gain.linearRampToValueAtTime( 0, t2 );
+		gain.connect( analyser );
+	}
+
+	return se;
+}
 
 //------------------------------------------------------------------------------
 function func_intersect_Line_Point2( P0, I0, P1 )	// 直線と点との距離
@@ -516,7 +572,10 @@ function gra_create( cv )	//2021/06/01
 //	gra.ctx.font = "12px monospace";	// iOSだとCourierになる	読める限界の小ささ
 //	gra.ctx.font = "14px monospace";	// iOSだとCourierになる 程よい小ささ
 	gra.ctx.font = "16px Courier";	// iOSでも使えるモノスペースフォントただし漢字はモノスペースにはならない 見栄えもある
+	gra.ctx.textAlign = "left";
+	gra.ctx.textBaseline = "alphabetic";
 	gra.fontw = gra.ctx.measureText("_").width;
+
 	//-------------------------------------------------------------------------
 	gra.window = function( _sx, _sy, _ex, _ey )
 	//-------------------------------------------------------------------------
@@ -532,8 +591,8 @@ function gra_create( cv )	//2021/06/01
 	//2021/07/22 フルスクリーン用にアスペクト機能を追加
 	gra.as = 1/(gra.ctx.canvas.width/gra.ctx.canvas.height);
 	gra.ab = (gra.ctx.canvas.width-gra.ctx.canvas.height)/2;
-//console.log(1/gra.as);
-
+//	gra.sc = gra.ctx.canvas.height/(gra.ey-gra.sy);
+//console.log(gra.sc,gra.ctx.canvas.height,(gra.ey-gra.sy));
 	function win_abs( x, y )
 	{
 		let w = gra.ex-gra.sx;
@@ -626,7 +685,9 @@ function gra_create( cv )	//2021/06/01
 	{
 		function func( str, tx, ty )
 		{
-  
+  			gra.ctx.font = "16px Courier";	// iOSでも使えるモノスペースフォントただし漢字はモノスペースにはならない 見栄えもある
+			gra.ctx.textAlign = "left";
+			gra.ctx.textBaseline = "alphabetic";
 			gra.ctx.fillStyle = gra.col;
 			gra.ctx.fillText( str, tx+2, ty+16 );
 
@@ -638,6 +699,20 @@ function gra_create( cv )	//2021/06/01
 		gra.x = x1;
 		gra.y = y1+16;
 	}
+	//-------------------------------------------------------------------------
+	gra.symbol = function( str, x1,y1, size = 30, aligh="center" )
+	//-------------------------------------------------------------------------
+	{
+		[x1,y1]=win_abs(x1,y1);
+		let [sw,sh] = win_range(size,size);
+
+		gra.ctx.font = sw+"px "+"Courier";
+		gra.ctx.textAlign = aligh;
+		gra.ctx.textBaseline = "top";
+		gra.ctx.fillStyle = gra.col;
+		gra.ctx.fillText( str, x1, y1 );
+	}
+
 	//-----------------------------------------------------------------------------
 	gra.alpha = function( fa=1.0, func='none' ) // 2021/07/10 追加
 	//-----------------------------------------------------------------------------
@@ -650,6 +725,14 @@ function gra_create( cv )	//2021/06/01
 			default:		gra.ctx.globalCompositeOperation = "source-over";	break;	// src*(1-α)+dst*α
 		}
 	}
+
+	//-----------------------------------------------------------------------------
+	gra.lineWidth = function( val=1.0 ) //2021/07/26 追加
+	//-----------------------------------------------------------------------------
+	{
+			gra.ctx.lineWidth = val;
+	}
+
 	//-----------------------------------------------------------------------------
 	gra.color = function( fr=0.0, fg=0.0, fb=0.0 )
 	//-----------------------------------------------------------------------------
@@ -664,9 +747,6 @@ function gra_create( cv )	//2021/06/01
 		
 		let s = "#"+("000000"+c.toString(16)).substr(-6);
 		gra.col = s;
-
-//		gra.ctx.fillStyle = s;
-//		gra.ctx.strokeStyle = s;
 	}
 
 	//-----------------------------------------------------------------------------
@@ -683,9 +763,6 @@ function gra_create( cv )	//2021/06/01
 		
 		let s = "#"+("000000"+c.toString(16)).substr(-6);
 		gra.backcol = s;
-
-//		gra.ctx.fillStyle = s;
-//		gra.ctx.strokeStyle = s;
 	}
 	
 	//-----------------------------------------------------------------------------
@@ -697,13 +774,12 @@ function gra_create( cv )	//2021/06/01
 			gra.ctx.beginPath();
 			gra.ctx.setLineDash([]);
 			gra.ctx.strokeStyle = gra.col;
+
 			let rotation = 0;
 			let startAngle = st;
 			let endAngle = en;
 			gra.ctx.ellipse( x, y, rw, rh, rotation, startAngle, endAngle );
 			gra.ctx.closePath();
-//			gra.ctx.fillStyle = "rgba(0,0,0,0.8)" ;
-//			gra.ctx.fill();
 			gra.ctx.stroke();
 		};
 		[x1,y1]=win_abs(x1,y1);
@@ -718,7 +794,6 @@ function gra_create( cv )	//2021/06/01
 		{
 			gra.ctx.beginPath();
 			gra.ctx.setLineDash([]);
-//			gra.ctx.strokeStyle = gra.col;
 			let rotation = 0;
 			let startAngle = st;
 			let endAngle = en;
@@ -726,7 +801,6 @@ function gra_create( cv )	//2021/06/01
 			gra.ctx.closePath();
 			gra.ctx.fillStyle = gra.col;// 2021/07/19 修正 "rgba(0,0,0,1)" ;
 			gra.ctx.fill();
-//			gra.ctx.stroke();	// 2021/07/22 fillとstrokeを併用すると半透明と相性が悪いので消す
 		};
 		[x1,y1]=win_abs(x1,y1);
 		let [rw,rh] = win_range(r,r);

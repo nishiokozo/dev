@@ -114,6 +114,7 @@ html,body,a{
 
 		
 					<input type="button" value="RESET" onClick="main()" >
+					<input type="button" value="フルスクリーン" onClick="html_onchange('fullscreen')" >
 				
 			</div>
 			<div id="html_table" class="group-right">
@@ -149,13 +150,12 @@ html,body,a{
 
  
 			<br>
-			<input type="checkbox" name="html_debug"  checked>debug
+			<input type="checkbox" name="html_debug"  >debug
 
 
 
 <!--
 				<div class="group">
-					<input type="button" value="フルスクリーン" onClick="html_onchange('fullscreen')" >
 				</div>
 
 
@@ -191,11 +191,22 @@ html,body,a{
 
 	<br>～概要 2021/07/22～<br>
 			衝突の物理演算をブロック崩しに持ち込んでみたらどうなるか？というテーマ<br>
+			ゲームパッド、キーボード、マウスが使えます<br>
+			マウスだと簡単すぎるのでゲームパッドかキーボードをお勧めします<br>
 
 	<br>～ゲーム内容～<br>
 			ブロックが丸い、ラケットも丸い<br>
 			ブラックボールは味方のボール。落としてもペナルティにならないヨ！<br>
 			クリアししたときにブラックボールを残し続けると攻撃力ＵＰ！<br>
+
+	<br>～物理演算をそのまま適用した場合のゲーム上の問題と解決～<br>
+		<div class="group-left">
+		①ラケットを高速移動させると衝突後ボールが速くなりすぎる問題<br>
+		②マスターボールが遅くなりすぎる問題<br>
+		③マスターボールが水平に反射し落ちてこない問題<br>
+		④マスターボールを高速で打ち返してもゲーム難易度を上げるだけの問題<br>
+		⑤マスターボールが天井スタートの時速くなりすぎて打ち返せなくなる問題<br>
+		</div>
 
 	</body>
 </html>

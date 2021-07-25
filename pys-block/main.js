@@ -43,9 +43,16 @@ let hit_q={};
 let hit_st={};
 let hit_en={};
 
-let tst = tst_create();
+let tst = fullscreen_create();
 let tst_x=0;
 let tst_y=0;
+
+let g_se;
+let racket;
+let g_hdlClick = null;	// マウスクリックのチャタリング防止用
+let g_inter = false;
+let g_mouse_x;
+let g_mouse_click;
 
 //-----------------------------------------------------------------------------
 function main()
@@ -58,8 +65,11 @@ function main()
 	gra = gra_create( html_canvas );
 	first = 1;
 	count = 1;
+	g_mouse_x = 0;
+	g_mouse_click = false;
 
 	//---
+	let info_flg_mouseinput = false;
 	let info_pause;
 	let info_stat;
 	let info_timerlost;
@@ -71,7 +81,6 @@ function main()
 	let info_scaleball;
 	let balls;
 	let blocks;
-	let racket;
 	let prev_x;
 	let pad;
 
@@ -130,7 +139,7 @@ function main()
 	}
 
 	// ステージ生成関数
-	function init_stage( type )
+	function init_stage( game, stage )
 	{
 		info_scaleball = 1;
 
@@ -153,7 +162,7 @@ function main()
 		// ブロック初期化
 		blocks=[];
 		info_activeblocks=0;
-		switch( type )
+		switch( game )
 		{
 			case 'test':	
 				{
@@ -237,6 +246,7 @@ function main()
 					let w = Math.floor(g_reso_x / st);
 					let ax = (g_reso_x-w*st)/2;
 
+//if (g_stage
 					for ( let j = 0 ; j < 4 ; j++ )
 					for ( let i = 0 ; i < w ; i++ )
 					{
@@ -246,6 +256,9 @@ function main()
 					}
 					create_ball( g_reso_x/2-50, BLOCK_Y+st*5, BALL_M/2, 100, radians(0) );
 					create_ball( g_reso_x/2+50, BLOCK_Y+st*5, BALL_M*2, 0 );
+
+				//	create_ball( g_reso_x/2+89, BLOCK_Y+st*5+150, BALL_M*2, 0.1,radians(-135) );
+
 				}
 				break;
 
@@ -259,6 +272,8 @@ function main()
 					for ( let j = 0 ; j < 4 ; j++ )
 					for ( let i = 0 ; i < w ; i++ )
 					{
+						if ( j == 3 && ( i == 5 || i == 6 ) ) continue;
+
 						let x = i * st+st/2+ax;
 						let y = j * st+st/2+BLOCK_Y;
 						blocks.push({p:vec2(x, y),r:r, flg:true});
@@ -277,6 +292,8 @@ function main()
 					for ( let j = 0 ; j < 4 ; j++ )
 					for ( let i = 0 ; i < w ; i++ )
 					{
+						if ( j == 2 && ( i == 5 || i == 6 ) ) continue;
+					
 						let x = i * st+st/2+ax;
 						let y = j * st+st/2+BLOCK_Y;
 						blocks.push({p:vec2(x, y),r:r, flg:true});
@@ -375,9 +392,9 @@ function main()
 					let w = Math.floor(g_reso_x / st);
 					let ax = (g_reso_x-w*st)/2+st/2;
 					let aax = 0;
-					for ( let j = 0 ; j < 11 ; j++ )
+					for ( let j = -1 ; j < 11 ; j++ )
 					{
-						if ( j%2 == 1 ) 
+						if ( (j+1)%2 == 1 ) 
 						{
 							aax = 0;
 						}
@@ -410,7 +427,7 @@ function main()
 					blocks.push({p:vec2(g_reso_x/2, g_reso_y/2),r:20, flg:true});
 					create_ball( g_reso_x/2, BLOCK_Y, BALL_M, 0 );
 				
-					console.log("ERROR stage name:"+type );
+					console.log("ERROR game name:"+game );
 				}
 				break;		
 		}
@@ -419,6 +436,8 @@ function main()
 	function resetall()
 	{
 		console.log("reset");
+
+
 		racket = {p:{x:g_reso_x/2,y:RACKET_Y},v:{x:0,y:0},a:{x:0,y:0},r:16, m:RACKET_M};
 		racket.r = calc_r( racket.m )*2; // ラケットは半円なので、半径は倍
 		prev_x	= racket.p.x;
@@ -426,6 +445,7 @@ function main()
 
 		balls = [];
 		blocks = [];
+		info_flg_mouseinput = false;
 		info_stage = 1;
 		info_stockballs = 3;
 		info_pause = false;
@@ -435,7 +455,7 @@ function main()
 		info_score = 0;
 		info_activeblocks = 0;
 		info_scaleball = 1;
-		init_stage( g_game );
+		init_stage( g_game, info_stage );
 
 		// ハイスコアのHTMLへの反映
 		for ( let id of Object.keys(g_highscore) )
@@ -453,24 +473,40 @@ function main()
 
 	resetall();
 
+	g_se = se_create();
 
 	
-
-//	let g_prevButtons;
 	//-------------------------------------------------------------------------
 	function frame_update( delta )
 	//-------------------------------------------------------------------------
 	{
+		gra.window( 0,0,g_reso_x,g_reso_y );
+		gra.backcolor(0,0,0);
+		gra.color(1,1,1);
+		gra.cls();
 		// 物理演算をそのまま適用した場合のゲーム上の問題
-		// ①マスターボールが遅くなりすぎる問題
-		// ②マスターボールが水平に反射し落ちてこない問題
-		// ③マスターボールを高速で打ち返してもゲーム難易度を上げるだけの問題
-		// ④ラケットを高速移動させると衝突後ボールが速くなりすぎる問題
-		
+		// ①ラケットを高速移動させると衝突後ボールが速くなりすぎる問題
+		// ②マスターボールが遅くなりすぎる問題
+		// ③マスターボールが水平に反射し落ちてこない問題
+		// ④マスターボールを高速で打ち返してもゲーム難易度を上げるだけの問題
+		// ⑤マスターボールが天井スタートの時速くなりすぎて打ち返せなくなる問題
+		//
+	
 		let flgdebug = (document.getElementsByName( "html_debug" )
 					&& document.getElementsByName( "html_debug" )[0]
 					&& document.getElementsByName( "html_debug" )[0].checked );
 
+		if ( g_req == 'fullscreen' )
+		{
+			g_req ='';
+			if ( tst.flgFullscreen == false ) 
+			{
+				tst.fullscreeen_change( html_canvas, function()
+				{
+					gra = gra_create( html_canvas );
+				});		
+			}
+		}
 		if ( g_req == 'reset' )
 		{
 			g_req ='';
@@ -478,13 +514,60 @@ function main()
 		}
 
 
-		// input key
+		function gra_cvx( mx ) // canvas座標系のxをgra.window()座標系に変換する
 		{
-			if ( g_key[KEY_SPC] )	
+			let wx = html_canvas.height*g_reso_x/g_reso_y; 
+			let ad = (html_canvas.width-wx)/2;
+			return (mx-ad)/wx*g_reso_x;
+		}
+
+		pad.getinfo();
+
+
+		// input start 
+		if ( info_stat == 'start' || info_stat == 'gameover' )
+		{
+
+			if ( g_mouse_click )	// mouse
 			{
 				g_req = 'req_next';
+				g_mouse_click = false;
+				info_flg_mouseinput = true;
 			}
+			else
+			if ( g_key[KEY_SPC] )	// key
 			{
+				g_req = 'req_next';
+				info_flg_mouseinput = false;
+			}
+			else
+			if ( pad.trig.a ) 
+			{
+				g_req = 'req_next';	// game pad
+				info_flg_mouseinput = false;
+			}
+		}
+
+		if ( info_flg_mouseinput )
+		{// input mouse
+
+
+			let x = gra_cvx(g_mouse_x);
+			if ( x < racket.r ) x = racket.r;
+			if ( x > g_reso_x-racket.r ) x = g_reso_x-racket.r;
+
+			let s = (x-racket.p.x);
+			{
+				let v = racket.v.x;					// 
+				let t = delta;						// 
+				let a = (s-v*t)/(t*t);			//
+				racket.a.x += a;
+			}
+		
+		}
+		else
+		{ 
+			{	// input key
 				let s = 0;
 				if ( g_key[KEY_RIGHT] ) 
 				{
@@ -495,92 +578,64 @@ function main()
 				{
 					s = -g_reso_x;
 				}
-				let v = racket.v.x;					// 
-				let t = 0.3;						// 
-				let a = (s-v*t)/(t*t);			//
-					let delta = 1/60;
-				racket.a.x += a;
+				{
+					let v = racket.v.x;					// 
+					let t = delta*20;						// 
+					let a = (s-v*t)/(t*t);			//
+					racket.a.x += a;
+				}
 			}
-		}
 
+			{// input pad
 
-		// input pad
-		{
-			pad.getinfo();
+				if ( pad.l1 && pad.trig.st ) {g_req='reset';}
+				else
+				if ( pad.trig.se ) 	document.getElementsByName( "html_debug" )[0].checked = !document.getElementsByName( "html_debug" )[0].checked;
+				else
+				if ( pad.trig.st && info_stat=='ingame' ) info_pause = !info_pause;
 
-			if ( pad.l1 && pad.trig.st ) {g_req='reset';}
-			else
-			if ( pad.trig.se ) 	document.getElementsByName( "html_debug" )[0].checked = !document.getElementsByName( "html_debug" )[0].checked;
-			else
-			if ( pad.trig.st && info_stat=='ingame' ) info_pause = !info_pause;
-			else
-			if ( pad.trig.a ) g_req = 'req_next';		
+				let s = 0;						// 移動距離
 
-			let s = 0;						// 移動距離
+				let mx = (pad.rx+pad.lx);		// 入力値(-1~+1) 
 
-			let mx = (pad.rx+pad.lx);		// 入力値(-1~+1) 
-
-			if(0)
-			{// 壁までの距離で移動速度を制御するアルゴリズム→壁際での左右の移動量の差に違和感
-				if ( mx > 0 )
-				{//右移動の場合
-					s = mx*(g_reso_x-racket.p.x);	// 右の壁までの距離
+				if(0)
+				{// 壁までの距離で移動速度を制御するアルゴリズム→壁際での左右の移動量の差に違和感
+					if ( mx > 0 )
+					{//右移動の場合
+						s = mx*(g_reso_x-racket.p.x);	// 右の壁までの距離
+					}
+					else
+					{//左移動の場合
+						s = mx*-(0-racket.p.x);			// 左の壁までの距離
+					}
 				}
 				else
-				{//左移動の場合
-					s = mx*-(0-racket.p.x);			// 左の壁までの距離
+				{// コート幅を移動量の基準にするアルゴリズム
+						s = mx*g_reso_x;
+				}
+
+				{
+					let v = racket.v.x;					// 
+					let t = delta*20;						// 
+					let a = (s-v*t)/(t*t);			//
+					racket.a.x += a;
 				}
 			}
-			else
-			{// コート幅を移動量の基準にするアルゴリズム
-					s = mx*g_reso_x;
-			}
-
-			{
-				let v = racket.v.x;					// 
-				let t = 0.3;						// 
-				let a = (s-v*t)/(t*t);			//
-				racket.a.x += a;
-			}
 		}
+
+
+
 
 		if ( info_pause == false )
 		{
-			// raket y accel
-			{
-				let s = (RACKET_Y-racket.p.y);
-				let v = racket.v.y;					// 
-				let t = 0.02;						// 
-				let a = (s-v*t)/(t*t);			//
-				racket.a.y += a;
-			}
-
-			// accel racket
-			{
-				racket.v.x += racket.a.x *delta;
-				racket.v.y += racket.a.y *delta;
-				racket.a.x = 0;
-				racket.a.y = 0;
-			}
-		
-			// move racket
-	//		if ( info_stat == 'start' || info_stat == 'ingame' )
-			{
-				let o = racket;
-				o.p.x = o.p.x + o.v.x * delta
-				o.p.y = o.p.y + o.v.y * delta
-			}
-
-	//		racket.v.x = (racket.p.x- prev_x)*60; // ラケットの移動量から速度を逆算
-
 		
 			// exec request
 			if ( info_stat == 'gameover' )
 			{
 				if ( g_req == 'req_next' )
 				{
+					g_req='';
 					resetall();
-					//return;
 				}
 
 			}
@@ -619,6 +674,13 @@ function main()
 				g_req=''
 				if ( info_stat == 'start' )
 				{
+		g_se.play( 200, 0.05, 220, 0.05,  'sine', 0.5125 );
+		//type = "triangle";
+		//type = "sine";
+		//type = "sawtooth";
+		//type = "square";
+					console.log('control by ',info_flg_mouseinput?'mouse only':'key or pad');
+
 					console.log('service');
 					info_stat = 'ingame';
 
@@ -630,12 +692,41 @@ function main()
 				}
 			}
 
-
 			// check clear
 			if ( info_activeblocks <= 0 )
 			{
 				info_stage++;
-				init_stage( g_game );
+				init_stage( g_game, info_stage );
+			}
+
+			// raket y accel
+			if(1)
+			{
+				let s = (RACKET_Y-racket.p.y);
+				let v = racket.v.y;					// 
+				let t = delta*2;						// 
+				let a = (s-v*t)/(t*t);			//
+				racket.a.y += a;
+			}
+			else
+			{// バウンドの見栄えがあまりよくないのでさせない
+				racket.a.y = 0;
+				racket.v.y = 0;
+			}
+
+			// accel racket
+			{
+				racket.v.x += racket.a.x *delta;
+				racket.v.y += racket.a.y *delta;
+				racket.a.x = 0;
+				racket.a.y = 0;
+			}
+		
+			// move racket
+			{
+				let o = racket;
+				o.p.x = o.p.x + o.v.x * delta
+				o.p.y = o.p.y + o.v.y * delta
 			}
 
 			// move ball
@@ -653,20 +744,20 @@ function main()
 			// racket for collition to wall 
 			{
 				// e:ラケットの壁との反発係数
-				let e = -1;
+				let e = -1/4;
 			
 				let o = racket;
 				let wl = o.r;
-				let wr = g_reso_x-o.r;
+				let wr = g_reso_x-o.r-1;
 
 				if ( o.p.x < wl ) 
 				{
-					o.p.x += (wl-o.p.x)*2;
+					o.p.x += (wl-o.p.x);
 		 			o.v.x = o.v.x*e;
 				}
 				if ( o.p.x > wr ) 
 				{
-					o.p.x += (wr-o.p.x)*2;
+					o.p.x += (wr-o.p.x);
 		 			o.v.x = o.v.x*e;
 				}
 			}
@@ -783,7 +874,7 @@ function main()
 				let ad = dot2( a.v, N )
 				let bd = dot2( b.v, N )
 
-				console.log( bd-ad);
+				//console.log( bd-ad);
 				if ( bd-ad > 0 ) return; // 離れてゆく場合は計算しない
 
 				let a1 = vec2( N.x*ad, N.y*ad );
@@ -811,10 +902,7 @@ function main()
 
 			}
 			
-			// collition racket to ball
-			if ( info_stat == 'ingame' )
-			{
-				let a = racket;
+			{// collition racket to ball
 
 				for ( let b of balls )
 				{
@@ -878,67 +966,66 @@ function main()
 	//								sp = (c_sp+i_sp+b_sp)/3;
 	//								sp = (i_sp+Math.sqrt(c_sp));
 	sp = c_sp;								
-									let F = rkt.m*racket.a.x;	// ラケットの力を計算
-									let a = F/ball.m;		// ボールに掛かる加速度
-	//								sp += a*delta;
+									let F = rkt.m*racket.racket.x;	// ラケットの力を計算
+									let racket = F/ball.m;		// ボールに掛かる加速度
+	//								sp += racket*delta;
 									
 								}
 								ball.v = vmul_scalar2( normalize2(ball.v), sp );
 							}
-						}
 
-						{ // 埋まりを解消
-							let l = chkhit(rkt,ball);
+							{ // 埋まりを解消
+								let l = chkhit(rkt,ball);
 
-							let N = normalize2( vsub2(rkt.p,ball.p) );
-							let m = vmul_scalar2(N,l/2);
-							rkt.p = vsub2( rkt.p, m );
-							ball.p = vadd2( ball.p, m );
+								let N = normalize2( vsub2(rkt.p,ball.p) );
+								let m = vmul_scalar2(N,l/2);
+								rkt.p = vsub2( rkt.p, m );
+								ball.p = vadd2( ball.p, m );
+							}
 						}
-						
 
 						hit_buf_racket.unshift({p:{x:rkt.p.x,y:rkt.p.y},r:rkt.r});
 						hit_buf_ball.unshift({p:{x:ball.p.x, y:ball.p.y},r:ball.r,iv:{x:ix, y:iy},v:{x:ball.v.x, y:ball.v.y}});
-
 					}
-					let [flg,d,Q] = func_intersect_SegLine_Point2( P0, P1, P2 );  // フレーム間を線形で衝突判定
-					if ( flg && d < r ) 
+
+
+					if ( b.p.y < racket.p.y )//+b.r ) // 上半分だけ
 					{
-						// X=Q+I*√(r^2-d^2)	衝突時のラケットの位置
-						let s = Math.sqrt(r*r-d*d);
-						let I = normalize2( vsub2( P1, Q ) );
-						let X = vadd2( Q, vmul_scalar2( I, s ) );
-					
-						hit_st.x = P0.x;		// 当たり判定の区間の開始位置
-						hit_st.y = P0.y;
-						hit_st.r = racket.r;
-						hit_en.x = P1.x;		// 当たり判定の区間の終了位置
-						hit_en.y = P1.y;
-						hit_en.r = racket.r;
-
-						hit_q.x = Q.x
-						hit_q.y = Q.y;
-						hit_q.r = 1;
-
-						let o = {p:{x:X.x,y:X.y},r:racket.r};
-						o.v = racket.v;
-						o.m = racket.m;
-
-						coll( b,o )
-
-
-					}
-					else 
-					{	// フレーム間以外の通常の当たり判定
-						let o = a;
-						let l = chkhit(b,o);
-						if ( l<0 )
+						let [flg,d,Q] = func_intersect_SegLine_Point2( P0, P1, P2 );  // フレーム間を線形で衝突判定
+						if ( flg && d < r ) 
 						{
-							coll( b,o )//
+							// X=Q+I*√(r^2-d^2)	衝突時のラケットの位置
+							let s = Math.sqrt(r*r-d*d);
+							let I = normalize2( vsub2( P1, Q ) );
+							let X = vadd2( Q, vmul_scalar2( I, s ) );
+						
+							hit_st.x = P0.x;		// 当たり判定の区間の開始位置
+							hit_st.y = P0.y;
+							hit_st.r = racket.r;
+							hit_en.x = P1.x;		// 当たり判定の区間の終了位置
+							hit_en.y = P1.y;
+							hit_en.r = racket.r;
+
+							hit_q.x = Q.x
+							hit_q.y = Q.y;
+							hit_q.r = 1;
+
+							let o = {p:{x:X.x,y:X.y},r:racket.r};
+							o.v = racket.v;
+							o.m = racket.m;
+
+							coll( b,o )
 
 						}
+						else 
+						{	// フレーム間以外の通常の当たり判定
+							let l = chkhit(b,racket);
+							if ( l<0 )
+							{
+								coll( b,racket );
+							}
+						}
 					}
-
 				}
 			}
 			
@@ -988,78 +1075,102 @@ function main()
 		} // end of pause
 		
 
-		// draw
-
-		gra.window( 0,0,g_reso_x,g_reso_y );
-		gra.backcolor(0,0,0);
-		gra.color(1,1,1);
-		gra.cls();
-		gra.line(0,0,0,g_reso_y);
-		gra.line(g_reso_x-1,0,g_reso_x-1,g_reso_y );
-	
-		// draw blocks
-		for ( let o of blocks )
-		{
-			if ( o.flg == false ) continue;
-
-			gra.circlefill( o.p.x, o.p.y, o.r );
+		if ( info_stat == 'start' )
+		{// draw mouse coursor
+			gra.color(1,1,1)
+			let x = gra_cvx(g_mouse_x);
+			let y = tst_y;
+			let s = 10;
+			gra.line( x  , y, x+s, y+s/2  );
+			gra.line( x  , y, x+s/2  , y+s);
+			gra.line( x+s, y+s/2, x+s/2  , y+s);
 		}
 
-		// draw ball
-		for ( let o of balls )
+		{// draw wall
+			gra.color(1,1,1);
+			gra.line(0,0,0,g_reso_y);
+			gra.line(g_reso_x-1,0,g_reso_x-1,g_reso_y );
+			gra.line(0,0,g_reso_x-1,0 );
+		}
+	
+		{// draw blocks
+			gra.color(1,1,1);
+			for ( let o of blocks )
+			{
+				if ( o.flg == false ) continue;
+
+				gra.circlefill( o.p.x, o.p.y, o.r );
+			}
+		}
+
+		// ブラーボールの表示
+		function blurball( o, n, st=0, en=Math.PI*2 )
 		{
-			if ( o.flg == false ) continue;
-
-			// ブラーボールの表示
-			function blurball( o )
+			//let n = Math.floor(length2(o.v)/o.r*0.03)+1;
+			let ax = o.v.x*delta/n;
+			let ay = o.v.y*delta/n;
+			gra.alpha(1.5/n, 'add' );
+			for ( let i = 0 ; i < n ; i++ )
 			{
-				let n = 8;
-				let ax = o.v.x*delta/n;
-				let ay = o.v.y*delta/n;
-				gra.alpha(1.5/n, 'add' );
-				for ( let i = 0 ; i < n ; i++ )
-				{
-					gra.circlefill( o.p.x-ax*i, o.p.y-ay*i, o.r );
-				}
-				gra.alpha(1);
+				gra.circlefill( o.p.x-ax*i, o.p.y-ay*i, o.r, st, en  );
 			}
+			gra.alpha(1);
+		}
 
-			if( o.flgmaster )
+		{// draw ball
+
+			gra.color(1,1,1);
+			for ( let o of balls )
 			{
-				//ブラーボール	
-				gra.color(1,1,1);
-				blurball( o );
-			}
-			else
-			{
-				// ブラックボール
-				if ( 1 )
-				{
-//					gra.color(0.5,0.5,0.5);
-//					gra.circlefill( o.p.x, o.p.y, o.r );
-					gra.color(1,1,1);
-					gra.circle( o.p.x, o.p.y, o.r );
-					gra.circle( o.p.x, o.p.y, o.r-0.25 );
-					gra.circle( o.p.x, o.p.y, o.r-0.5 );
+				if ( o.flg == false ) continue;
+
+
+				if( o.flgmaster )
+				{	//ブラーボール	
+					//gra.color(1,1,1);
+					blurball( o, 3 );
 				}
 				else
 				{
-					gra.color(1,1,1);
-					blurball( o );
-	//				gra.circle( o.p.x, o.p.y, o.r );
+					if ( 1 )
+					{// ブラックボール
+						gra.color(1,1,1);
+						if ( tst.flgFullscreen == false ) 
+						{
+							gra.lineWidth(2);
+						}
+						else
+						{
+							gra.lineWidth(4);
+						}
+						gra.circle( o.p.x, o.p.y, o.r );
+						gra.lineWidth( 1 );
+					//	gra.circle( o.p.x, o.p.y, o.r-0.25 );
+					//	gra.circle( o.p.x, o.p.y, o.r-0.5 );
+					}
+					else
+					{
+						blurball( o, 3 );
+					}
 				}
-			}
-			gra.color(1,1,1);
-		
-			if ( flgdebug ) gra.print( Math.floor(length2(o.v)).toString(), o.p.x,o.p.y );
+				gra.color(1,1,1);
+			
+				if ( flgdebug ) gra.print( Math.floor(length2(o.v)).toString(), o.p.x,o.p.y );
 
+			}
 		}
 
 
-
 		// draw racket 
-		gra.circlefill( racket.p.x, racket.p.y, racket.r, Math.PI, Math.PI*2  );
-
+		if (1)
+		{
+			blurball( racket, 32, Math.PI, Math.PI*2 );
+		}
+		else
+		{
+			gra.circlefill( racket.p.x, racket.p.y, racket.r, Math.PI, Math.PI*2  );
+		}
+	
 
 		//draw debug
 		{
@@ -1094,15 +1205,31 @@ function main()
 					let o = hit_buf_racket[i];
 					gra.color(0.0,0.7,0.7);
 					gra.circle( o.p.x, o.p.y, o.r, Math.PI, Math.PI*2 );
+
 				}
 			}
 			gra.color(1,1,1);
 		}
-///		if( info_stat=='start')			gra.circlefill( BALL_X, BALL_Y, calc_r(BALL_M*info_scaleball) );
-//		if( info_stat=='lostball')		gra.circlefill( info_masterball.p.x, info_masterball.p.y, info_masterball.r );
+
+		gra.color(1,0.4,0);
+		{
+		}
+		if(0)	
+		{
+				var g = html_canvas.getContext('2d');
+				g.fillStyle = "yellow";
+				g.font = "30px Courier";
+				g.textAlign = "center";
+				g.textBaseline = "top";
+				g.fillText("abcABCあいう漢字", 512, 175);
+				
+				}
+
+
 
 		// draw score
 		{
+			gra.color(1,1,1);
 			function putcenter( str, x, y )
 			{
 				x += (40 - str.length)/2;
@@ -1114,39 +1241,70 @@ function main()
 				gra.locate(x,y);gra.print( str );
 			}
 						
-			gra.window( 0,0,html_canvas.width,html_canvas.height);
+//			gra.window( 0,0,html_canvas.width,html_canvas.height);
 			gra.locate(1,0);
-			gra.print("SCORE "+("0000"+info_score.toString()).substr(-4));
-			putcenter( "STAGE "+info_stage.toString() ,0,0 );
-			putright( "BALLS "+info_stockballs.toString(), -1,0 );
-//gra.locate(0,11);gra.print("12345678901234567890123456789012345678901234567890_____");
-//gra.locate(10,12);gra.print("0        1         2         3         4         4_____");
-//gra.locate(20,13);gra.print("0        1");
-//			putright( "BALLS "+info_stockballs.toString(), 0,14 );
+	//		gra.print("SCORE "+("0000"+info_score.toString()).substr(-4));
+			let str_score = "SCORE "+("0000"+info_score.toString()).substr(-4);
+			let str_stage = "STAGE "+info_stage.toString();
+			let str_balls = "BALLS "+info_stockballs.toString();
+//			let str_score = "SCORE "+("0000"+info_score.toString()).substr(-4);
+			gra.symbol( str_score,1,0,16,"left" );
+			gra.symbol( str_stage,g_reso_x/2,0,16,"center" );
+			gra.symbol( str_balls,g_reso_x-2,0,16,"right" );
+
+//			putcenter( str_stage ,0,0 );
+//			putright( "BALLS "+info_stockballs.toString(), -1,0 );
 		
 			if ( info_pause )putcenter( 'PAUSE', 0, 14 );
 
 			switch(info_stat)
 			{
-				case 'start':		putcenter( 'Click to service', 0, 16 );	break;
+				case 'start':
+					if ( 0 )
+					{
+						gra.symbol( 'Click to service'				,g_reso_x/2,16*14,16,"center" );
+						gra.symbol( 'or'							,g_reso_x/2,16*15,16,"center" );
+						gra.symbol( 'Space or Trigger to service'	,g_reso_x/2,16*16,16,"center" );
+					}
+					else
+					{
+						gra.symbol( 'クリックしてスタート'				,g_reso_x/2,16*14,16,"center" );
+						gra.symbol( 'or'							,g_reso_x/2,16*15,16,"center" );
+						gra.symbol( 'Space or Trigger to service'	,g_reso_x/2,16*16,16,"center" );
+					}
+//		gra.color(1,0.4,0);
+//						putcenter( 'Click to service', 0, 16 );	
+//						putcenter( 'or', 0, 17 );	
+//						putcenter( 'Space or Trigger to service', 0, 18 );	
+					break;
 				case 'ingame':												break;
 				case 'gameover':
-								putcenter( 'GAME OVER', 0, 16 );	//	break;
-							if ( g_highscore[ g_game ] == info_score &&  g_highscore[ g_game ]>0 )
-							{
-								putcenter( 'Recorded a high score!!!', 0, 17 );
-							}
-							putcenter( 'high score '+("0000"+g_highscore[ g_game ].toString()).substr(-4), 0, 18 );
+					let str_hiscore = 'high score '+("0000"+g_highscore[ g_game ].toString()).substr(-4);
+						gra.symbol( 'GAME OVER'				,g_reso_x/2,16*14,16,"center" );
+//								putcenter( 'GAME OVER', 0, 16 );	//	break;
+						if ( g_highscore[ g_game ] == info_score &&  g_highscore[ g_game ]>0 )
+						{
+							gra.symbol( 'Recorded a high score!!!'		,g_reso_x/2,16*15,16,"center" );
+//							putcenter( 'Recorded a high score!!!', 0, 17 );
+						}
+						gra.symbol( str_hiscore	,g_reso_x/2,16*16,16,"center" );
+//						putcenter( 'high score '+("0000"+g_highscore[ g_game ].toString()).substr(-4), 0, 18 );
 
-										break;
+									break;
 
-				case 'lostball':	putcenter( 'LOST BALL' , 0, 16 );		break;
-				default:			putcenter( 'error stat' , 0, 16 );		break;
+				case 'lostball':	
+					gra.symbol( 'LOST BALL'		,g_reso_x/2,16*14,16,"center" );
+//					putcenter( 'LOST BALL' , 0, 16 );		
+					break;
+				default:			
+					gra.symbol( 'error stat'		,g_reso_x/2,16*14,16,"center" );
+//					putcenter( 'error stat' , 0, 16 );		
+					break;
 				
 			}
 			
 		}
-
+		
 		// 情報表示
 		if ( flgdebug )
 		{
@@ -1186,7 +1344,7 @@ function main()
 	update();
 }
 //-----------------------------------------------------------------------------
-function tst_create()
+function fullscreen_create()
 //-----------------------------------------------------------------------------
 {
 	let tst = {}
@@ -1196,10 +1354,14 @@ function tst_create()
 	let m_fullscreen_original_width;
 	let m_fullscreen_original_height;
 
+	tst.flgFullscreen = false;
+
 	//-----------------------------------------------------------------------------
-	tst.fullscreeen_change = function( cv,cb )
+	tst.fullscreeen_change = function( cv, callback_at_return )
 	//-----------------------------------------------------------------------------
 	{
+	
+	
 		if( 	window.document.fullscreenEnabled
 			||	document.documentElement.webkitRequestFullScreen ) // iOS対応
 		{
@@ -1218,20 +1380,18 @@ function tst_create()
 			}
 		//	gra = create_gra_webgl( cv.getContext( "webgl", { antialias: true } ) );	// 画面再設定
 			{
-				let obj =	cv.requestFullscreen 
-						||	cv.webkitRequestFullScreen;
-
+				let obj = cv.requestFullscreen || cv.webkitRequestFullScreen;
 				obj.call( cv );
 			}
 
 			function callback()
 			{
-				if (	window.document.fullscreenElement
-					||	window.document.webkitFullscreenElement )
+				if (	window.document.fullscreenElement ||	window.document.webkitFullscreenElement )
 				{
 					// フルスクリーンへ突入時
 //					window.document.getElementById("html_debug1").innerHTML = window.orientation;
 //					window.document.getElementById("html_debug2").innerHTML = window.screen.width+","+window.screen.height;
+					tst.flgFullscreen = true;
 				}
 				else
 				{
@@ -1239,15 +1399,16 @@ function tst_create()
 					cv.width = m_fullscreen_original_width;
 					cv.height = m_fullscreen_original_height;
 //					gra = create_gra_webgl( cv.getContext( "webgl", { antialias: true } ) );	// 画面再設定
+					tst.flgFullscreen = false;
 				}
-				cb(); // 画面モード再設定
+				callback_at_return(); // 画面モード再設定
 			}
 			window.document.addEventListener("fullscreenchange", callback, false);
 			window.document.addEventListener("webkitfullscreenchange", callback, false);
 		}
 		else
 		{
-			alert("フルスクリーンに対応していません");
+			alert("フルスクリーンに対応していません\nDoes not support full screen");
 		}
 	}
 	return tst;
@@ -1263,6 +1424,8 @@ function html_onchange( valRequest )
 	else
 	if( valRequest == "fullscreen" )
 	{
+//		g_req = 'fullscreen';
+
 		tst.fullscreeen_change( html_canvas, function()
 		{
 			gra = gra_create( html_canvas );
@@ -1279,6 +1442,7 @@ function html_onchange( valRequest )
 window.onload = function()
 //-----------------------------------------------------------------------------
 {
+/*
 	function makeTable()
 	{
 
@@ -1328,13 +1492,14 @@ window.onload = function()
 		document.getElementById("html_table").appendChild(table);
 	}
 	//makeTable();
-
+*/
 	// htmlのhtml_game/checked設定を読み込んで実行
 	{
 		var list = document.getElementsByName( "html_game" ) ;
 		for ( let l of list ) if ( l.checked ) l.onchange();
 	}
 //console.log(window.document.getElementsByName( "html_debug" )[0].checked);
+
 	main();
 }
 // HTML/マウス/キーボード制御
@@ -1342,31 +1507,38 @@ window.onload = function()
 
 document.onmousedown = mousemovedown;
 document.onmousemove = mousemovedown;
-let g_hdlClick = null;	// マウスクリックのチャタリング防止用
-let g_inter = false;
 //-----------------------------------------------------------------------------
 function mousemovedown(e)
 //-----------------------------------------------------------------------------
 {
+	let as2 = g_reso_x/g_reso_y;
+	let as1 = html_canvas.width/html_canvas.height;
+	let	W = html_canvas.width * (g_reso_x/g_reso_y);
+	let	H = html_canvas.height;
+
 	if ( e.buttons==1 )
 	{
+
 	    var rect = html_canvas.getBoundingClientRect();
         let x= (e.clientX - rect.left)/ html_canvas.width;
         let y= (e.clientY - rect.top)/ html_canvas.height;
 		if ( x > 0 && x < 1 && y >0 && y < 1 )
 		{
+			g_mouse_click = true;	
+
 			if ( g_inter == false ) //  チャタリング防止 ms間連続クリックの禁止
 			{
-				g_req = 'req_next';
 				g_inter = true;
-				g_hdlClick = setTimeout( function(){g_inter = false;}, 300 ); // チャタリング防止 ms間連続クリックの禁止
+				g_hdlClick = setTimeout( function(){g_inter = false;g_mouse_click=false;}, 200 ); // チャタリング防止 ms間連続クリックの禁止
 			}
 		}
 	}
 	{
+	
 	    var rect = html_canvas.getBoundingClientRect();
-        let x= (e.clientX - rect.left)/ html_canvas.width *g_reso_x;
-//		racket.p.x = x;
+
+		g_mouse_x = (e.clientX - rect.left);
+
 	}
 
 	//test
@@ -1386,11 +1558,6 @@ window.onkeyup = function( ev )
 {
 	let c = ev.keyCode;
 	g_key[c]=false;
-	if ( c == KEY_SPC ) return; 
-//	if ( c == KEY_UP ) return; 
-//	if ( c == KEY_DOWN ) return; 
-	if ( c == KEY_LEFT ) return; 
-	if ( c == KEY_DOWN ) return; 
 }
 let g_key=Array(256);
 //-----------------------------------------------------------------------------
@@ -1402,7 +1569,7 @@ window.onkeydown = function( ev )
 	if ( c == KEY_SPC ) return false; // falseを返すことでスペースバーでのスクロールを抑制
 	if ( c == KEY_D ) document.getElementsByName( "html_debug" )[0].checked = !document.getElementsByName( "html_debug" )[0].checked;
 	if ( c == KEY_R ) g_req = 'reset';
-//		return false; デバッグ機能(Ctrl+Shift+I)も、再読み込み(F5)も全部抑制
+	if ( c == KEY_F ) g_req = 'fullscreen';
 }
 
 // 右クリックでのコンテキストメニューを抑制
