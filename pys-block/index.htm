@@ -14,6 +14,30 @@
 				text-align:center;
 				vertical-align: top;
 			}
+			.group-left
+			{
+				display:inline-block; 
+				padding: 6px; 
+				border-radius: 7px; 
+				border:1px solid #aaa;
+				text-align:left;
+				vertical-align: top;
+			}
+			.group-right
+			{
+				display:inline-block; 
+				padding: 6px; 
+				border-radius: 7px; 
+				border:1px solid #aaa;
+				text-align:right;
+				vertical-align: top;
+			}
+			.left
+			{
+				display:inline-block; 
+				text-align:center;
+				vertical-align: top;
+			}
 			.readme
 			{
 				display:inline-block; 
@@ -30,7 +54,7 @@
 			}
 .gamearea
  {
-//  cursor: none;
+  cursor: none;
 }
 /*
 html,body,a{
@@ -83,47 +107,75 @@ html,body,a{
 	<body align="center">
 		<H1>丸いブロック崩しv1.0</H1>
 			<div class="group">
-				<div class="group">
-					<input type="radio" name="html_stage" onchange="html_onchange('basic');">Basic
-					<input type="radio" name="html_stage" onchange="html_onchange('super');">Super
-					<input type="radio" name="html_stage" onchange="html_onchange('mitu');">Mitu
-					<input type="radio" name="html_stage" onchange="html_onchange('wild');">Wild
-					<input type="radio" name="html_stage" onchange="html_onchange('special');">Special
-					<input type="radio" name="html_stage" onchange="html_onchange('giant');">Giant
-					<input type="radio" name="html_stage" onchange="html_onchange('dot');">Dot
-					<input type="radio" name="html_stage" onchange="html_onchange('hex');">Hex
-					<input type="radio" name="html_stage" onchange="html_onchange('castle');"checked>Castle
-				</div>
-					<br>
-				<canvas class="gamearea" id="html_canvas"  width="384" height="384" style="border:1px solid" ></canvas>
-		<!--
-				<canvas class="gamearea" id="html_canvas"  width="384" height="384" style="border:1px solid" ></canvas>
-				<canvas class="gamearea" id="html_canvas"  width="640" height="360" style="border:1px solid" ></canvas>
-		-->
+				<canvas class="gamearea" id="html_canvas"  width="512" height="384" style="border:1px solid" ></canvas>
 				<script src="lib.js"></script>
 				<script src="main.js"></script>
 				<br>
 
-
-				<div class="group">
-				ハイスコア:<a id="html_fps" ></a>
-				</div>
 		
-				<div class="group">
 					<input type="button" value="RESET" onClick="main()" >
-				</div>
-				<div class="group">
-					<input type="button" value="フルスクリーン" onClick="html_onchange('fullscreen')" >
-				</div>
+				
 			</div>
+			<div id="html_table" class="group-right">
+				<table style="width:100%">
+				<tr>	<th></th><th>GAME:</th>	<th>ハイスコア</th>  </tr>
+				<!-- id:書き換えるのに使う name:radioボタンを読むのに使う
+				-->
+					<tr> <td><input type="radio" name="html_game" onchange="html_onchange('basic');"></td>			
+						<td>Basic:<br>	</td>	<td "><a id="html_basic" ></a></td> <tr>
+					<tr> <td><input type="radio" name="html_game" 	onchange="html_onchange('super');"></td>	
+						<td>Super:<br>	</td>	<td><a id="html_super" ></a></td> <tr>
+					<tr> <td><input type="radio" name="html_game" onchange="html_onchange('mitu');"checked></td>			
+						<td>Mitu:<br>	</td>	<td><a id="html_mitu" ></a></td> <tr>
+					<tr> <td><input type="radio" name="html_game" onchange="html_onchange('wild');"></td>			
+						<td>Wild:<br>	</td>	<td><a id="html_wild" ></a></td> <tr>
+					<tr> <td><input type="radio" name="html_game" onchange="html_onchange('special');"></td>		
+						<td>Special:<br>	</td>	<td><a id="html_special" ></a></td> <tr>
+					<tr> <td><input type="radio" name="html_game" onchange="html_onchange('atom');"></td>			
+						<td>Atom:<br>	</td>	<td><a id="html_atom" ></a></td> <tr>
+					<tr> <td><input type="radio" name="html_game" onchange="html_onchange('heavy');"></td>			
+						<td>Heavy:<br>	</td>	<td><a id="html_heavy" ></a></td> <tr>
+					<tr> <td><input type="radio" name="html_game" onchange="html_onchange('dot');"></td>			
+						<td>Dot:<br>		</td>	<td><a id="html_dot" ></a></td> <tr>
+					<tr> <td><input type="radio" name="html_game" onchange="html_onchange('hex');"></td>			
+						<td>Hex:<br>		</td>	<td><a id="html_hex" ></a></td> <tr>
+					<tr> <td><input type="radio" name="html_game" onchange="html_onchange('bio');"></td>		
+						<td>Bio:<br>	</td>	<td><a id="html_bio" ></a></td> <tr>
 
-		<br>
-		<br>
-			<input type="checkbox" name="html_debug"  >debug
+				</table>
+			</div> 
+
+			<br>
+
+ 
+			<br>
+			<input type="checkbox" name="html_debug"  checked>debug
+
 
 
 <!--
+				<div class="group">
+					<input type="button" value="フルスクリーン" onClick="html_onchange('fullscreen')" >
+				</div>
 
+
+				<div class="group">
+				ステージ選択<br>
+					<input type="radio" name="html_game" onchange="html_onchange('basic');">Basic
+					<input type="radio" name="html_game" onchange="html_onchange('super');">Super
+					<input type="radio" name="html_game" onchange="html_onchange('mitu');">Mitu
+					<input type="radio" name="html_game" onchange="html_onchange('wild');">Wild
+					<input type="radio" name="html_game" onchange="html_onchange('special');">Special
+					<input type="radio" name="html_game" onchange="html_onchange('giant');">Giant
+					<input type="radio" name="html_game" onchange="html_onchange('dot');">Dot
+					<input type="radio" name="html_game" onchange="html_onchange('hex');">Hex
+					<input type="radio" name="html_game" onchange="html_onchange('bio');"checked>Castle
+				</div>
+
+				<canvas class="gamearea" id="html_canvas"  width="384" height="384" style="border:1px solid" ></canvas>
+				<canvas class="gamearea" id="html_canvas"  width="640" height="360" style="border:1px solid" ></canvas>
+				
+				
 		<div class="group">
 			速度計算
 			<br>

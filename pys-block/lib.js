@@ -1,3 +1,7 @@
+// 2021/07/24	KEY追加
+// 2021/07/23	半直線と点との距離,	線分と点との距離,直線と直線の距離,半直線と線分の距離,線分と線分の距離 関数追加
+// 2021/07/23	pad_create ゲームパッド入力ライブラリ追加
+// 2021/07/22	フルスクリーン用にアスペクト機能を追加
 // 2021/07/19	ver1.12 gra backcolor()追加
 // 2021/07/10	ver1.11 フォント送りサイズ変更
 // 2021/07/10	ver1.10 gra.alpha追加
@@ -17,6 +21,479 @@
 //
 // OpenGL® Programming Guide: The Official Guide 
 // https://www.cs.utexas.edu/users/fussell/courses/cs354/handouts/Addison.Wesley.OpenGL.Programming.Guide.8th.Edition.Mar.2013.ISBN.0321773039.pdf
+
+//------------------------------------------------------------------------------
+function func_intersect_Line_Point2( P0, I0, P1 )	// 直線と点との距離
+//------------------------------------------------------------------------------
+{
+	// P0:始点
+	// I0:方向（単位ベクトル）
+	// P1:点
+	// Q :衝突点
+	// t :P0からQまでの距離
+
+	let I1 = vsub2(P1 , P0);
+	let t = dot2(I0,I1);	// P0からQまでのQ距離
+	let Q = vadd2( P0, vmul_scalar2(I0,t));
+	let	d =  length2(vsub2(Q , P1));
+	return [true,d,Q,t];
+}
+
+//------------------------------------------------------------------------------
+function func_intersect_HarfLine_Point2( P0, I0, P1 )	// 半直線と点との距離 2021/07/23
+//------------------------------------------------------------------------------
+{
+	let [flg,d,Q,t] = func_intersect_Line_Point2( P0, I0, P1 );
+
+	if ( t <= 0 ) flg = false; 			// 始点トリミング：範囲外でも使える衝突点等の値が返る
+
+	return [flg,d,Q,t];
+}
+
+//------------------------------------------------------------------------------
+function func_intersect_SegLine_Point2( P0, Q0, P1 )	// 線分と点との距離 2021/07/23
+//------------------------------------------------------------------------------
+{
+	// P0:始点
+	// Q0:終点
+	// P1:点
+ 	let L = vsub2(Q0 , P0)
+ 	let I0 = normalize2(L)
+
+	let [flg,d,Q,t] = func_intersect_Line_Point2( P0, I0, P1 );
+	if ( t <= 0 ) flg = false; 			// 始点トリミング：範囲外でも使える衝突点等の値が返る
+	if ( t >= length2(L) ) flg = false;	// 終点トリミング：範囲外でも使える衝突点等の値が返る
+
+	return [flg,d,Q,t];
+}
+
+
+//------------------------------------------------------------------------------
+function func_intersect_Line_Line2( P0, I0, P1, I1 ) // 直線と直線の距離 2021/07/23
+//------------------------------------------------------------------------------
+{
+	if ( (I0.x==0 && I0.y==0) || (I1.x==0 && I1.y==0) ) return [false,0,vec2(0,0),vec2(0,0),0,0];
+
+	//    P0       P1
+	//    |        |
+	//    |}t0     |}t1(時間:Iベクトル方向、負の数ならP1より前)
+	//    |        |
+	// Q0 +--------+ Q1(衝突位置)
+	//    |        |
+	//    v        v
+	//    I0       I1 (I0,I1は単位ベクトル)
+	//
+	//	交点ができたときは、Q0=Q1 , d=0 になる
+
+	if (  cross2( I0, I1 ) == 0 ) // 平行だった時
+	{
+		let Q0 = vec2(0.0);
+		let Q1 = vec2(0.0);
+		let d = Math.abs( cross2( vsub2(P1 , P0), I0 ) );	// func_intersect_Line_Point2():点と線との距離
+		return [false,d,Q0,Q1,0,0];
+	}
+
+	let d0 = dot2( vsub2(P1 , P0), I0 );
+	let d1 = dot2( vsub2(P1 , P0), I1 );
+	let d2 = dot2( I0, I1 );
+
+	let t0 = ( d0 - d1 * d2 ) / ( 1.0 - d2 * d2 );
+	let t1 = ( d1 - d0 * d2 ) / ( d2 * d2 - 1.0 );
+
+	let	Q0 = vadd2(P0 , vmul_scalar2(I0,t0));
+	let	Q1 = vadd2(P1 , vmul_scalar2(I1,t1));
+	let	d =  length2(vsub2(Q1 , Q0));
+
+	return [true,d,Q0,Q1,t0,t1];
+}
+//------------------------------------------------------------------------------
+function func_intersect_HarfLine_HarfLine2( P0, I0, P1, I1 )	//2021/07/23 半直線と線分の距離
+//------------------------------------------------------------------------------
+{
+	if ( (I0.x==0 && I0.y==0) || (I1.x==0 && I1.y==0) ) return [false,0,vec2(0,0),vec2(0,0),0,0];
+
+	// 半直線と線分の距離
+	// 半直線   : P0+I0
+	// 半直線   : p1+I1
+	// 距離     : d = |Q1-Q0|
+	// 戻り値   : d距離 Q0,Q1	※false でもdだけは取得できる
+	
+	let [flg,d,Q0,Q1,t0,t1] = func_intersect_Line_Line2( P0, I0, P1, I1 );
+
+	if ( flg )
+	{
+		// 半直線
+		if ( t0 < 0 ) flg = false;
+		if ( t1 < 0 ) flg = false;
+	}
+
+	return [flg,d,Q0,Q1,t0,t1];
+}
+//------------------------------------------------------------------------------
+function func_intersect_SegLine_SegLine2( p0, q0, p1, q1 )	//2021/07/23 線分と線分の距離
+//------------------------------------------------------------------------------
+{
+	if ( q0.x == p0.x && q0.y == p0.y || q1.x == p1.x && q1.y == p1.y ) return [false,0,vec2(0,0),vec2(0,0),0,0];
+
+	// 線分と線分の距離
+	// 線分0開始: p0
+	// 線分0終了: q0
+	// 線分1開始: p1
+	// 線分1終了: q1
+	// 距離     : d = |Q1-Q0|
+	// 戻り値   : d距離 Q0,Q1	※false でもdだけは取得できる
+	
+	let	P0 = p0;
+	let	I0 = normalize2( vsub2(q0,p0) );
+	let	P1 = p1;
+	let	I1 = normalize2( vsub2(q1,p1) );
+
+	let [flg,d,Q0,Q1,t0,t1] = func_intersect_Line_Line2( P0, I0, P1, I1 );
+
+	if ( flg )
+	{
+		// 線分処理
+		if ( t1 < 0 ) flg = false;
+		if ( t1 > length2(vsub2(q1,p1)) ) flg = false;
+
+		// 線分処理
+		if ( t0 < 0 ) flg = false;
+		if ( t0 > length2(vsub2(q0,p0)) ) flg = false;
+
+	}
+
+	return [flg,d,Q0,Q1,t0,t1];
+}
+
+//-----------------------------------------------------------------------------
+function pad_create()	// 2021/07/23 追加
+//-----------------------------------------------------------------------------
+{
+	// PS4パッド、XBOX one パッド、switchパッドでは同じように使える様子
+	// 電源ボタン,L3R3アナログボタン押し込み、メニューボタンのようなものは使えず。button[16]もバッファはあるけどアサインは不明
+
+	let body = 
+	{
+		lx:0,
+		ly:0,
+		rx:0,
+		ry:0,
+		a:false,
+		b:false,
+		x:false,
+		y:false,
+		l1:false,
+		r1:false,
+		l2:0,
+		r2:0,
+		se:false,
+		st:false,
+		u:false,
+		d:false,
+		l:false,
+		r:false,
+		B16:false,
+		trig:
+		{
+			a:false,
+			b:false,
+			x:false,
+			y:false,
+			l1:false,
+			r1:false,
+			se:false,
+			st:false,
+			u:false,
+			d:false,
+			l:false,
+			r:false,
+			B16:false,
+		},
+		release:
+		{
+			a:false,
+			b:false,
+			x:false,
+			y:false,
+			l1:false,
+			r1:false,
+			se:false,
+			st:false,
+			u:false,
+			d:false,
+			l:false,
+			r:false,
+			B16:false,
+		}
+	};
+	
+	//-----------------------------------------------------------------------------
+	body.reset = function()
+	//-----------------------------------------------------------------------------
+	{
+		if(navigator.getGamepads)
+		{
+			let list = navigator.getGamepads();
+			for ( let pad of list )
+			{
+				if ( pad != null )		
+				{
+					if ( body.prevButtons == undefined ) 
+					{
+						body.lx = pad.axes[0];
+						body.ly = pad.axes[1];
+						body.rx = pad.axes[2];
+						body.ry = pad.axes[3];
+						body.a  = pad.buttons[ 0].value == 1;
+						body.b  = pad.buttons[ 1].value == 1;
+						body.x  = pad.buttons[ 2].value == 1;
+						body.y  = pad.buttons[ 3].value == 1;
+						body.l1 = pad.buttons[ 4].value == 1;
+						body.r1 = pad.buttons[ 5].value == 1;
+						body.l2 = pad.buttons[ 6].value;
+						body.r2 = pad.buttons[ 7].value;
+						body.se = pad.buttons[ 8].value == 1;
+						body.st = pad.buttons[ 9].value == 1;
+						body.u  = pad.buttons[12].value == 1;
+						body.d  = pad.buttons[13].value == 1;
+						body.l  = pad.buttons[14].value == 1;
+						body.r  = pad.buttons[15].value == 1;
+						body.B16= pad.buttons[16].value == 1;
+
+						body.trig.a  = pad.buttons[ 0].value == 1;
+						body.trig.b  = pad.buttons[ 1].value == 1;
+						body.trig.x  = pad.buttons[ 2].value == 1;
+						body.trig.y  = pad.buttons[ 3].value == 1;
+						body.trig.l1 = pad.buttons[ 4].value == 1;
+						body.trig.r1 = pad.buttons[ 5].value == 1;
+						body.trig.se = pad.buttons[ 8].value == 1;
+						body.trig.st = pad.buttons[ 9].value == 1;
+						body.trig.u  = pad.buttons[12].value == 1;
+						body.trig.d  = pad.buttons[13].value == 1;
+						body.trig.l  = pad.buttons[14].value == 1;
+						body.trig.r	 = pad.buttons[15].value == 1;
+						body.trig.B16= pad.buttons[16].value == 1;
+
+						body.release.a  = false;
+						body.release.b  = false;
+						body.release.x  = false;
+						body.release.y  = false;
+						body.release.l1 = false;
+						body.release.r1 = false;
+						body.release.se = false;
+						body.release.st = false;
+						body.release.u  = false;
+						body.release.d  = false;
+						body.release.l  = false;
+						body.release.r	= false;
+						body.release.B16= false;
+					}
+					else
+					{
+						body.lx =  pad.axes[0];
+						body.ly =  pad.axes[1];
+						body.rx =  pad.axes[2];
+						body.ry =  pad.axes[3];
+						body.a  =  pad.buttons[ 0].value == 1;
+						body.b  =  pad.buttons[ 1].value == 1;
+						body.x  =  pad.buttons[ 2].value == 1;
+						body.y  =  pad.buttons[ 3].value == 1;
+						body.l1 =  pad.buttons[ 4].value == 1;
+						body.r1 =  pad.buttons[ 5].value == 1;
+						body.l2 =  pad.buttons[ 6].value;
+						body.r2 =  pad.buttons[ 7].value;
+						body.se =  pad.buttons[ 8].value == 1;
+						body.st =  pad.buttons[ 9].value == 1;
+						body.u  =  pad.buttons[12].value == 1;
+						body.d  =  pad.buttons[13].value == 1;
+						body.l  =  pad.buttons[14].value == 1;
+						body.r  =  pad.buttons[15].value == 1;
+						body.B16=  pad.buttons[16].value == 1;
+
+						body.trig.a  = (pad.buttons[ 0].value == 1 ) && ( body.prevButtons[ 0].value != 1 );
+						body.trig.b  = (pad.buttons[ 1].value == 1 ) && ( body.prevButtons[ 1].value != 1 );
+						body.trig.x  = (pad.buttons[ 2].value == 1 ) && ( body.prevButtons[ 2].value != 1 );
+						body.trig.y  = (pad.buttons[ 3].value == 1 ) && ( body.prevButtons[ 3].value != 1 );
+						body.trig.l1 = (pad.buttons[ 4].value == 1 ) && ( body.prevButtons[ 4].value != 1 );
+						body.trig.r1 = (pad.buttons[ 5].value == 1 ) && ( body.prevButtons[ 5].value != 1 );
+						body.trig.se = (pad.buttons[ 8].value == 1 ) && ( body.prevButtons[ 8].value != 1 );
+						body.trig.st = (pad.buttons[ 9].value == 1 ) && ( body.prevButtons[ 9].value != 1 );
+						body.trig.u  = (pad.buttons[12].value == 1 ) && ( body.prevButtons[12].value != 1 );
+						body.trig.d  = (pad.buttons[13].value == 1 ) && ( body.prevButtons[13].value != 1 );
+						body.trig.l  = (pad.buttons[14].value == 1 ) && ( body.prevButtons[14].value != 1 );
+						body.trig.r  = (pad.buttons[15].value == 1 ) && ( body.prevButtons[15].value != 1 );
+						body.trig.B16= (pad.buttons[16].value == 1 ) && ( body.prevButtons[16].value != 1 );
+
+						body.release.a  = (pad.buttons[ 0].value == 0 ) && ( body.prevButtons[ 0].value != 0 );
+						body.release.b  = (pad.buttons[ 1].value == 0 ) && ( body.prevButtons[ 1].value != 0 );
+						body.release.x  = (pad.buttons[ 2].value == 0 ) && ( body.prevButtons[ 2].value != 0 );
+						body.release.y  = (pad.buttons[ 3].value == 0 ) && ( body.prevButtons[ 3].value != 0 );
+						body.release.l1 = (pad.buttons[ 4].value == 0 ) && ( body.prevButtons[ 4].value != 0 );
+						body.release.r1 = (pad.buttons[ 5].value == 0 ) && ( body.prevButtons[ 5].value != 0 );
+						body.release.se = (pad.buttons[ 8].value == 0 ) && ( body.prevButtons[ 8].value != 0 );
+						body.release.st = (pad.buttons[ 9].value == 0 ) && ( body.prevButtons[ 9].value != 0 );
+						body.release.u  = (pad.buttons[12].value == 0 ) && ( body.prevButtons[12].value != 0 );
+						body.release.d  = (pad.buttons[13].value == 0 ) && ( body.prevButtons[13].value != 0 );
+						body.release.l  = (pad.buttons[14].value == 0 ) && ( body.prevButtons[14].value != 0 );
+						body.release.r  = (pad.buttons[15].value == 0 ) && ( body.prevButtons[15].value != 0 );
+						body.release.B16= (pad.buttons[16].value == 0 ) && ( body.prevButtons[16].value != 0 );
+
+						let border = 0.15; //15%を遊び
+						if ( Math.abs( body.lx ) < border ) body.lx = 0;
+						if ( Math.abs( body.ly ) < border ) body.ly = 0;
+						if ( Math.abs( body.rx ) < border ) body.rx = 0;
+						if ( Math.abs( body.ry ) < border ) body.ry = 0;
+					}
+
+					body.prevButtons = pad.buttons;
+				}
+			}
+		}
+	}
+	
+	//-----------------------------------------------------------------------------
+	body.getinfo = function()
+	//-----------------------------------------------------------------------------
+	{
+		if(navigator.getGamepads)
+		{
+			let list = navigator.getGamepads();
+			for ( let pad of list )
+			{
+				if ( pad != null )		
+				{
+					if ( body.prevButtons == undefined ) 
+					{
+						body.lx = pad.axes[0];
+						body.ly = pad.axes[1];
+						body.rx = pad.axes[2];
+						body.ry = pad.axes[3];
+						body.a  = pad.buttons[ 0].value == 1;
+						body.b  = pad.buttons[ 1].value == 1;
+						body.x  = pad.buttons[ 2].value == 1;
+						body.y  = pad.buttons[ 3].value == 1;
+						body.l1 = pad.buttons[ 4].value == 1;
+						body.r1 = pad.buttons[ 5].value == 1;
+						body.l2 = pad.buttons[ 6].value;
+						body.r2 = pad.buttons[ 7].value;
+						body.se = pad.buttons[ 8].value == 1;
+						body.st = pad.buttons[ 9].value == 1;
+						body.u  = pad.buttons[12].value == 1;
+						body.d  = pad.buttons[13].value == 1;
+						body.l  = pad.buttons[14].value == 1;
+						body.r  = pad.buttons[15].value == 1;
+						body.B16= pad.buttons[16].value == 1;
+
+						body.trig.a  = pad.buttons[ 0].value == 1;
+						body.trig.b  = pad.buttons[ 1].value == 1;
+						body.trig.x  = pad.buttons[ 2].value == 1;
+						body.trig.y  = pad.buttons[ 3].value == 1;
+						body.trig.l1 = pad.buttons[ 4].value == 1;
+						body.trig.r1 = pad.buttons[ 5].value == 1;
+						body.trig.se = pad.buttons[ 8].value == 1;
+						body.trig.st = pad.buttons[ 9].value == 1;
+						body.trig.u  = pad.buttons[12].value == 1;
+						body.trig.d  = pad.buttons[13].value == 1;
+						body.trig.l  = pad.buttons[14].value == 1;
+						body.trig.r	 = pad.buttons[15].value == 1;
+						body.trig.B16= pad.buttons[16].value == 1;
+
+						body.release.a  = false;
+						body.release.b  = false;
+						body.release.x  = false;
+						body.release.y  = false;
+						body.release.l1 = false;
+						body.release.r1 = false;
+						body.release.se = false;
+						body.release.st = false;
+						body.release.u  = false;
+						body.release.d  = false;
+						body.release.l  = false;
+						body.release.r	= false;
+						body.release.B16= false;
+					}
+					else
+					{
+						body.lx =  pad.axes[0];
+						body.ly =  pad.axes[1];
+						body.rx =  pad.axes[2];
+						body.ry =  pad.axes[3];
+						body.a  =  pad.buttons[ 0].value == 1;
+						body.b  =  pad.buttons[ 1].value == 1;
+						body.x  =  pad.buttons[ 2].value == 1;
+						body.y  =  pad.buttons[ 3].value == 1;
+						body.l1 =  pad.buttons[ 4].value == 1;
+						body.r1 =  pad.buttons[ 5].value == 1;
+						body.l2 =  pad.buttons[ 6].value;
+						body.r2 =  pad.buttons[ 7].value;
+						body.se =  pad.buttons[ 8].value == 1;
+						body.st =  pad.buttons[ 9].value == 1;
+						body.u  =  pad.buttons[12].value == 1;
+						body.d  =  pad.buttons[13].value == 1;
+						body.l  =  pad.buttons[14].value == 1;
+						body.r  =  pad.buttons[15].value == 1;
+						body.B16=  pad.buttons[16].value == 1;
+
+						body.trig.a  = (pad.buttons[ 0].value == 1 ) && ( body.prevButtons[ 0].value != 1 );
+						body.trig.b  = (pad.buttons[ 1].value == 1 ) && ( body.prevButtons[ 1].value != 1 );
+						body.trig.x  = (pad.buttons[ 2].value == 1 ) && ( body.prevButtons[ 2].value != 1 );
+						body.trig.y  = (pad.buttons[ 3].value == 1 ) && ( body.prevButtons[ 3].value != 1 );
+						body.trig.l1 = (pad.buttons[ 4].value == 1 ) && ( body.prevButtons[ 4].value != 1 );
+						body.trig.r1 = (pad.buttons[ 5].value == 1 ) && ( body.prevButtons[ 5].value != 1 );
+						body.trig.se = (pad.buttons[ 8].value == 1 ) && ( body.prevButtons[ 8].value != 1 );
+						body.trig.st = (pad.buttons[ 9].value == 1 ) && ( body.prevButtons[ 9].value != 1 );
+						body.trig.u  = (pad.buttons[12].value == 1 ) && ( body.prevButtons[12].value != 1 );
+						body.trig.d  = (pad.buttons[13].value == 1 ) && ( body.prevButtons[13].value != 1 );
+						body.trig.l  = (pad.buttons[14].value == 1 ) && ( body.prevButtons[14].value != 1 );
+						body.trig.r  = (pad.buttons[15].value == 1 ) && ( body.prevButtons[15].value != 1 );
+						body.trig.B16= (pad.buttons[16].value == 1 ) && ( body.prevButtons[16].value != 1 );
+
+						body.release.a  = (pad.buttons[ 0].value == 0 ) && ( body.prevButtons[ 0].value != 0 );
+						body.release.b  = (pad.buttons[ 1].value == 0 ) && ( body.prevButtons[ 1].value != 0 );
+						body.release.x  = (pad.buttons[ 2].value == 0 ) && ( body.prevButtons[ 2].value != 0 );
+						body.release.y  = (pad.buttons[ 3].value == 0 ) && ( body.prevButtons[ 3].value != 0 );
+						body.release.l1 = (pad.buttons[ 4].value == 0 ) && ( body.prevButtons[ 4].value != 0 );
+						body.release.r1 = (pad.buttons[ 5].value == 0 ) && ( body.prevButtons[ 5].value != 0 );
+						body.release.se = (pad.buttons[ 8].value == 0 ) && ( body.prevButtons[ 8].value != 0 );
+						body.release.st = (pad.buttons[ 9].value == 0 ) && ( body.prevButtons[ 9].value != 0 );
+						body.release.u  = (pad.buttons[12].value == 0 ) && ( body.prevButtons[12].value != 0 );
+						body.release.d  = (pad.buttons[13].value == 0 ) && ( body.prevButtons[13].value != 0 );
+						body.release.l  = (pad.buttons[14].value == 0 ) && ( body.prevButtons[14].value != 0 );
+						body.release.r  = (pad.buttons[15].value == 0 ) && ( body.prevButtons[15].value != 0 );
+						body.release.B16= (pad.buttons[16].value == 0 ) && ( body.prevButtons[16].value != 0 );
+
+						let border = 0.15; //15%を遊び
+						if ( Math.abs( body.lx ) < border ) body.lx = 0;
+						if ( Math.abs( body.ly ) < border ) body.ly = 0;
+						if ( Math.abs( body.rx ) < border ) body.rx = 0;
+						if ( Math.abs( body.ry ) < border ) body.ry = 0;
+					}
+
+					body.prevButtons = pad.buttons;
+				}
+			}
+		}
+		return body;
+	}
+
+	body.test_press = function()
+	{
+		let p = body;
+		console.log( "press:",p.a,p.b,p.x,p.y,p.l1,p.r1,p.se,p.st,p.lx,p.ly,p.rx,p.ry,p.l2,p.r2,p.u,p.d,p.l,p.r,p.B16 );
+	}
+	body.test_trig = function()
+	{
+		let p = body.trig;
+		console.log( "trig:",p.a,p.b,p.x,p.y,p.l1,p.r1,p.se,p.st,p.lx,p.ly,p.rx,p.ry,p.l2,p.r2,p.u,p.d,p.l,p.r,p.B16 );
+	}
+	body.test_release = function()
+	{
+		let p = body.trig;
+		console.log( "release:",p.a,p.b,p.x,p.y,p.l1,p.r1,p.se,p.st,p.lx,p.ly,p.rx,p.ry,p.l2,p.r2,p.u,p.d,p.l,p.r,p.B16 );
+	}
+
+	return body;
+}
 
 //-----------------------------------------------------------------------------
 function gra_create( cv )	//2021/06/01
@@ -39,8 +516,7 @@ function gra_create( cv )	//2021/06/01
 //	gra.ctx.font = "12px monospace";	// iOSだとCourierになる	読める限界の小ささ
 //	gra.ctx.font = "14px monospace";	// iOSだとCourierになる 程よい小ささ
 	gra.ctx.font = "16px Courier";	// iOSでも使えるモノスペースフォントただし漢字はモノスペースにはならない 見栄えもある
-	gra.fontw = gra.ctx.measureText("|").width;
-
+	gra.fontw = gra.ctx.measureText("_").width;
 	//-------------------------------------------------------------------------
 	gra.window = function( _sx, _sy, _ex, _ey )
 	//-------------------------------------------------------------------------
@@ -52,6 +528,11 @@ function gra_create( cv )	//2021/06/01
 		ox = -_sx;
 		oy = -_sy;
 	}
+	
+	//2021/07/22 フルスクリーン用にアスペクト機能を追加
+	gra.as = 1/(gra.ctx.canvas.width/gra.ctx.canvas.height);
+	gra.ab = (gra.ctx.canvas.width-gra.ctx.canvas.height)/2;
+//console.log(1/gra.as);
 
 	function win_abs( x, y )
 	{
@@ -59,7 +540,7 @@ function gra_create( cv )	//2021/06/01
 		let h = gra.ey-gra.sy;
 		x = (x+ox)/w * gra.ctx.canvas.width;
 		y = (y+oy)/h * gra.ctx.canvas.height;
-		return [x,y];
+		return [x*gra.as+gra.ab,y];
 	}
 	function win_range( x, y )
 	{
@@ -67,7 +548,7 @@ function gra_create( cv )	//2021/06/01
 		let h = Math.abs(gra.ey-gra.sy);
 		x = (x)/w * gra.ctx.canvas.width;
 		y = (y)/h * gra.ctx.canvas.height;
-		return [x,y];
+		return [x*gra.as,y];
 	}
 	//-----------------------------------------------------------------------------
 	gra.box = function( x1, y1, x2, y2, mode="" )
@@ -131,11 +612,12 @@ function gra_create( cv )	//2021/06/01
 	
 		func( x1, y1, x2, y2, style );
 	}
+
 	//-------------------------------------------------------------------------
 	gra.locate = function( x1, y1 )
 	//-------------------------------------------------------------------------
 	{
-		gra.x=x1*gra.fontw;
+		gra.x=x1*gra.fontw/gra.as;
 		gra.y=y1*16;
 	}
 	//-------------------------------------------------------------------------
@@ -907,3 +1389,49 @@ function mlookat( eye, at, up=vec3(0,1,0)  )	// V マトリクスを作成
 
 ////
 
+
+// 2021/07/24 KEY追加
+const	KEY_TAB	= 9;
+const	KEY_CR	= 13;
+const	KEY_SPC	= 32;
+const	KEY_0	= 48;	//0x30
+const	KEY_1	= 49;	//0x31
+const	KEY_2	= 50;	//0x32
+const	KEY_3	= 51;	//0x33
+const	KEY_4	= 52;	//0x34
+const	KEY_5	= 53;	//0x35
+const	KEY_6	= 54;	//0x36
+const	KEY_7	= 55;	//0x37
+const	KEY_8	= 56;	//0x38
+const	KEY_9	= 57;	//0x39
+const	KEY_A	= 65;	//0x41
+const	KEY_B	= 66;	//0x42
+const	KEY_C	= 67;	//0x43
+const	KEY_D	= 68;	//0x44
+const	KEY_E	= 69;	//0x45
+const	KEY_F	= 70;	//0x46
+const	KEY_G	= 71;	//0x47
+const	KEY_H	= 72;	//0x48
+const	KEY_I	= 73;	//0x49
+const	KEY_J	= 74;	//0x4a
+const	KEY_K	= 75;	//0x4b
+const	KEY_L	= 76;	//0x4c
+const	KEY_M	= 77;	//0x4d
+const	KEY_N	= 78;	//0x4e
+const	KEY_O	= 79;	//0x4f
+const	KEY_P	= 80;	//0x50
+const	KEY_Q	= 81;	//0x51
+const	KEY_R	= 82;	//0x52
+const	KEY_S	= 83;	//0x53
+const	KEY_T	= 84;	//0x54
+const	KEY_U	= 85;	//0x55
+const	KEY_V	= 86;	//0x56
+const	KEY_W	= 87;	//0x57
+const	KEY_X	= 88;	//0x58
+const	KEY_Y	= 89;	//0x59
+const	KEY_Z	= 90;	//0x5a
+
+const	KEY_LEFT	= 37;
+const	KEY_UP		= 38;
+const	KEY_RIGHT	= 39;
+const	KEY_DOWN	= 40;
