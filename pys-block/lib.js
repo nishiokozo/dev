@@ -71,7 +71,7 @@ function se_create()	// 2021/07/26 効果音ライブラリ
 
 		gain.gain.setValueAtTime( vol, t0 );
 		gain.gain.setValueAtTime( vol, t1 );
-		gain.gain.linearRampToValueAtTime( 0, t2 );
+		gain.gain.linearRampToValueAtTime( 0, t2 );	//前にスケジュールされているパラメーター値から指定された値まで、直線的に連続して値を変化させる
 		gain.connect( analyser );
 	}
 
@@ -576,6 +576,8 @@ function gra_create( cv )	//2021/06/01
 	gra.ctx.textBaseline = "alphabetic";
 	gra.fontw = gra.ctx.measureText("_").width;
 
+	gra.lineWidth = 1;
+
 	//-------------------------------------------------------------------------
 	gra.window = function( _sx, _sy, _ex, _ey )
 	//-------------------------------------------------------------------------
@@ -586,6 +588,8 @@ function gra_create( cv )	//2021/06/01
 		gra.ey = _ey;
 		ox = -_sx;
 		oy = -_sy;
+
+		gra.ctx.lineWidth = gra.lineWidth;
 	}
 	
 	//2021/07/22 フルスクリーン用にアスペクト機能を追加
@@ -643,17 +647,30 @@ function gra_create( cv )	//2021/06/01
 		func( x1, y1, x2, y2 );
 
 	}
+	
+	//-------------------------------------------------------------------------
+	gra.pattern = function( type = 'normal' )
+	//-------------------------------------------------------------------------
+	{
+		switch( type )
+		{
+			case "normal": gra.ctx.setLineDash([]);	break;
+			case "hasen": gra.ctx.setLineDash([2,4]);	break;
+			default: alert("破線パターン異常 gra.pattern()");
+		}
+//		gra.ctx.setLineDash([2,4]);
+	}
 	//-------------------------------------------------------------------------
 	gra.line = function( x1, y1, x2, y2, mode="" )
 	//-------------------------------------------------------------------------
 	{
-		function func( sx,sy, ex,ey, style =[1] )
+		function func( sx,sy, ex,ey )
 		{
 			gra.ctx.beginPath();
-			gra.ctx.setLineDash(style);
+//			gra.ctx.setLineDash(style);
 			gra.ctx.strokeStyle = gra.col;
 //			gra.ctx.strokeStyle = "#000000";
-			gra.ctx.lineWidth = 1.0;
+//			gra.ctx.lineWidth = 1.0;
 			gra.ctx.moveTo( sx, sy );
 			gra.ctx.lineTo( ex, ey );
 			gra.ctx.closePath();
@@ -663,13 +680,13 @@ function gra_create( cv )	//2021/06/01
 		[x1,y1]=win_abs(x1,y1);
 		[x2,y2]=win_abs(x2,y2);
 
-		let style = [];
-		switch( mode )
-		{
-			case "hasen": style = [2,4];
-		}
+//		let style = [];
+//		switch( mode )
+//		{
+//			case "hasen": style = [2,4];
+//		}
 	
-		func( x1, y1, x2, y2, style );
+		func( x1, y1, x2, y2 );
 	}
 
 	//-------------------------------------------------------------------------
@@ -727,10 +744,13 @@ function gra_create( cv )	//2021/06/01
 	}
 
 	//-----------------------------------------------------------------------------
-	gra.lineWidth = function( val=1.0 ) //2021/07/26 追加
+	gra.setLineWidth = function( val=1.0 ) //2021/07/26 追加
 	//-----------------------------------------------------------------------------
 	{
-			gra.ctx.lineWidth = val;
+//			gra.lineWidth(gra.ctx.canvas.height/(gra.ey-gra.sy) *val);
+
+			gra.lineWidth = gra.ctx.canvas.height/(gra.ey-gra.sy) *val;
+			gra.ctx.lineWidth = gra.lineWidth;
 	}
 
 	//-----------------------------------------------------------------------------
@@ -772,8 +792,9 @@ function gra_create( cv )	//2021/06/01
 		let func = function( x,y,rw,rh )
 		{
 			gra.ctx.beginPath();
-			gra.ctx.setLineDash([]);
+//			gra.ctx.setLineDash([]);
 			gra.ctx.strokeStyle = gra.col;
+
 
 			let rotation = 0;
 			let startAngle = st;
@@ -793,7 +814,7 @@ function gra_create( cv )	//2021/06/01
 		let func = function( x,y,rw,rh )
 		{
 			gra.ctx.beginPath();
-			gra.ctx.setLineDash([]);
+//			gra.ctx.setLineDash([]);
 			let rotation = 0;
 			let startAngle = st;
 			let endAngle = en;
@@ -872,6 +893,15 @@ function vmul_scalar2( a, s )
 	);
 }
 //------------------------------------------------------------------------------
+function vdiv_scalar2( a, s ) // 2021/07/26 追加
+//------------------------------------------------------------------------------
+{
+	return vec2(
+		a.x / s,
+		a.y / s 
+	);
+}
+//------------------------------------------------------------------------------
 function vneg2( a )
 //------------------------------------------------------------------------------
 {
@@ -894,6 +924,7 @@ function cross2( a, b )
 function length2( v )	//	 as abs()
 //------------------------------------------------------------------------------
 {
+	if ( v.x==0 && v.y==0) return 0; // 2021/07/28 add
 	return Math.sqrt(v.x*v.x+v.y*v.y);
 }
 //------------------------------------------------------------------------------
@@ -1465,7 +1496,26 @@ function mlookat( eye, at, up=vec3(0,1,0)  )	// V マトリクスを作成
 
 
 // 2021/07/24 KEY追加
+const	KEY_F1	= 112;
+const	KEY_F2	= 113;
+const	KEY_F3	= 114;
+const	KEY_F4	= 115;
+const	KEY_F5	= 116;
+const	KEY_F6	= 117;
+const	KEY_F7	= 118;
+const	KEY_F8	= 119;
+const	KEY_F9	= 121;
+const	KEY_F10	= 122;
+const	KEY_F11	= 123;
+const	KEY_F12 = 124;
+const	KEY_DEL	= 46;
+const	KEY_ESC	= 27;
+const	KEY_BS	= 8;
 const	KEY_TAB	= 9;
+const	KEY_CAPS	= 20;
+const	KEY_SHIFT	= 16;
+const	KEY_CTRL	= 17;
+const	KEY_ALT		= 18;
 const	KEY_CR	= 13;
 const	KEY_SPC	= 32;
 const	KEY_0	= 48;	//0x30

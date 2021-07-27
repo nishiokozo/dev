@@ -2,7 +2,7 @@
 <html>
 	<head>
 		<meta charset="UTF-8">
-		<title>pys</title>
+		<title>丸いブロック崩しv1.0</title>
 		<style>
 
 			.group
@@ -52,6 +52,11 @@
 				font-size:12px;
 				font-family:monospace;
 			}
+
+//			table,td,thead,tfoot 
+//			{
+//				border: 1px solid;
+//			}
 .gamearea
  {
   cursor: none;
@@ -122,31 +127,35 @@ html,body,a{
 				<tr>	<th></th><th>GAME:</th>	<th>ハイスコア</th>  </tr>
 				<!-- id:書き換えるのに使う name:radioボタンを読むのに使う
 				-->
-					<tr> <td><input type="radio" name="html_game" onchange="html_onchange('basic');"></td>			
+					<tr> <td><input type="radio" name="html_game" onchange="html_onchange('basic');		"checked></td>			
 						<td>Basic:<br>	</td>	<td "><a id="html_basic" ></a></td> <tr>
-					<tr> <td><input type="radio" name="html_game" 	onchange="html_onchange('super');"></td>	
+<!--
+					<tr> <td><input type="radio" name="html_game" 	onchange="html_onchange('super');	"></td>	
 						<td>Super:<br>	</td>	<td><a id="html_super" ></a></td> <tr>
-					<tr> <td><input type="radio" name="html_game" onchange="html_onchange('mitu');"checked></td>			
-						<td>Mitu:<br>	</td>	<td><a id="html_mitu" ></a></td> <tr>
-					<tr> <td><input type="radio" name="html_game" onchange="html_onchange('wild');"></td>			
-						<td>Wild:<br>	</td>	<td><a id="html_wild" ></a></td> <tr>
-					<tr> <td><input type="radio" name="html_game" onchange="html_onchange('special');"></td>		
-						<td>Special:<br>	</td>	<td><a id="html_special" ></a></td> <tr>
-					<tr> <td><input type="radio" name="html_game" onchange="html_onchange('atom');"></td>			
-						<td>Atom:<br>	</td>	<td><a id="html_atom" ></a></td> <tr>
-					<tr> <td><input type="radio" name="html_game" onchange="html_onchange('heavy');"></td>			
+					<tr> <td><input type="radio" name="html_game" onchange="html_onchange('heavy');		"></td>			
 						<td>Heavy:<br>	</td>	<td><a id="html_heavy" ></a></td> <tr>
-					<tr> <td><input type="radio" name="html_game" onchange="html_onchange('dot');"></td>			
+-->
+					<tr> <td><input type="radio" name="html_game" onchange="html_onchange('mitu');		"></td>			
+						<td>Mitu:<br>	</td>	<td><a id="html_mitu" ></a></td> <tr>
+					<tr> <td><input type="radio" name="html_game" onchange="html_onchange('wild');		"></td>			
+						<td>Wild:<br>	</td>	<td><a id="html_wild" ></a></td> <tr>
+					<tr> <td><input type="radio" name="html_game" onchange="html_onchange('special');	"></td>		
+						<td>Special:<br>	</td>	<td><a id="html_special" ></a></td> <tr>
+					<tr> <td><input type="radio" name="html_game" onchange="html_onchange('atom');		"></td>			
+						<td>Atom:<br>	</td>	<td><a id="html_atom" ></a></td> <tr>
+					<tr> <td><input type="radio" name="html_game" onchange="html_onchange('dot');		"></td>			
 						<td>Dot:<br>		</td>	<td><a id="html_dot" ></a></td> <tr>
-					<tr> <td><input type="radio" name="html_game" onchange="html_onchange('hex');"></td>			
+					<tr> <td><input type="radio" name="html_game" onchange="html_onchange('hex');		"></td>			
 						<td>Hex:<br>		</td>	<td><a id="html_hex" ></a></td> <tr>
-					<tr> <td><input type="radio" name="html_game" onchange="html_onchange('bio');"></td>		
+					<tr> <td><input type="radio" name="html_game" onchange="html_onchange('bio');		"></td>		
 						<td>Bio:<br>	</td>	<td><a id="html_bio" ></a></td> <tr>
 
 				</table>
 			</div> 
 
 			<br>
+		<br>
+		<a href="https://twitter.com/intent/tweet?button_hashtag=BreakoutRoundBlock&ref_src=twsrc%5Etfw" data-size="large" class="twitter-share-button" data-show-count="false"></a><script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
 
  
 			<br>
@@ -191,22 +200,19 @@ html,body,a{
 
 	<br>～概要 2021/07/22～<br>
 			衝突の物理演算をブロック崩しに持ち込んでみたらどうなるか？というテーマ<br>
-			ゲームパッド、キーボード、マウスが使えます<br>
-			マウスだと簡単すぎるのでゲームパッドかキーボードをお勧めします<br>
 
-	<br>～ゲーム内容～<br>
-			ブロックが丸い、ラケットも丸い<br>
-			ブラックボールは味方のボール。落としてもペナルティにならないヨ！<br>
-			クリアししたときにブラックボールを残し続けると攻撃力ＵＰ！<br>
+	<br>～操作方法～<br>
 
-	<br>～物理演算をそのまま適用した場合のゲーム上の問題と解決～<br>
-		<div class="group-left">
-		①ラケットを高速移動させると衝突後ボールが速くなりすぎる問題<br>
-		②マスターボールが遅くなりすぎる問題<br>
-		③マスターボールが水平に反射し落ちてこない問題<br>
-		④マスターボールを高速で打ち返してもゲーム難易度を上げるだけの問題<br>
-		⑤マスターボールが天井スタートの時速くなりすぎて打ち返せなくなる問題<br>
-		</div>
+			<div id="html_table" class="group-left">
+				<table style="width:100%">
+				<tr>	<th>デバイス　　　　</th> <th>左右移動　　　　　　</th>	<th>サーブ　　　　　　　</th>	<th>ポーズ　　　　　　</th>  </tr>
+					<tr> <td>キーボード</td>	<td>カーソルキー←→</td>	<td>スペースバー</td>	<td>Pキー</td>	<tr>
+					<tr> <td>ゲームパッド</td>	<td>アナログレバー</td>	<td>Ａボタン</td>	<td>スタートボタン</td>	<tr>
+					<tr> <td>マウス</td>	<td>本体左右</td>	<td>左ボタン</td>	<td>右ボタン</td>	<tr>
+
+				</table>
+			</div> 
+			<br>
 
 	</body>
 </html>

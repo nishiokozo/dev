@@ -11,12 +11,12 @@ let count = 1;
 let g_highscore = 
 {
 	basic:1,
-//	super:1,
+	super:1,
 	mitu:1,
 	wild:1,
 	special:1,
 	atom:1,
-//	heavy:1,
+	heavy:1,
 	dot:1,
 	hex:1,
 	bio:1,
@@ -32,7 +32,6 @@ const BALL_X = g_reso_x/2-100;
 const BALL_Y = 210;
 const RACKET_Y=g_reso_y-8;
 const RACKET_M=2;
-const RACKET_MIN=0.5;
 const BLOCK_Y=64;
 const BLOCK_R=14;
 
@@ -55,7 +54,6 @@ let g_inter = false;
 let g_mouse_x;
 let g_mouse_click;
 
-let g_key=Array(256);
 //-----------------------------------------------------------------------------
 function main()
 //-----------------------------------------------------------------------------
@@ -86,7 +84,6 @@ function main()
 	let prev_x;
 	let pad;
 
-	let info_mouseslowtime = 0;
 
 	// メモ＞
 	// 時間:o(s)
@@ -144,14 +141,6 @@ function main()
 	// ステージ生成関数
 	function init_stage( game, stage )
 	{
-		{
-			// ラケットサイズをステージが進むと小さく
-			let m = RACKET_M - (stage-1)/10;
-			if ( m < RACKET_MIN ) m =  RACKET_MIN;
-			racket = {p:{x:g_reso_x/2,y:RACKET_Y},v:{x:0,y:0},a:{x:0,y:0},r:16, m:m, req_a:{x:0,y:0}};
-			racket.r = calc_r( racket.m )*2; // ラケットは半円なので、半径は倍
-		}
-
 		info_scaleball = 1;
 
 		// ボールクリーンナップ
@@ -187,7 +176,7 @@ function main()
 					{
 						let x = i * st+st/2+ax;
 						let y = j * st+st/2+BLOCK_Y;
-						blocks.push({typ:'nml',n:1,p:vec2(x, y),r:r, flg:true});
+						blocks.push({p:vec2(x, y),r:r, flg:true});
 					}
 					create_ball( g_reso_x/2-50, BLOCK_Y+st*5, BALL_M/2, 100, radians(0) );
 					create_ball( g_reso_x/2+50, BLOCK_Y+st*5, BALL_M*2, 0 );
@@ -210,13 +199,32 @@ function main()
 					{
 						let x = i * st+st/2+ax;
 						let y = j * st+st/2+BLOCK_Y;
-						blocks.push({typ:'nml',n:1,p:vec2(x, y),r:r, flg:true});
+						blocks.push({p:vec2(x, y),r:r, flg:true});
 					}
 					create_ball( g_reso_x/2, BLOCK_Y-st, BALL_M, 0 );
-
 				}
 				break;
 	
+			case 'heavy':	
+				{
+					let r = BLOCK_R;
+					let st = r*2+1;
+					let w = Math.floor(g_reso_x / st);
+					let ax = (g_reso_x-w*st)/2;
+
+					for ( let j = 0 ; j < 4 ; j++ )
+					for ( let i = 0 ; i < w ; i++ )
+					{
+						let x = i * st+st/2+ax;
+						let y = j * st+st/2+BLOCK_Y;
+						blocks.push({p:vec2(x, y),r:r, flg:true});
+					}
+					create_ball( g_reso_x/2, BLOCK_Y-st, BALL_M, 0 );
+
+					info_scaleball = 4;
+				}
+				break;
+
 			case 'super':	// +2ball
 				{
 					let r = BLOCK_R;
@@ -229,12 +237,7 @@ function main()
 					{
 						let x = i * st+st/2+ax;
 						let y = j * st+st/2+BLOCK_Y;
-//						if ( (j == 1 && ( i == 2 || i == 9 ) ) 
-//						||   ( j == 2 && ( i == 2 || i ==  9 ) ) )
-						if ( (j == 3 && ( i == 0 || i == 11 ) ) )
-						blocks.push({typ:'hard',n:1,p:vec2(x, y),r:r, flg:true});
-						else
-						blocks.push({typ:'nml',n:1,p:vec2(x, y),r:r, flg:true});
+						blocks.push({p:vec2(x, y),r:r, flg:true});
 					}
 					create_ball( g_reso_x/2-16, BLOCK_Y-st, BALL_M, -50, radians(180) );
 					create_ball( g_reso_x/2+16, BLOCK_Y-st, BALL_M,  20, radians(0) );
@@ -248,15 +251,18 @@ function main()
 					let w = Math.floor(g_reso_x / st);
 					let ax = (g_reso_x-w*st)/2;
 
+//if (g_stage
 					for ( let j = 0 ; j < 4 ; j++ )
 					for ( let i = 0 ; i < w ; i++ )
 					{
 						let x = i * st+st/2+ax;
 						let y = j * st+st/2+BLOCK_Y;
-						blocks.push({typ:'nml',n:1,p:vec2(x, y),r:r, flg:true});
+						blocks.push({p:vec2(x, y),r:r, flg:true});
 					}
 					create_ball( g_reso_x/2-50, BLOCK_Y+st*5, BALL_M/2, 100, radians(0) );
-					create_ball( g_reso_x/2+50, BLOCK_Y+st*5, BALL_M*4, 0 );
+					create_ball( g_reso_x/2+50, BLOCK_Y+st*5, BALL_M*2, 0 );
+
+				//	create_ball( g_reso_x/2+89, BLOCK_Y+st*5+150, BALL_M*2, 0.1,radians(-135) );
 
 				}
 				break;
@@ -275,11 +281,7 @@ function main()
 
 						let x = i * st+st/2+ax;
 						let y = j * st+st/2+BLOCK_Y;
-
-				//		if ( j == 3 && ( i == 4 || i == 7 ) ) 
-				//		blocks.push({typ:'hard',n:1,p:vec2(x, y),r:r, flg:true});
-				//		else
-						blocks.push({typ:'nml',n:1,p:vec2(x, y),r:r, flg:true});
+						blocks.push({p:vec2(x, y),r:r, flg:true});
 					}
 					create_ball( g_reso_x/2, BLOCK_Y+st*4, BALL_M*6, 0 );
 				}
@@ -287,28 +289,25 @@ function main()
 
 			case 'special':	 
 				{
-					let r = BLOCK_R+1;
+					let r = BLOCK_R;
 					let st = r*2+1;
 					let w = Math.floor(g_reso_x / st);
 					let ax = (g_reso_x-w*st)/2;
 
-					for ( let j = 0 ; j < 5 ; j++ )
+					for ( let j = 0 ; j < 4 ; j++ )
 					for ( let i = 0 ; i < w ; i++ )
 					{
-						if ( j == 2 && ( i == 5 ) ) continue;
+						if ( j == 2 && ( i == 5 || i == 6 ) ) continue;
 					
 						let x = i * st+st/2+ax;
-						let y = j * st+st/2+BLOCK_Y - st;
-						if ( j == 2 && ( i == 2 || i == 8 ) ) 
-						blocks.push({typ:'hard',n:1,p:vec2(x, y),r:r, flg:true});
-						else
-						blocks.push({typ:'nml',n:1,p:vec2(x, y),r:r, flg:true});
+						let y = j * st+st/2+BLOCK_Y;
+						blocks.push({p:vec2(x, y),r:r, flg:true});
 					}
 
-					for ( let i = 0 ; i<4/2 ; i++ )
+					for ( let i = 0 ; i<4 ; i++ )
 					{
-						let x = g_reso_x/2-st+st/4	+st/2*i +st/2;
-						let y = BLOCK_Y+st*2+st/4 - st;
+						let x = g_reso_x/2-st+st/4	+st/2*i;
+						let y = BLOCK_Y+st*2+st/4;
 						create_ball( x,y, BALL_M*0.5, 0 );
 						create_ball( x,y+st/2, BALL_M*0.5, 0 );
 					}
@@ -322,52 +321,21 @@ function main()
 					let w = Math.floor(g_reso_x / st);
 					let ax = (g_reso_x-w*st)/2;
 
-					for ( let j = 1 ; j < 6 ; j++ )
-					for ( let i = 0 ; i < w ; i++ )
-					{
-						let x = i * st+st/2+ax;
-						let y = j * st + +BLOCK_Y-st*2;
-//						if ( j == 2 && ( i == 0 || i == 2 || i == 4 || i == 7 || i == 9 || i == 11 ) ) 
-//						if ( j == 2 ) continue;
-						if ( j == 3 ) continue;
-//						if ( j == 4 ) continue;
-						if ( j == 1 && ( i == 0 || i == 11 ) ) 
-						blocks.push({typ:'hard',n:1,p:vec2(x, y),r:r, flg:true});
-						else
-						blocks.push({typ:'nml',n:1,p:vec2(x, y),r:r, flg:true});
-					}
-
-//						create_ball( g_reso_x/2,BLOCK_Y-st-10 +50, BALL_M*0.1, 700, radians(0) );
-						create_ball( g_reso_x/2,BLOCK_Y-st    +48, BALL_M*0.1, 600, radians(180) );
-						create_ball( g_reso_x/2,BLOCK_Y-st+10 +48, BALL_M*0.1, 500, radians(0) );
-						create_ball( g_reso_x/2,BLOCK_Y-st+20 +48, BALL_M*0.1, 400, radians(180) );
-//						create_ball( g_reso_x/2,BLOCK_Y-st+30 +48, BALL_M*0.1, 300, radians(0) );
-//						create_ball( g_reso_x/2,BLOCK_Y-st+40 +48, BALL_M*0.1, 200, radians(180) );
-//						create_ball( g_reso_x/2,BLOCK_Y-st+50 +48, BALL_M*0.1, 100, radians(0) );
-				}
-				break;
-
-			case 'heavy':	
-				{
-					let r = BLOCK_R;
-					let st = r*2+1;
-					let w = Math.floor(g_reso_x / st);
-					let ax = (g_reso_x-w*st)/2;
-
-					for ( let j = 0 ; j < 4 ; j++ )
+					for ( let j = 1 ; j < 4 ; j++ )
 					for ( let i = 0 ; i < w ; i++ )
 					{
 						let x = i * st+st/2+ax;
 						let y = j * st+st/2+BLOCK_Y;
-						if ( (j == 1 && ( i == 1 || i == 10 ) ) 
-						||   ( j == 2 && ( i == 3 || i ==  8 ) ) )
-						blocks.push({typ:'hard',n:1,p:vec2(x, y),r:r, flg:true});
-						else
-						blocks.push({typ:'nml',n:1,p:vec2(x, y),r:r, flg:true});
+						blocks.push({p:vec2(x, y),r:r, flg:true});
 					}
-				//	create_ball( g_reso_x/2, BLOCK_Y-st, BALL_M, 0 );
 
-					info_scaleball = 4;
+						create_ball( g_reso_x/2,BLOCK_Y-st-10 , BALL_M*0.1, 700, radians(0) );
+						create_ball( g_reso_x/2,BLOCK_Y-st    , BALL_M*0.1, 600, radians(180) );
+						create_ball( g_reso_x/2,BLOCK_Y-st+10 , BALL_M*0.1, 500, radians(0) );
+						create_ball( g_reso_x/2,BLOCK_Y-st+20 , BALL_M*0.1, 400, radians(180) );
+						create_ball( g_reso_x/2,BLOCK_Y-st+30 , BALL_M*0.1, 300, radians(0) );
+						create_ball( g_reso_x/2,BLOCK_Y-st+40 , BALL_M*0.1, 200, radians(180) );
+						create_ball( g_reso_x/2,BLOCK_Y-st+50 , BALL_M*0.1, 100, radians(0) );
 				}
 				break;
 
@@ -382,7 +350,7 @@ function main()
 					{
 						let x = i * st+st/2+ax;
 						let y = j * st+st/2+BLOCK_Y;
-						blocks.push({typ:'nml',n:1,p:vec2(x, y),r:r, flg:true});
+						blocks.push({p:vec2(x, y),r:r, flg:true});
 					}
 					create_ball( g_reso_x/2, BLOCK_Y-16, BALL_M*3,  0, radians(0) );
 					create_ball( g_reso_x/2-50, BLOCK_Y-16, BALL_M*0.1,    0, radians(0) );
@@ -412,10 +380,7 @@ function main()
 						{
 							let x = i * st+ax+aax;
 							let y = j * st*0.85+BLOCK_Y;
-							if ( j == 2 && ( i == 0 || i == 10 ) ) 
-							blocks.push({typ:'hard',n:1,p:vec2(x, y),r:r, flg:true});
-							else
-							blocks.push({typ:'nml',n:1,p:vec2(x, y),r:r, flg:true});
+							blocks.push({p:vec2(x, y),r:r, flg:true});
 						}
 					}
 					create_ball( g_reso_x/2-st*6, BLOCK_Y+st*0.85*2 , BALL_M, 0 );
@@ -452,26 +417,19 @@ function main()
 							let v = y-cy;
 							let l = Math.sqrt(u*u+v*v);
 							if ( l < st*4+st/2  ) continue;
-							if ( l < st*4.7 && y < st*8 && ( j == 1 || j == 6 ) ) 
-							blocks.push({typ:'hard',n:1,p:vec2(x, y),r:r, flg:true});
-							else
-							blocks.push({typ:'nml',n:1,p:vec2(x, y),r:r, flg:true});
+
+							blocks.push({p:vec2(x, y),r:r, flg:true});
 						}
 					}
-					create_ball( g_reso_x/2-32, BLOCK_Y+64+32, BALL_M*Math.random()*3, 0 );
+					create_ball( g_reso_x/2-30, BLOCK_Y+64+32, BALL_M*Math.random()*3, 0 );
 					create_ball( g_reso_x/2   , BLOCK_Y+32+32, BALL_M*Math.random()*4, 0 );
 					create_ball( g_reso_x/2+32, BLOCK_Y+64+32, BALL_M*Math.random()*5, 0 );
-//					create_ball( g_reso_x/2-64, BLOCK_Y+64+48, BALL_M*Math.random()*2, 0 );
-//					create_ball( g_reso_x/2   , BLOCK_Y+32+96, BALL_M*Math.random()*3, 0 );
-//					create_ball( g_reso_x/2+64, BLOCK_Y+64+48, BALL_M*Math.random()*4, 0 );
-
 				}
 				break;
 
-
 			default:
 				{
-					blocks.push({typ:'nml',p:vec2(g_reso_x/2, g_reso_y/2),r:20, flg:true});
+					blocks.push({p:vec2(g_reso_x/2, g_reso_y/2),r:20, flg:true});
 					create_ball( g_reso_x/2, BLOCK_Y, BALL_M, 0 );
 				
 					console.log("ERROR game name:"+game );
@@ -484,6 +442,7 @@ function main()
 	{
 		console.log("reset");
 
+
 		racket = {p:{x:g_reso_x/2,y:RACKET_Y},v:{x:0,y:0},a:{x:0,y:0},r:16, m:RACKET_M};
 		racket.r = calc_r( racket.m )*2; // ラケットは半円なので、半径は倍
 		prev_x	= racket.p.x;
@@ -493,7 +452,7 @@ function main()
 		blocks = [];
 		info_flg_mouseinput = false;
 		info_stage = 1;
-		info_stockballs = 3;
+		info_stockballs = 2;
 		info_pause = false;
 		info_stat = 'start';
 		info_timerlost = 0;
@@ -542,15 +501,6 @@ function main()
 					&& document.getElementsByName( "html_debug" )[0]
 					&& document.getElementsByName( "html_debug" )[0].checked );
 
-
-		if ( g_req == 'pause' )
-		{
-			g_req ='';
-			if ( info_stat=='ingame' ) 
-			{
-				info_pause = !info_pause;
-			}
-		}
 		if ( g_req == 'fullscreen' )
 		{
 			g_req ='';
@@ -603,119 +553,87 @@ function main()
 			}
 		}
 
+		if ( info_flg_mouseinput )
+		{// input mouse
 
 
-			if ( info_flg_mouseinput )
-			{// input mouse
+			let x = gra_cvx(g_mouse_x);
+			if ( x < racket.r ) x = racket.r;
+			if ( x > g_reso_x-racket.r ) x = g_reso_x-racket.r;
 
-
-				let x = gra_cvx(g_mouse_x);
-				if ( x < racket.r ) x = racket.r;
-				if ( x > g_reso_x-racket.r ) x = g_reso_x-racket.r;
-
-
-				let s = (x-racket.p.x);
-
-				if ( info_mouseslowtime > 0 )
+			let s = (x-racket.p.x);
+			{
+				let v = racket.v.x;					// 
+				let t = delta;						// 
+				let a = (s-v*t)/(t*t);			//
+				racket.a.x += a;
+			}
+		
+		}
+		else
+		{ 
+			{	// input key
+				let s = 0;
+				if ( g_key[KEY_RIGHT] ) 
 				{
-					info_mouseslowtime -= delta;
-					s /= 4;
+					s = g_reso_x;
+
+				}
+				if ( g_key[KEY_LEFT] ) 
+				{
+					s = -g_reso_x;
+				}
+				{
+					let v = racket.v.x;					// 
+					let t = delta*20;						// 
+					let a = (s-v*t)/(t*t);			//
+					racket.a.x += a;
+				}
+			}
+
+			{// input pad
+
+				if ( pad.l1 && pad.trig.st ) {g_req='reset';}
+				else
+				if ( pad.trig.se ) 	document.getElementsByName( "html_debug" )[0].checked = !document.getElementsByName( "html_debug" )[0].checked;
+				else
+				if ( pad.trig.st && info_stat=='ingame' ) info_pause = !info_pause;
+
+				let s = 0;						// 移動距離
+
+				let mx = (pad.rx+pad.lx);		// 入力値(-1~+1) 
+
+				if(0)
+				{// 壁までの距離で移動速度を制御するアルゴリズム→壁際での左右の移動量の差に違和感
+					if ( mx > 0 )
+					{//右移動の場合
+						s = mx*(g_reso_x-racket.p.x);	// 右の壁までの距離
+					}
+					else
+					{//左移動の場合
+						s = mx*-(0-racket.p.x);			// 左の壁までの距離
+					}
+				}
+				else
+				{// コート幅を移動量の基準にするアルゴリズム
+						s = mx*g_reso_x;
 				}
 
 				{
 					let v = racket.v.x;					// 
-					let t = delta;						// 
+					let t = delta*20;						// 
 					let a = (s-v*t)/(t*t);			//
 					racket.a.x += a;
 				}
-			
 			}
-			else
-			{ 
-				{	// input key
-					let s = 0;
-					if ( g_key[KEY_N] ) 
-					{
-						g_key[KEY_N] = 0;
-						info_stage++;
-						init_stage( g_game, info_stage );
-					}
-					if ( g_key[KEY_P] ) 
-					{
-						g_req='pause';
-						g_key[KEY_P] = false;
-					}
-					if ( g_key[KEY_RIGHT] ) 
-					{
-						s = g_reso_x;
+		}
 
-					}
-					if ( g_key[KEY_LEFT] ) 
-					{
-						s = -g_reso_x;
-					}
-					{
-						let v = racket.v.x;					// 
-						let t = delta*20;						// 
-						let a = (s-v*t)/(t*t);			//
-						racket.a.x += a;
-					}
-				}
 
-				{// pad
-					let s = 0;						// 移動距離
-
-					{// input pad
-
-						if ( pad.l1 && pad.trig.st ) {g_req='reset';}
-						else
-						if ( pad.trig.se ) 	document.getElementsByName( "html_debug" )[0].checked = !document.getElementsByName( "html_debug" )[0].checked;
-						else
-						if ( pad.trig.st ) {g_req='pause';}
-
-					}
-
-					let mx = (pad.rx+pad.lx);		// 入力値(-1~+1) 
-
-					if(0)
-					{// 壁までの距離で移動速度を制御するアルゴリズム→壁際での左右の移動量の差に違和感
-						if ( mx > 0 )
-						{//右移動の場合
-							s = mx*(g_reso_x-racket.p.x);	// 右の壁までの距離
-						}
-						else
-						{//左移動の場合
-							s = mx*-(0-racket.p.x);			// 左の壁までの距離
-						}
-					}
-					else
-					{// コート幅を移動量の基準にするアルゴリズム
-							s = mx*g_reso_x;
-					}
-
-					{
-						let v = racket.v.x;					// 
-						let t = delta*20;						// 
-						let a = (s-v*t)/(t*t);			//
-						racket.a.x += a;
-					}
-				}
-			}
-					// raket y accel
-			{
-				let s = (RACKET_Y-racket.p.y);
-				let v = racket.v.y;					// 
-				let t = delta*1;						// 
-				let a = (s-v*t)/(t*t);			//
-
-				racket.a.y += a;
-			}
 
 
 		if ( info_pause == false )
 		{
-
-
+		
 			// exec request
 			if ( info_stat == 'gameover' )
 			{
@@ -731,22 +649,27 @@ function main()
 				info_timerlost += delta;
 				if ( info_timerlost >= 1.0 )
 				{
+//					info_stat = 'result';
 					if ( info_stockballs > 0 )
 					{
+//						if ( o.flgmaster ) se_ring_name("se:lost");
+//						info_stat = 'lostball';
+//						info_timerlost = 0;
 						info_stat = 'start';
 					}
 					else
 					{
 						if ( info_score > g_highscore[ g_game ] )
 						{
-							se_ring_by_name("se:highscore");
+							se_ring_name("se:highscore");
 							g_highscore[ g_game ] = info_score;
 						}
 						else
 						{
-							se_ring_by_name("se:gameover");
+							se_ring_name("se:gameover");
 						}
 						info_stat = 'gameover';	// ゲームオーバー
+						//info_timerlost = 0;
 					}
 
 				}
@@ -767,7 +690,6 @@ function main()
 				for ( let o of blocks )
 				{
 					if ( o.flg == false ) continue;
-					if ( o.typ == 'hard' ) continue;
 					
 					info_activeblocks++;
 				}
@@ -777,6 +699,7 @@ function main()
 			// ボール生成
 			if( info_stat=='start')
 			{
+			//	se_ring_name("se:start");
 				info_masterball = create_ball( BALL_X, BALL_Y, BALL_M*info_scaleball, BALL_SP_BASE*0.75, radians(45) );
 				info_masterball.flgmaster = true;
 				info_stat = 'serve';
@@ -788,7 +711,7 @@ function main()
 				g_req=''
 				if ( info_stat == 'serve' )
 				{
-					se_ring_by_name("se:service");
+					se_ring_name("se:service");
 					console.log('control by ',info_flg_mouseinput?'mouse only':'key or pad');
 
 					console.log('service');
@@ -809,6 +732,20 @@ function main()
 				init_stage( g_game, info_stage );
 			}
 
+			// raket y accel
+			if(1)
+			{
+				let s = (RACKET_Y-racket.p.y);
+				let v = racket.v.y;					// 
+				let t = delta*2;						// 
+				let a = (s-v*t)/(t*t);			//
+				racket.a.y += a;
+			}
+			else
+			{// バウンドの見栄えがあまりよくないのでさせない
+				racket.a.y = 0;
+				racket.v.y = 0;
+			}
 
 			// accel racket
 			{
@@ -870,7 +807,7 @@ function main()
 
 				if ( o.p.x < wl )
 				{
-					se_ring_by_name("se:wall", (o.flgmaster)?1:0.5 );
+					if ( o.flgmaster ) se_ring_name("se:wall");
 					o.p.x += (wl-o.p.x)*2;
 		 			o.v.x = -o.v.x;
 					if ( o.flgmaster )
@@ -885,7 +822,7 @@ function main()
 		 		}
 				if ( o.p.x > wr )
 				{
-					se_ring_by_name("se:wall", (o.flgmaster)?1:0.5);
+					if ( o.flgmaster ) se_ring_name("se:wall");
 					o.p.x += (wr-o.p.x)*2;
 		 			o.v.x = -o.v.x;
 					if ( o.flgmaster )
@@ -900,7 +837,7 @@ function main()
 
 				if ( o.p.y < wt )
 				{
-					se_ring_by_name("se:ceil", (o.flgmaster)?1:0.5);
+					if ( o.flgmaster ) se_ring_name("se:ceil");
 					o.p.y += (wt-o.p.y)*2;
 		 			o.v.y = -o.v.y;
 					if ( o.flgmaster ) 
@@ -916,9 +853,32 @@ function main()
 					{
 						info_stockballs--;
 
-							se_ring_by_name("se:lost", (o.flgmaster)?1:0.5);
+							if ( o.flgmaster ) se_ring_name("se:lost");
 							info_stat = 'lostball';
 							info_timerlost = 0;
+/*
+
+						if ( info_stockballs > 0 )
+						{
+							if ( o.flgmaster ) se_ring_name("se:lost");
+							info_stat = 'lostball';
+							info_timerlost = 0;
+						}
+						else
+						{
+							if ( info_score > g_highscore[ g_game ] )
+							{
+								if ( o.flgmaster ) se_ring_name("se:highscore");
+								g_highscore[ g_game ] = info_score;
+							}
+							else
+							{
+								if ( o.flgmaster ) se_ring_name("se:gameover");
+							}
+							info_stat = 'gameover';	// ゲームオーバー
+							//info_timerlost = 0;
+						}
+*/
 					}
 					o.flg = false;
 				}
@@ -933,45 +893,22 @@ function main()
 			}
 
 			// colition to block
-			for ( let b of balls )
+			for ( let o of balls )
 			{
-				if ( b.flg == false ) continue;
+				if ( o.flg == false ) continue;
 
-				for ( let blk of blocks )
+				for ( let b of blocks )
 				{
-					if ( blk.flg == false ) continue;
+					if ( b.flg == false ) continue;
 
-					let l = chkhit(b,blk);
+					let l = chkhit(o,b);
 					if ( l < 0 )
 					{
-						if ( blk.typ == 'hard' ) 
-						{
-							{ // 埋まりを解消
-								let l = chkhit(blk,b);
-								let N = normalize2( vsub2(blk.p,b.p) );
-								let m = vmul_scalar2(N,l);
-								b.p = vadd2( b.p, m );
-							}
-
-							b.v = reflect2( b.v, normalize2( vsub2( blk.p, b.p ) ) );
-							se_ring_by_name("se:hard");
-						}
-						else
-						if ( blk.typ == 'uzu' ) 
-						{
-							b.v = reflect2( b.v, normalize2( vsub2( blk.p, b.p ) ) );
-							b.v = vmul_scalar2(b.v,1.1);
-							se_ring_by_name("se:uzu");
-							blk.flg = false;
-							info_score++;
-						}
-						else
-						{
-							b.v = reflect2( b.v, normalize2( vsub2( blk.p, b.p ) ) );
-							se_ring_by_name("se:break");
-							blk.flg = false;
-							info_score++;
-						}
+					se_ring_name("se:break");
+						o.v = reflect2( o.v, normalize2( vsub2( b.p, o.p ) ) );
+						b.flg = false;
+						info_score++;
+						
 					}
 
 				}
@@ -983,14 +920,14 @@ function main()
 			{
 				// 伝達ベクトル
 				let N = normalize2( vsub2( b.p, a.p ) );
-				let va = dot2( a.v, N )
-				let vb = dot2( b.v, N )
+				let ad = dot2( a.v, N )
+				let bd = dot2( b.v, N )
 
-				//console.log( vb-va);
-				if ( vb > va ) return 0 ; // 離れてゆく場合は計算しない
+				//console.log( bd-ad);
+				if ( bd-ad > 0 ) return; // 離れてゆく場合は計算しない
 
-				let a1 = vec2( N.x*va, N.y*va );
-				let b1 = vec2( N.x*vb, N.y*vb );
+				let a1 = vec2( N.x*ad, N.y*ad );
+				let b1 = vec2( N.x*bd, N.y*bd );
 
 				// 残留ベクトル
 				let a2 = vsub2( a.v, a1 );
@@ -1012,11 +949,6 @@ function main()
 				a.v = vadd2( a2, a3 );
 				b.v = vadd2( b2, b3 );
 
-					
-				let ka = (1/2*a.m*va*va);
-				let kb = (1/2*b.m*vb*vb);
-				return  ka+kb; // 衝突エネルギーKを返す
-
 			}
 			
 			{// collition racket to ball
@@ -1030,61 +962,63 @@ function main()
 					let P2 = b.p;
 					let r = b.r+racket.r;
 
-					function coll( b, r ) //  ball && racket 
+					function coll( ball, r )
 					{
-						let ix= b.v.x; // 衝突前の速度ベクトル
-						let iy= b.v.y; 
+						let ix= ball.v.x;
+						let iy= ball.v.y;
+						{
+	 						calcbound( r, ball );
+	 						
+							
+							{	// 速度下限調整
+								//
+								let b_sp = BALL_SP_BASE;			// 基準速度
+								let i_sp = length2( vec2(ix,iy) );	// 入射速度
+								let c_sp = length2(ball.v);			// 計算速度
 
- 						let k = calcbound( r, b );
-
-						{	// 速度下限調整
-							//
-							let b_sp = BALL_SP_BASE;			// 基準速度
-							let i_sp = length2( vec2(ix,iy) );	// 入射速度
-							let c_sp = length2(b.v);			// 計算速度
-
-							let sp = 0;
-							let type="none";
-							if ( 1)
-							{
-								//   1| 2| 3	|基|入|計|
-								//  基>入>計	| 1| 2| 3|	入射速度を基準速度に近づける
-								//  基>計>入	| 1| 3| 2|	計算速度を基準速度に近づける
-								//  入>基>計	| 2| 1| 3|	入射速度で返す
-								//  入>計>基	| 3| 1| 2|	入射速度で返す
-								//  計>入>基	| 3| 2| 1|	入射速度で返す
-								//  計>基>入	| 2| 3| 1|	基準速度で返す
-									 if ( b_sp >= i_sp && i_sp >= c_sp ) {type = "bic";sp = (i_sp+b_sp)/2;}
-								else if ( b_sp >= c_sp && c_sp >= i_sp ) {type = "bci";sp = (c_sp+b_sp)/2;}
-								else if ( i_sp >= b_sp && b_sp >= c_sp ) {type = "ibc";sp = i_sp;}
-								else if ( i_sp >= c_sp && c_sp >= b_sp ) {type = "icb";sp = i_sp;}
-								else if ( c_sp >= i_sp && i_sp >= b_sp ) {type = "cib";sp = i_sp;}
-								else if ( c_sp >= b_sp && b_sp >= i_sp ) {type = "cbi";sp = b_sp;}
-								else console.log("error bound speed:" );
+								let sp = 0;
+								let type="none";
+								if ( 0)
+								{
+									//   1| 2| 3	|基|入|計|
+									//  基>入>計	| 1| 2| 3|	入射速度を基準速度に近づける
+									//  基>計>入	| 1| 3| 2|	計算速度を基準速度に近づける
+									//  入>基>計	| 2| 1| 3|	入射速度で返す
+									//  入>計>基	| 3| 1| 2|	入射速度で返す
+									//  計>入>基	| 3| 2| 1|	入射速度で返す
+									//  計>基>入	| 2| 3| 1|	基準速度で返す
+										 if ( b_sp >= i_sp && i_sp >= c_sp ) {type = "bic";sp = (i_sp+b_sp)/2;}
+									else if ( b_sp >= c_sp && c_sp >= i_sp ) {type = "bci";sp = (c_sp+b_sp)/2;}
+									else if ( i_sp >= b_sp && b_sp >= c_sp ) {type = "ibc";sp = i_sp;}
+									else if ( i_sp >= c_sp && c_sp >= b_sp ) {type = "icb";sp = i_sp;}
+									else if ( c_sp >= i_sp && i_sp >= b_sp ) {type = "cib";sp = i_sp;}
+									else if ( c_sp >= b_sp && b_sp >= i_sp ) {type = "cbi";sp = b_sp;}
+									else console.log("error bound speed:" );
+								}
+								else
+								{
+	sp = c_sp;								
+									let F = r.m*racket.v.x;	// ラケットの力を計算
+									let a = vdiv_scalar2(F,ball.m);		// ボールに掛かる加速度
+									
+								}
+								ball.v = vmul_scalar2( normalize2(ball.v), sp );
 							}
-							else
-							{
-sp = c_sp;								
-								let F = r.m*racket.v.x;	// ラケットの力を計算
-								let a = vdiv_scalar2(F,b.m);		// ボールに掛かる加速度
-								
+
+							{ // 埋まりを解消
+								let l = chkhit(r,ball);
+
+								let N = normalize2( vsub2(r.p,ball.p) );
+								let m = vmul_scalar2(N,l/2);
+								r.p = vsub2( r.p, m );
+								ball.p = vadd2( ball.p, m );
 							}
-							b.v = vmul_scalar2( normalize2(b.v), sp );
 						}
 
-						{ // 埋まりを解消
-							let l = chkhit(r,b);
-
-							let N = normalize2( vsub2(r.p,b.p) );
-							let m = vmul_scalar2(N,l/2);
-							r.p = vsub2( r.p, m );
-							b.p = vadd2( b.p, m );
-						}
-
+//						let r=rkt;
+						let b=ball;
 						hit_buf_racket.unshift({m:r.m,p:{x:r.p.x,y:r.p.y},r:r.r, iv:{x:ix,y:iy}, v:{x:r.v.x, y:r.v.y}});
 						hit_buf_ball.unshift(  {m:b.m,p:{x:b.p.x,y:b.p.y},r:b.r, iv:{x:ix,y:iy}, v:{x:b.v.x, y:b.v.y}});
-					
-						return k;
 					}
 
 
@@ -1113,18 +1047,17 @@ sp = c_sp;
 							o.v = racket.v;
 							o.m = racket.m;
 
-							let k = coll( b,o );
-							if ( k > 0 ) se_ring_by_name("se:racket");
-							info_mouseslowtime += 0.1;//(s) 
+							se_ring_name("se:racket");
+							coll( b,o )
+
 						}
 						else 
 						{	// フレーム間以外の通常の当たり判定
 							let l = chkhit(b,racket);
 							if ( l<0 )
 							{
-								let k = coll( b,racket );
-								if ( k > 0 ) se_ring_by_name("se:racket");
-								info_mouseslowtime += 0.1;//(s)
+					se_ring_name("se:racket");
+								coll( b,racket );
 							}
 						}
 					}
@@ -1144,12 +1077,11 @@ sp = c_sp;
 					let l = chkhit(a,b);
 					if ( l < 0 )
 					{
+					if ( a.flgmaster || b.flgmaster ) se_ring_name("se:toball");
 
 						if ( a.p.x == b.p.x && a.p.y == b.p.y ) b.p.x+=0.01; // 同一座標解消
 
-						let k = calcbound( a, b );
-
-						if ( k > 0 ) se_ring_by_name("se:toball", (a.flgmaster||b.flgmaster)?1:0.5 );
+						calcbound( a, b );
 
 						// 埋まりを解消
 						{
@@ -1177,12 +1109,6 @@ sp = c_sp;
 	//				o.v = vmul_scalar2( normalize2(o.v), BALL_SP_UNDER );	//	下限制限
 				}
 			}
-		}
-		else
-		{
-			// ポーズ中
-			racket.a.x = 0;
-			racket.a.y = 0;
 		} // end of pause
 		
 
@@ -1210,42 +1136,14 @@ sp = c_sp;
 			{
 				if ( o.flg == false ) continue;
 
-				if ( o.typ == 'nml' )
-				{
-					gra.circlefill( o.p.x, o.p.y, o.r );
-				}
-				else
-				if ( o.typ == 'hard' )
-				{
-					gra.setLineWidth(3);
-					for ( let i = 0 ; i < 1 ; i++ )
-					{
-						let r = o.r-i*4;
-						if ( r < 1 ) break;
-						gra.circle( o.p.x, o.p.y, r );
-					}
-					gra.setLineWidth(1);
-					gra.circlefill( o.p.x, o.p.y, o.r-4 );
-				}
-				else
-				if ( o.typ == 'uzu' )
-				{
-					gra.setLineWidth(2);
-					for ( let i = 0 ; i < 5 ; i++ )
-					{
-						let r = o.r-i*3;
-						if ( r < 1 ) break;
-						gra.circle( o.p.x, o.p.y, r );
-					}
-					gra.setLineWidth(1);
-				}
+				gra.circlefill( o.p.x, o.p.y, o.r );
 			}
 		}
 
 		// ブラーボールの表示
 		function blurball( o, n, st=0, en=Math.PI*2 )
 		{
-			// n = Math.floor(length2(o.v)/o.r*0.03)+1;
+			 n = Math.floor(length2(o.v)/o.r*0.03)+1;
 			let ax = o.v.x*delta/n;
 			let ay = o.v.y*delta/n;
 			gra.alpha(1.5/n, 'add' );
@@ -1274,9 +1172,18 @@ sp = c_sp;
 					if ( 1 )
 					{// ブラックボール
 						gra.color(1,1,1);
-						gra.setLineWidth(2);
+						if ( tst.flgFullscreen == false ) 
+						{
+							gra.lineWidth(2);
+						}
+						else
+						{
+							gra.lineWidth(4);
+						}
 						gra.circle( o.p.x, o.p.y, o.r );
-						gra.setLineWidth(1);
+						gra.lineWidth( 1 );
+					//	gra.circle( o.p.x, o.p.y, o.r-0.25 );
+					//	gra.circle( o.p.x, o.p.y, o.r-0.5 );
 					}
 					else
 					{
@@ -1387,15 +1294,12 @@ sp = c_sp;
 			gra.symbol( str_balls,g_reso_x-2,0,16,"right" );
 
 		
-			if ( info_pause )
-			{
-					gra.symbol( 'PAUSE'		,g_reso_x/2,16*14,16,"center" );
-			}
+			if ( info_pause )putcenter( 'PAUSE', 0, 14 );
 
 			switch(info_stat)
 			{
 				case 'serve':
-					if ( 1 )
+					if ( 0 )
 					{
 						gra.symbol( 'Click to service'				,g_reso_x/2,16*14,16,"center" );
 						gra.symbol( 'or'							,g_reso_x/2,16*15,16,"center" );
@@ -1411,7 +1315,7 @@ sp = c_sp;
 				case 'ingame':												break;
 				case 'gameover':
 					let str_hiscore = 'high score '+("0000"+g_highscore[ g_game ].toString()).substr(-4);
-						gra.symbol( 'GAME OVER'				,g_reso_x/2,16*13,24,"center" );
+						gra.symbol( 'GAME OVER'				,g_reso_x/2,16*14,16,"center" );
 						if ( g_highscore[ g_game ] == info_score &&  g_highscore[ g_game ]>0 )
 						{
 							gra.symbol( 'Recorded a high score!!!'		,g_reso_x/2,16*15,16,"center" );
@@ -1421,7 +1325,7 @@ sp = c_sp;
 									break;
 
 				case 'lostball':	
-					gra.symbol( 'LOST BALL'		,g_reso_x/2,16*14,20,"center" );
+					gra.symbol( 'LOST BALL'		,g_reso_x/2,16*14,16,"center" );
 					break;
 				default:			
 					gra.symbol( 'error stat'		,g_reso_x/2,16*14,16,"center" );
@@ -1473,17 +1377,17 @@ sp = c_sp;
 function fullscreen_create()
 //-----------------------------------------------------------------------------
 {
-	let body = {}
+	let tst = {}
 
 	document.addEventListener('touchmove', function(e) {e.preventDefault();}, {passive: false}); // 指ドラッグスクロールの抑制
 
 	let m_fullscreen_original_width;
 	let m_fullscreen_original_height;
 
-	body.flgFullscreen = false;
+	tst.flgFullscreen = false;
 
 	//-----------------------------------------------------------------------------
-	body.fullscreeen_change = function( cv, callback_at_return )
+	tst.fullscreeen_change = function( cv, callback_at_return )
 	//-----------------------------------------------------------------------------
 	{
 	
@@ -1504,6 +1408,7 @@ function fullscreen_create()
 					cv.height = window.screen.width;
 				}
 			}
+		//	gra = create_gra_webgl( cv.getContext( "webgl", { antialias: true } ) );	// 画面再設定
 			{
 				let obj = cv.requestFullscreen || cv.webkitRequestFullScreen;
 				obj.call( cv );
@@ -1514,14 +1419,17 @@ function fullscreen_create()
 				if (	window.document.fullscreenElement ||	window.document.webkitFullscreenElement )
 				{
 					// フルスクリーンへ突入時
-					body.flgFullscreen = true;
+//					window.document.getElementById("html_debug1").innerHTML = window.orientation;
+//					window.document.getElementById("html_debug2").innerHTML = window.screen.width+","+window.screen.height;
+					tst.flgFullscreen = true;
 				}
 				else
 				{
 					// フルスクリーンから戻り時
 					cv.width = m_fullscreen_original_width;
 					cv.height = m_fullscreen_original_height;
-					body.flgFullscreen = false;
+//					gra = create_gra_webgl( cv.getContext( "webgl", { antialias: true } ) );	// 画面再設定
+					tst.flgFullscreen = false;
 				}
 				callback_at_return(); // 画面モード再設定
 			}
@@ -1533,7 +1441,7 @@ function fullscreen_create()
 			alert("フルスクリーンに対応していません\nDoes not support full screen");
 		}
 	}
-	return body;
+	return tst;
 }
 
 //-----------------------------------------------------------------------------
@@ -1546,7 +1454,12 @@ function html_onchange( valRequest )
 	else
 	if( valRequest == "fullscreen" )
 	{
-		g_req = 'fullscreen';
+//		g_req = 'fullscreen';
+
+		tst.fullscreeen_change( html_canvas, function()
+		{
+			gra = gra_create( html_canvas );
+		});
 
 	}
 	else
@@ -1559,18 +1472,71 @@ function html_onchange( valRequest )
 window.onload = function()
 //-----------------------------------------------------------------------------
 {
+/*
+	function makeTable()
+	{
+
+		let tbl = new Array(8);
+		for( let y = 0; y < tbl.length; y++) 
+		{
+			tbl[y] = new Array(2);
+		}
+
+		{
+		    let date = new Date();
+			let y = 0;
+			tbl[y][0] ="new Date()"				;tbl[y++][1] = "表示結果";
+			tbl[y][0] ="toString()"				;tbl[y++][1] = date.toString();
+			tbl[y][0] ="toLocaleString()"		;tbl[y++][1] = date.toLocaleString();
+			tbl[y][0] ="toUTCString()"			;tbl[y++][1] = date.toUTCString();
+			tbl[y][0] ="toDateString()"			;tbl[y++][1] = date.toDateString();
+			tbl[y][0] ="toLocaleDateString()"	;tbl[y++][1] = date.toLocaleDateString();
+			tbl[y][0] ="toTimeString()"			;tbl[y++][1] = date.toTimeString();
+			tbl[y][0] ="toLocaleTimeString()"	;tbl[y++][1] = date.toLocaleTimeString();
+		}
+
+		// 表の作成開始
+		let rows=[];
+		let table = document.createElement("table");
+
+		// 表に2次元配列の要素を格納
+		for( let i = 0; i < tbl.length; i++)
+		{
+			rows.push(table.insertRow(-1));  // 行の追加
+			for( let j = 0; j < tbl[0].length; j++)
+			{
+				let cell=rows[i].insertCell(-1);
+				cell.appendChild(document.createTextNode(tbl[i][j]));
+				// 背景色の設定
+				if(i==0)
+				{
+					cell.style.backgroundColor = "#bbb"; // ヘッダ行
+				}
+				else
+				{
+					cell.style.backgroundColor = "#ddd"; // ヘッダ行以外
+				}
+			}
+		}
+		// 指定したdiv要素に表を加える
+		document.getElementById("html_table").appendChild(table);
+	}
+	//makeTable();
+*/
 	// htmlのhtml_game/checked設定を読み込んで実行
 	{
 		var list = document.getElementsByName( "html_game" ) ;
 		for ( let l of list ) if ( l.checked ) l.onchange();
 	}
+//console.log(window.document.getElementsByName( "html_debug" )[0].checked);
 
 	main();
 }
-
 // HTML/マウス/キーボード制御
+
+
 document.onmousedown = mousemovedown;
-document.onmousemove = onmousemove;
+document.onmousemove = mousemovedown;
 //-----------------------------------------------------------------------------
 function mousemovedown(e)
 //-----------------------------------------------------------------------------
@@ -1580,8 +1546,7 @@ function mousemovedown(e)
 	let	W = html_canvas.width * (g_reso_x/g_reso_y);
 	let	H = html_canvas.height;
 
-	if ( e.buttons==3 ) g_req='reset';
-	if ( e.buttons==2 ) g_req='pause';
+	if ( e.buttons==2 ) g_req='reset';
 	if ( e.buttons==1 )
 	{
 
@@ -1599,18 +1564,6 @@ function mousemovedown(e)
 			}
 		}
 	}
-
-}
-//-----------------------------------------------------------------------------
-function onmousemove(e)
-//-----------------------------------------------------------------------------
-{
-	let as2 = g_reso_x/g_reso_y;
-	let as1 = html_canvas.width/html_canvas.height;
-	let	W = html_canvas.width * (g_reso_x/g_reso_y);
-	let	H = html_canvas.height;
-
-
 	{
 	
 	    var rect = html_canvas.getBoundingClientRect();
@@ -1637,32 +1590,343 @@ window.onkeyup = function( ev )
 	let c = ev.keyCode;
 	g_key[c]=false;
 }
+let g_key=Array(256);
 
-//-----------------------------------------------------------------------------
-function se_ring_by_name( name, vol=1.0 )
-//-----------------------------------------------------------------------------
+
+		let se_f1 =900;
+		let se_l1 =0.08;
+		let se_f2 =1300;
+		let se_l2 =1.5;
+		let se_t  = 3;
+
+ let se_num = 0;
+let se_tbl =
+[
+	[464,0.03,1628,0.12,0],
+	[1864,0.08,1968,0.18,3],
+	[1129,0.19,1127,0.15,0],
+	[1626,0.1,1463,0.13,3],
+	[516,0,758,0.05,3],
+	[247,0.05,919,0.14,0],
+	[1279,0.05,791,0.16,0],
+	[1328,0.1,98,0.18,3],		//7
+	[479,0.1,75,0.14,0],
+	[351,0.07,286,0.04,3],
+	[1212,0.09,181,0.19,1],
+	[1314,0.05,925,0.03,2],
+	[1609,0.01,330,0.01,2],
+	[1819,0.19,1938,0.08,1],
+	[17,0,72,0.19,0],
+	[480,0.04,1335,0.12,1],
+	[717,0.05,662,0.07,1],
+	[405,0.04,1827,0.07,0],
+	[1252,0.04,653,0.18,3],
+	[553,0,577,0.03,3],
+	[367,0.12,436,0.14,1],
+	[1044,0.02,1538,0.06,3],
+	[1266,0.05,561,0.19,3],
+	[1737,0.04,1741,0.14,2],
+	[1074,0.04,186,0.06,3],
+	[1783,0.11,1285,0.15,1],
+	[1714,0,1321,0.08,0],
+	[1782,0,248,0.15,1],
+	[1376,0,1917,0.06,0],
+	[1994,0.02,1714,0.12,2],
+	[1087,0.06,1919,0.08,3],
+	[798,0.02,1150,0.02,3],
+	[1811,0.02,665,0.12,3],
+	[1209,0.13,1263,0.19,2],
+	[1044,0.08,808,0.18,3],
+	[1833,0.09,989,0.08,0],
+	[236,0.05,1382,0.12,0],
+	[19,0.03,269,0.05,0],
+	[1996,0.11,1949,0.14,2],
+	[837,0.05,1202,0.09,0],
+	[743,0.02,1692,0.01,0],
+	[135,0.02,496,0.06,2],
+	[89,0,145,0.05,0],
+	[205,0.04,1231,0.12,0],
+	[736,0.09,1668,0.16,1],
+	[1448,0.01,1364,0.12,0],
+	[30,0.05,1954,0.06,0],
+	[99,0.11,707,0.05,0],
+	[603,0.09,1022,0.13,1],
+	[1618,0.17,1543,0.11,1],
+	[535,0.03,1992,0.13,1],
+	[1031,0,1599,0.15,2],
+	[1369,0.04,1085,0.17,0],
+	[589,0,1904,0.15,3],
+	[359,0.06,1023,0.09,1],
+	[364,0.03,1453,0.06,3],
+	[1608,0.09,1260,0.15,0],
+	[1027,0.01,835,0.14,3],
+	[20,0.03,956,0.03,2],
+	[1033,0.19,622,0,0],	// beep
+	[1573,0.08,1414,0.17,0],
+	[1333,0.02,1936,0.01,3],
+	[1770,0.16,1793,0.16,3],
+	[1559,0.11,2756,0.1,0],
+	[2877,0.05,1235,0.08,0],
+	[3404,0.01,3009,0.28,2],
+	[1808,0,707,0.38,3],
+	[1006,0.03,542,0.22,0],
+	[2477,0.01,2532,0.02,0],
+	[136,0.01,2183,0.37,1],
+	[2822,0.03,1895,0.29,1],
+	[2652,0.02,1078,0.11,2],
+	[1077,0.04,1787,0.3,3],
+	[186,0.06,3139,0.19,1],
+	[1843,0.09,2531,0.29,2],
+	[2218,0.02,436,0.37,0],
+	[3898,0.1,2581,0.07,0],
+	[3210,0.05,1366,0.07,1],
+	[476,0.05,229,0.12,0],
+	[3506,0.09,1139,0.14,0],
+	[262,0.01,668,0.28,0],
+	[3033,0,2764,0.32,2],
+	[2376,0.06,2585,0.32,0],
+	[1651,0,3648,0.35,2],
+	[2242,0.04,422,0.36,2],
+	[1219,0.11,1482,0.07,3],
+	[3654,0.01,135,0.29,0],
+	[3418,0.04,3777,0.26,2],
+	[1241,0.03,2599,0.12,2],
+	[2363,0.1,1303,0.31,2],
+	[655,0.04,2420,0.03,1],
+	[3263,0.06,1963,0.37,0],
+	[1600,0.07,1005,0.12,3],
+	[1940,0.06,3704,0.04,3],
+	[762,0,1165,0.06,1],
+	[1117,0.1,71,0.27,2],
+	[193,0.01,411,0.34,3],
+	[3257,0.12,2619,0.2,0],
+	[932,0.06,695,0.32,3],
+	[1797,0.03,2714,0.19,2],
+	[1517,0,160,0.12,0],
+	[2268,0.19,2185,0.1,0],
+	[2439,0,3378,0.34,3],
+	[3672,0.06,3274,0.14,3],
+	[3176,0.04,3066,0.22,0],
+	[2778,0.02,1275,0.27,2],
+	[2078,0.05,2366,0,2],
+	[1096,0.17,1099,0.16,1],
+	[1949,0.05,3332,0.2,1],
+	[1366,0,2798,0.39,3],
+	[1363,0.02,3548,0.22,2],
+	[744,0.05,29,0.34,2],		//bbb
+	[778,0.14,20,0.24,2],
+	[990,0.02,870,0.26,1],
+	[675,0.03,102,0.26,1],
+	[959,0.03,131,0.37,2],
+	[460,0.04,771,0.07,3],
+	[900,0.03,814,0.22,2],
+	[629,0.08,558,0.32,1],
+	[30,0.01,562,0.05,3],
+	[415,0.02,633,0.01,2],
+	[985,0,299,0.34,3],
+	[260,0.04,453,0.22,0],
+	[763,0.01,310,0.14,3],
+	[27,0.08,664,0.21,1],
+	[277,0.05,455,0.11,0],
+	[263,0.13,78,0.29,2],
+	[25,0,217,0.34,2],
+	[299,0.02,628,0.32,3],
+	[56,0.19,1928,0.05,2],
+	[104,0.08,490,0.33,2],
+	[293,0.09,1625,0.09,3],
+	[392,0.05,972,0.42,0],
+	[135,0.15,106,0.12,0],
+	[66,0.13,1174,0.49,0],
+	[210,0.07,96,0.34,0],
+	[110,0,307,0.24,3],
+	[415,0.03,1046,0.45,0],
+	[216,0.05,1295,0.1,3],
+	[199,0.19,95,0.55,0],
+	[253,0.04,963,0.43,1],
+	[155,0.02,1842,0.56,2],
+	[38,0.03,201,0.26,3],
+	[18,0.17,1471,0.18,2],
+	[243,0.02,796,0.27,0],
+	[356,0.04,621,0.46,2],
+	[146,0.01,1592,0.37,0],
+	[291,0,464,0.22,1],
+	[226,0.1,700,0.24,3],
+	[194,0.05,1566,0.55,0],
+	[299,0.03,991,0.57,2],
+	[80,0.06,1045,0.55,0],
+	[55,0.03,1953,0.42,1],
+	[367,0.01,1376,0.14,3],
+	[157,0.17,587,0.27,3],
+	[98,0.02,1972,0.59,1],
+	[436,0.03,962,0.28,3],
+	[198,0.16,679,0.54,1],
+	[205,0.04,860,0.3,3],
+	[99,0,541,0.39,2],
+	[274,0,756,0.01,1],
+	[266,0.1,509,0.49,1],
+	[405,0.03,1959,0.19,0],
+	[125,0,1564,0.3,3],
+	[138,0,338,0.54,2],
+	[433,0.04,601,0.23,3],
+	[340,0.01,1054,0.43,3],
+	[3,0.17,1903,0.35,2],
+	[18,0.07,1260,0.11,1],
+	[102,0.03,721,0.1,3],
+	[466,0.04,148,0.09,2],
+	[24,0.01,197,0.26,2],
+	[85,0.05,1978,0,2],
+	[392,0.02,464,0.42,2],
+	[88,0.15,402,0.03,1],
+	[466,0.09,951,0.14,3],
+	[487,0.03,964,0.47,0],
+	[376,0.03,766,0.22,0],
+	[74,0.04,35,0.41,0],
+	[2322,0.01,481,0.37,0],
+	[1240,0.01,213,0.32,1],
+	[2011,0,240,0.08,0],
+	[2822,0.04,136,0.15,2],
+	[2999,0.18,16,0.44,3],
+	[2395,0.04,284,0.12,1],
+	[18,0.13,407,0.44,0],
+	[509,0.04,414,0.3,3],
+	[1073,0.06,144,0.45,3],
+	[931,0.09,108,0.15,3],
+	[2913,0.03,441,0.16,0],
+	[2326,0.02,333,0.4,1],
+	[288,0.1,311,0.31,1],
+	[1953,0.06,177,0.44,3],
+	[2871,0.03,106,0.37,3],
+	[1849,0.09,206,0.11,3],
+	[2499,0.02,443,0.3,2],
+	[604,0.01,131,0.41,1],
+	[1474,0.02,176,0.08,2],
+	[48,0.08,122,0.23,1],
+	[1014,0.02,223,0.57,0],
+	[150,0.11,112,0.36,0],
+	[773,0.02,384,0.54,0],
+	[1625,0.04,411,0.02,3],
+	[1860,0.05,169,0.59,2],
+	[2015,0.04,459,0.19,3],
+	[554,0.07,97,0.35,1],
+	[1726,0.11,45,0.1,3],
+	[2743,0.02,451,0.54,3],
+	[340,0.07,374,0.37,2],
+	[1823,0.04,137,0.27,0],
+	[746,0,409,0.17,3],
+	[1387,0.03,125,0.35,3],
+	[241,0.07,249,0.09,1],
+	[138,0,317,0.36,2],
+	[212,0.15,24,0.36,2],
+	[1740,0.03,243,0.46,3],
+	[455,0.03,164,0.5,1],
+	[1393,0.05,155,0.47,3],
+	[65,0.09,437,0.42,0],
+	[1246,0.04,25,0.3,1],
+	[845,0,212,0.43,0],
+	[2026,0.01,131,0.15,0],
+	[2736,0.11,75,0.11,1],
+	[620,0.02,83,0.04,0],
+	[2957,0,148,0.39,2],
+	[1870,0,345,0.45,3],
+	[1902,0.01,425,0.16,1],
+	[50,0.13,394,0.47,0],
+	[2809,0,259,0.56,2],
+	[734,0.05,447,0,2],
+	[1420,0.02,410,0.04,0],
+	[2594,0,260,0.56,2],
+	[2663,0,346,0.48,0],
+	[415,0,433,0.07,0],
+	[2526,0,42,0.33,2],
+	[83,0.09,174,0.31,2],
+	[345,0.05,425,0.19,0],
+	[315,0.03,266,0.57,0],
+	[627,0.03,315,0.02,2],
+	[200, 0.05, 220, 0.05,1],
+	[200, 0.01, 320, 0.2,0],
+	[200, 0.03, 320, 0.1,0],
+	[200, 0.01, 220, 0.1,0],
+	[430, 0.026, 1616, 0.02,1],
+	[1047, 0.026, 1616, 0.02,1],
+	[1596, 0.05, 1502, 0.06,2],
+	[1612, 0.01, 1623, 0.13,0],
+	[853, 0.05, 540, 0.05,3],
+	[1980, 0.01, 576, 0.11,2],
+	[1024, 0.01, 1317, 0.03,3],
+	[261,0.15, 55, 0.13, 2],
+	[1901, 0.05, 1246, 0.1, 3],
+	[293,0.02,93,0.15,2],
+	[1476,0.02,976,0.02,2],
+	[1630,0.02,581,0.04,0],
+	[15,0.03,779,0.07,2],
+	[76,0.03,231,0.08,3],
+	[949,0,629,0.11,0],
+	[460,0.14,396,0.15,0],
+	[1806,0.04,620,0.03,3],
+	[257,0.1,1959,0.19,1],
+	[203,0.03,147,0,0],
+
+	[177,0.1,71,0.27,2],
+	[212/2,0.15,24,0.36,2],
+];
+//type = "triangle";
+//type = "sine";
+//type = "sawtooth";
+//type = "square";
+let types=
 {
+	0:{type:"triangle"	,vol:0.4},
+	1:{type:"sine"		,vol:0.5},
+	2:{type:"sawtooth"	,vol:0.1},
+	3:{type:"square"	,vol:0.15},
+};
+
+function se_ring_name( name )
+{
+//	console.log(name)
+
 	switch(name)
 	{
-		case 'se:service':	g_se.play( 89,0,145,0.05,  'triangle', 0.8*vol );	break;	//se_ring([42]);break;//135,27,200,42,37
-		case 'se:racket':	g_se.play( 1517,0,160,0.12,  'triangle', 0.8*vol );	break;	//se_ring([100]);break;	//242,100
-		case 'se:lost':		g_se.play( 177,0.1,71,0.27,  'sawtooth', 0.1*vol );	break;	//se_ring([262]);break;//,263
-		case 'se:wall':		g_se.play( 19,0.03,269,0.05,  'triangle', 0.4*vol );	break;	//se_ring([37]);break;//37,171,241,257,223,113
-		case 'se:ceil':		g_se.play( 19,0.03,106,0.4,  'triangle', 0.5*vol );	break;		//se_ring([193]);break;//,
-//		case 'se:ceil':		g_se.play( 2871,0.00,106,0.37,  'square', 0.08*vol );	break;		//se_ring([193]);break;//,
-		case 'se:uzu':		g_se.play(  574,0.08,286,0.12,  'triangle', 0.25*vol );	break;		//se_ring([24]);break;//24,40,248,116,28,31,61
-//		case 'se:break':	g_se.play( 330,0.02,440,0.08,  'square', 0.08*vol );	break;		//se_ring([24]);break;//24,40,248,116,28,31,61
-//		case 'se:break':		g_se.play( 486,0.02,729,0.08,  'triangle', 0.20*vol );	break;		//se_ring([24]);break;//24,40,248,116,28,31,61
-		case 'se:break':		g_se.play( 380,0.02,420,0.08,  'triangle', 0.32*vol );	break;		//se_ring([24]);break;//24,40,248,116,28,31,61
-		case 'se:hard':		g_se.play( 486,0.02,972,0.06,  'square', 0.10*vol );	break;		//se_ring([24]);break;//24,40,248,116,28,31,61
-		case 'se:toball':	g_se.play(  659,0.0,231,0.137,  'square', 0.1*vol );	break;		//se_ring([115]);break;//57,26,58,81,127,,213,26
-		case 'se:highscore':	g_se.play( 392,0.10,972,0.82,  'sawtooth', 0.1*vol );	break;		//se_ring([132]);break;//,156,98,158,118,132
-		case 'se:gameover':	g_se.play( 199,0.19,95,0.855,  'sine', 0.6*vol );	break;	//se_ring([139]);break;//183,47
+		case 'se:start':	se_ring([17]);break;
+		case 'se:service':	se_ring([42]);break;//135,27,200,42,37
+		case 'se:racket':	se_ring([100]);break;	//242,100
+		case 'se:lost':		se_ring([262]);break;//,263
+		case 'se:wall':		se_ring([37]);break;//37,171,241,257,223,113
+		case 'se:break':	se_ring([24]);break;//24,40,248,116,28,31,61
+		case 'se:toball':	se_ring([115]);break;//57,26,58,81,127,,213,26
+		case 'se:ceil':	se_ring([193]);break;//,
+		case 'se:highscore':	se_ring([132]);break;//,156,98,158,118,132
+		case 'se:gameover':	se_ring([139]);break;//183,47
 		default:
 			console.log("no se:"+name);
 	}
-	
 }
+function se_ring( list=[], volume )
+{
+	let num = 0;
+	if ( list.length == 0 )
+	{
+		num = Math.floor( Math.random()*se_tbl.length );
+	}
+	else
+	{
+		num = list[ Math.floor( Math.random()*list.length ) ];
+	}
+
+	let se = se_tbl[num];
+	se_f1 = se[0];
+	se_l1 = se[1];
+	se_f2 = se[2];
+	se_l2 = se[3];
+	se_t  = se[4];
+	let vol = types[se_t].vol;
+	if ( volume != undefined ) vol = volume;	
+
+	g_se.play( se_f1,se_l1,se_f2,se_l2,  types[se_t].type, vol );
+
+		let str = "["+se_f1+","+se_l1+","+se_f2+","+se_l2+","+ se_t+"],";
+		console.log( num,str );
+
+}	
 //-----------------------------------------------------------------------------
 window.onkeydown = function( ev )
 //-----------------------------------------------------------------------------
@@ -1675,7 +1939,41 @@ window.onkeydown = function( ev )
 	if ( c == KEY_F ) g_req = 'fullscreen';
 
 	
+	function play( [f1,l1,f2,l2,t] )
+	{
+		g_se.play( f1, l1, f2, l2,  types[t].type, types[t].vol );
+	}
 
+
+	if ( c == KEY_UP || c == KEY_DOWN )
+	{
+		if ( c == KEY_UP )		se_num--;
+		if ( c == KEY_DOWN )	se_num++;
+		if ( se_num < 0 ) se_num = se_tbl.length-1;
+		if ( se_num >se_tbl.length-1 ) se_num = 0;
+
+		se_ring([se_num]);
+	}
+
+	if ( c == KEY_C ) 
+	{
+		let str = "["+se_f1+","+se_l1+","+se_f2+","+se_l2+","+ se_t+"],";
+		console.log(str );
+	}
+	if ( c == KEY_X  ) 	g_se.play( se_f1,se_l1,se_f2,se_l2,  types[se_t].type, types[se_t].vol );
+	if ( c == KEY_Z ) 
+	{
+
+		se_f1 = Math.floor( Math.random()*3000 );
+		se_l1 = Math.floor( Math.random()*0.2 *100)/100;
+		se_f2 = Math.floor( Math.random()*500 );
+		se_l2 = Math.floor( Math.random()*0.6 *100)/100 ;
+		se_t  = Math.floor( Math.random()*4 );
+		g_se.play( se_f1,se_l1,se_f2,se_l2,  types[se_t].type, types[se_t].vol );
+//		console.log(se_f1,se_l1,se_f2,se_l2,  se_t);
+	}
+
+	if ( c == KEY_F1  ) 	return;
 }
 
 // 右クリックでのコンテキストメニューを抑制
