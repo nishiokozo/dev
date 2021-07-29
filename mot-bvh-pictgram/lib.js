@@ -1,3 +1,4 @@
+// 2021/07/30 gra.drawpictgrambone ピクトグラム風、円が二つ連なった図形の描画
 // 2021/07/29 gra.bezier_n 追加
 // 2021/07/29 gra windowとcanvasのアスペクト比を反映
 // 2021/07/26 効果音ライブラリ
@@ -473,7 +474,7 @@ function gra_create( cv )	//2021/06/01
 	gra.as = 1/(gra.ctx.canvas.width/gra.ctx.canvas.height);
 	gra.ab = (gra.ctx.canvas.width-gra.ctx.canvas.height)/2;
 
-	function win_abs( x, y )
+	gra.win_abs = function( x, y )
 	{
 		let w = gra.ex-gra.sx;
 		let h = gra.ey-gra.sy;
@@ -481,7 +482,7 @@ function gra_create( cv )	//2021/06/01
 		y = (y+oy)/h * gra.ctx.canvas.height;
 		return [x*gra.as+gra.ab,y];
 	}
-	function win_range( x, y )
+	gra.win_range = function( x, y )
 	{
 		let w = Math.abs(gra.ex-gra.sx);
 		let h = Math.abs(gra.ey-gra.sy);
@@ -501,8 +502,8 @@ function gra_create( cv )	//2021/06/01
 			gra.ctx.stroke();
 		}
 
-		[x1,y1]=win_abs(x1,y1);
-		[x2,y2]=win_abs(x2,y2);
+		[x1,y1]=gra.win_abs(x1,y1);
+		[x2,y2]=gra.win_abs(x2,y2);
 
 		func( x1, y1, x2, y2 );
 	}
@@ -546,8 +547,8 @@ function gra_create( cv )	//2021/06/01
 			gra.ctx.stroke();
 		}
 
-		[x1,y1]=win_abs(x1,y1);
-		[x2,y2]=win_abs(x2,y2);
+		[x1,y1]=gra.win_abs(x1,y1);
+		[x2,y2]=gra.win_abs(x2,y2);
 
 		func( x1, y1, x2, y2 );
 	}
@@ -558,7 +559,7 @@ function gra_create( cv )	//2021/06/01
 	{
 		for ( let v of V )
 		{
-			[v.x,v.y]=win_abs(v.x,v.y);
+			[v.x,v.y]=gra.win_abs(v.x,v.y);
 		}
 
 		{
@@ -609,7 +610,7 @@ function gra_create( cv )	//2021/06/01
 			gra.ctx.fillText( str, tx+2, ty+16 );
 		}
 
-		[x1,y1]=win_abs(x1,y1);
+		[x1,y1]=gra.win_abs(x1,y1);
 		func( str, x1, y1 );
 
 		gra.x = x1;
@@ -619,8 +620,8 @@ function gra_create( cv )	//2021/06/01
 	gra.symbol = function( str, x1,y1, size = 30, aligh="center" )
 	//-------------------------------------------------------------------------
 	{
-		[x1,y1]=win_abs(x1,y1);
-		let [sw,sh] = win_range(size,size);
+		[x1,y1]=gra.win_abs(x1,y1);
+		let [sw,sh] = gra.win_range(size,size);
 
 		gra.ctx.font = sw+"px "+"Courier";
 		gra.ctx.textAlign = aligh;
@@ -692,7 +693,7 @@ function gra_create( cv )	//2021/06/01
 
 		for ( let a of v )
 		{
-			[a.x,a.y]=win_abs(a.x,a.y);
+			[a.x,a.y]=gra.win_abs(a.x,a.y);
 		}
 
 		{
@@ -740,16 +741,21 @@ function gra_create( cv )	//2021/06/01
 	gra.circle = function( x1,y1,r, st=0, en=Math.PI*2, mode="/loop/fill" ) // 2021/07/21　circle にst en を追加
 	//-----------------------------------------------------------------------------
 	{
-		let func = function( x,y,rw,rh )
+		[x1,y1]=gra.win_abs(x1,y1);
+//		let [rw,rh] = gra.win_range(r*gra.as,r); // 2021/07/29 windowとcanvasのアスペクト比を反映
+		let [rw,rh] = gra.win_range(r,r); // 2021/07/29 windowとcanvasのアスペクト比を反映
+	
+//		func( x1, y1,rw,rh );
 		{
 			gra.ctx.beginPath();
 
 			let rotation = 0;
-			gra.ctx.ellipse( x, y, rw, rh, rotation, st, en );
+			gra.ctx.ellipse( x1, y1, rw, rh, rotation, st, en );
 
 			if ( mode == 'loop' ) 
 			{
 				gra.ctx.closePath();
+				gra.ctx.stroke();
 			}
 			else
 			if ( mode == 'fill' ) 
@@ -760,30 +766,89 @@ function gra_create( cv )	//2021/06/01
 			{
 				gra.ctx.stroke();
 			}
-		};
-		[x1,y1]=win_abs(x1,y1);
-//		let [rw,rh] = win_range(r*gra.as,r); // 2021/07/29 windowとcanvasのアスペクト比を反映
-		let [rw,rh] = win_range(r,r); // 2021/07/29 windowとcanvasのアスペクト比を反映
-	
-		func( x1, y1,rw,rh );
+		}
 	}
 	//-----------------------------------------------------------------------------
 	gra.circlefill = function( x1,y1,r, st=0, en=Math.PI*2 ) // 2021/07/21　circle にst en を追加 )
 	//-----------------------------------------------------------------------------
 	{
-		let func = function( x,y,rw,rh )
+		[x1,y1]=gra.win_abs(x1,y1);
+//		let [rw,rh] = gra.win_range(r*gra.as,r); // 2021/07/29 windowとcanvasのアスペクト比を反映
+		let [rw,rh] = gra.win_range(r,r); // 2021/07/29 windowとcanvasのアスペクト比を反映
 		{
 			gra.ctx.beginPath();
 			let rotation = 0;
-			gra.ctx.ellipse( x, y, rw, rh, rotation, st, en );
+			gra.ctx.ellipse( x1, y1, rw, rh, rotation, st, en );
 			gra.ctx.fill();
 		};
-		[x1,y1]=win_abs(x1,y1);
-//		let [rw,rh] = win_range(r*gra.as,r); // 2021/07/29 windowとcanvasのアスペクト比を反映
-		let [rw,rh] = win_range(r,r); // 2021/07/29 windowとcanvasのアスペクト比を反映
-		func( x1, y1,rw,rh );
 	}
 
+	//-----------------------------------------------------------------------------
+	gra.drawpictgrambone = function( p1, r1, p2, r2 )	// 2021/07/30 ピクトグラム風、円が二つ連なった図形の描画
+	//-----------------------------------------------------------------------------
+	{
+
+		function vrot( v, th )
+		{
+			let s = Math.sin(th);
+			let c = Math.cos(th);
+			// c,  s,  0,
+			//-s,  c,  0,
+			// 0,  0,  1
+			let nx = v.x*c + v.y*s;
+			let ny =-v.x*s + v.y*c;
+
+			return new vec2( nx, ny );
+		}
+		let l = length2(vsub2(p2,p1));
+		let rot = Math.atan2(p1.x-p2.x, p1.y-p2.y);
+		let th = -Math.asin( (r1-r2)/l);
+
+		let c = Math.cos(th);
+		let s = Math.sin(th);
+		let va=vec2( r1*c,r1*s);
+		let vb=vec2( r2*c,r2*s);
+		let vc=vec2(-r1*c,r1*s);
+		let vd=vec2(-r2*c,r2*s);
+
+		let pa = vadd2(vrot(va,rot),p1);
+		let pb = vadd2(vrot(vb,rot),p2);
+		let pc = vadd2(vrot(vc,rot),p1);
+		let pd = vadd2(vrot(vd,rot),p2);
+
+		function path_circle( x1,y1,r, st, en )
+		{
+			[x1,y1]=gra.win_abs(x1,y1);
+			let [rw,rh] = gra.win_range(r,r); // 2021/07/29 windowとcanvasのアスペクト比を反映
+			{
+				let rotation = 0;
+				gra.ctx.ellipse( x1, y1, rw, rh, rotation, st, en );
+			};
+		}
+		
+		function path_line( V ) // vec2 V
+		{
+			for ( let v of V )
+			{
+				[v.x,v.y]=gra.win_abs(v.x,v.y);
+			}
+
+
+			gra.ctx.moveTo( V[0].x, V[0].y );
+			
+			for ( let i = 1 ; i < V.length ; i++ )
+			{
+				gra.ctx.lineTo( V[i].x, V[i].y );
+			}
+		}
+
+		gra.ctx.beginPath();
+		path_circle( p1.x, p1.y, r1, Math.PI+th+rot, -th+rot );
+		path_circle( p2.x, p2.y, r2, -th+rot, Math.PI+th+rot );
+		path_line( [pd, pc, pa, pb ] );
+		gra.ctx.fill();
+
+	}
 	//-----------------------------------------------------------------------------
 	gra.cls = function()
 	//-----------------------------------------------------------------------------
