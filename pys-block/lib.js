@@ -1,3 +1,6 @@
+// 2021/07/30 gra.drawpictgrambone ピクトグラム風、円が二つ連なった図形の描画
+// 2021/07/29 gra.bezier_n 追加
+// 2021/07/29 gra windowとcanvasのアスペクト比を反映
 // 2021/07/26 効果音ライブラリ
 // 2021/07/24 KEY追加
 // 2021/07/23 半直線と点との距離,	線分と点との距離,直線と直線の距離,半直線と線分の距離,線分と線分の距離 関数追加
@@ -282,131 +285,7 @@ function pad_create()	// 2021/07/23 追加
 			B16:false,
 		}
 	};
-	
-	//-----------------------------------------------------------------------------
-	body.reset = function()
-	//-----------------------------------------------------------------------------
-	{
-		if(navigator.getGamepads)
-		{
-			let list = navigator.getGamepads();
-			for ( let pad of list )
-			{
-				if ( pad != null )		
-				{
-					if ( body.prevButtons == undefined ) 
-					{
-						body.lx = pad.axes[0];
-						body.ly = pad.axes[1];
-						body.rx = pad.axes[2];
-						body.ry = pad.axes[3];
-						body.a  = pad.buttons[ 0].value == 1;
-						body.b  = pad.buttons[ 1].value == 1;
-						body.x  = pad.buttons[ 2].value == 1;
-						body.y  = pad.buttons[ 3].value == 1;
-						body.l1 = pad.buttons[ 4].value == 1;
-						body.r1 = pad.buttons[ 5].value == 1;
-						body.l2 = pad.buttons[ 6].value;
-						body.r2 = pad.buttons[ 7].value;
-						body.se = pad.buttons[ 8].value == 1;
-						body.st = pad.buttons[ 9].value == 1;
-						body.u  = pad.buttons[12].value == 1;
-						body.d  = pad.buttons[13].value == 1;
-						body.l  = pad.buttons[14].value == 1;
-						body.r  = pad.buttons[15].value == 1;
-						body.B16= pad.buttons[16].value == 1;
 
-						body.trig.a  = pad.buttons[ 0].value == 1;
-						body.trig.b  = pad.buttons[ 1].value == 1;
-						body.trig.x  = pad.buttons[ 2].value == 1;
-						body.trig.y  = pad.buttons[ 3].value == 1;
-						body.trig.l1 = pad.buttons[ 4].value == 1;
-						body.trig.r1 = pad.buttons[ 5].value == 1;
-						body.trig.se = pad.buttons[ 8].value == 1;
-						body.trig.st = pad.buttons[ 9].value == 1;
-						body.trig.u  = pad.buttons[12].value == 1;
-						body.trig.d  = pad.buttons[13].value == 1;
-						body.trig.l  = pad.buttons[14].value == 1;
-						body.trig.r	 = pad.buttons[15].value == 1;
-						body.trig.B16= pad.buttons[16].value == 1;
-
-						body.release.a  = false;
-						body.release.b  = false;
-						body.release.x  = false;
-						body.release.y  = false;
-						body.release.l1 = false;
-						body.release.r1 = false;
-						body.release.se = false;
-						body.release.st = false;
-						body.release.u  = false;
-						body.release.d  = false;
-						body.release.l  = false;
-						body.release.r	= false;
-						body.release.B16= false;
-					}
-					else
-					{
-						body.lx =  pad.axes[0];
-						body.ly =  pad.axes[1];
-						body.rx =  pad.axes[2];
-						body.ry =  pad.axes[3];
-						body.a  =  pad.buttons[ 0].value == 1;
-						body.b  =  pad.buttons[ 1].value == 1;
-						body.x  =  pad.buttons[ 2].value == 1;
-						body.y  =  pad.buttons[ 3].value == 1;
-						body.l1 =  pad.buttons[ 4].value == 1;
-						body.r1 =  pad.buttons[ 5].value == 1;
-						body.l2 =  pad.buttons[ 6].value;
-						body.r2 =  pad.buttons[ 7].value;
-						body.se =  pad.buttons[ 8].value == 1;
-						body.st =  pad.buttons[ 9].value == 1;
-						body.u  =  pad.buttons[12].value == 1;
-						body.d  =  pad.buttons[13].value == 1;
-						body.l  =  pad.buttons[14].value == 1;
-						body.r  =  pad.buttons[15].value == 1;
-						body.B16=  pad.buttons[16].value == 1;
-
-						body.trig.a  = (pad.buttons[ 0].value == 1 ) && ( body.prevButtons[ 0].value != 1 );
-						body.trig.b  = (pad.buttons[ 1].value == 1 ) && ( body.prevButtons[ 1].value != 1 );
-						body.trig.x  = (pad.buttons[ 2].value == 1 ) && ( body.prevButtons[ 2].value != 1 );
-						body.trig.y  = (pad.buttons[ 3].value == 1 ) && ( body.prevButtons[ 3].value != 1 );
-						body.trig.l1 = (pad.buttons[ 4].value == 1 ) && ( body.prevButtons[ 4].value != 1 );
-						body.trig.r1 = (pad.buttons[ 5].value == 1 ) && ( body.prevButtons[ 5].value != 1 );
-						body.trig.se = (pad.buttons[ 8].value == 1 ) && ( body.prevButtons[ 8].value != 1 );
-						body.trig.st = (pad.buttons[ 9].value == 1 ) && ( body.prevButtons[ 9].value != 1 );
-						body.trig.u  = (pad.buttons[12].value == 1 ) && ( body.prevButtons[12].value != 1 );
-						body.trig.d  = (pad.buttons[13].value == 1 ) && ( body.prevButtons[13].value != 1 );
-						body.trig.l  = (pad.buttons[14].value == 1 ) && ( body.prevButtons[14].value != 1 );
-						body.trig.r  = (pad.buttons[15].value == 1 ) && ( body.prevButtons[15].value != 1 );
-						body.trig.B16= (pad.buttons[16].value == 1 ) && ( body.prevButtons[16].value != 1 );
-
-						body.release.a  = (pad.buttons[ 0].value == 0 ) && ( body.prevButtons[ 0].value != 0 );
-						body.release.b  = (pad.buttons[ 1].value == 0 ) && ( body.prevButtons[ 1].value != 0 );
-						body.release.x  = (pad.buttons[ 2].value == 0 ) && ( body.prevButtons[ 2].value != 0 );
-						body.release.y  = (pad.buttons[ 3].value == 0 ) && ( body.prevButtons[ 3].value != 0 );
-						body.release.l1 = (pad.buttons[ 4].value == 0 ) && ( body.prevButtons[ 4].value != 0 );
-						body.release.r1 = (pad.buttons[ 5].value == 0 ) && ( body.prevButtons[ 5].value != 0 );
-						body.release.se = (pad.buttons[ 8].value == 0 ) && ( body.prevButtons[ 8].value != 0 );
-						body.release.st = (pad.buttons[ 9].value == 0 ) && ( body.prevButtons[ 9].value != 0 );
-						body.release.u  = (pad.buttons[12].value == 0 ) && ( body.prevButtons[12].value != 0 );
-						body.release.d  = (pad.buttons[13].value == 0 ) && ( body.prevButtons[13].value != 0 );
-						body.release.l  = (pad.buttons[14].value == 0 ) && ( body.prevButtons[14].value != 0 );
-						body.release.r  = (pad.buttons[15].value == 0 ) && ( body.prevButtons[15].value != 0 );
-						body.release.B16= (pad.buttons[16].value == 0 ) && ( body.prevButtons[16].value != 0 );
-
-						let border = 0.15; //15%を遊び
-						if ( Math.abs( body.lx ) < border ) body.lx = 0;
-						if ( Math.abs( body.ly ) < border ) body.ly = 0;
-						if ( Math.abs( body.rx ) < border ) body.rx = 0;
-						if ( Math.abs( body.ry ) < border ) body.ry = 0;
-					}
-
-					body.prevButtons = pad.buttons;
-				}
-			}
-		}
-	}
-	
 	//-----------------------------------------------------------------------------
 	body.getinfo = function()
 	//-----------------------------------------------------------------------------
@@ -567,7 +446,6 @@ function gra_create( cv )	//2021/06/01
 	let ox = 0;
 	let oy = 0;
 
-	gra.col = "#000000";
 	gra.backcol = "#FFFFFF";
 //	gra.ctx.font = "12px monospace";	// iOSだとCourierになる	読める限界の小ささ
 //	gra.ctx.font = "14px monospace";	// iOSだとCourierになる 程よい小ささ
@@ -595,9 +473,8 @@ function gra_create( cv )	//2021/06/01
 	//2021/07/22 フルスクリーン用にアスペクト機能を追加
 	gra.as = 1/(gra.ctx.canvas.width/gra.ctx.canvas.height);
 	gra.ab = (gra.ctx.canvas.width-gra.ctx.canvas.height)/2;
-//	gra.sc = gra.ctx.canvas.height/(gra.ey-gra.sy);
-//console.log(gra.sc,gra.ctx.canvas.height,(gra.ey-gra.sy));
-	function win_abs( x, y )
+
+	gra.win_abs = function( x, y )
 	{
 		let w = gra.ex-gra.sx;
 		let h = gra.ey-gra.sy;
@@ -605,7 +482,7 @@ function gra_create( cv )	//2021/06/01
 		y = (y+oy)/h * gra.ctx.canvas.height;
 		return [x*gra.as+gra.ab,y];
 	}
-	function win_range( x, y )
+	gra.win_range = function( x, y )
 	{
 		let w = Math.abs(gra.ex-gra.sx);
 		let h = Math.abs(gra.ey-gra.sy);
@@ -620,14 +497,13 @@ function gra_create( cv )	//2021/06/01
 		function func( sx,sy, ex,ey )
 		{
 			gra.ctx.beginPath();
-			gra.ctx.strokeStyle = "#000000";
 		    gra.ctx.rect(sx,sy,ex-sx,ey-sy);
 			gra.ctx.closePath();
 			gra.ctx.stroke();
 		}
 
-		[x1,y1]=win_abs(x1,y1);
-		[x2,y2]=win_abs(x2,y2);
+		[x1,y1]=gra.win_abs(x1,y1);
+		[x2,y2]=gra.win_abs(x2,y2);
 
 		func( x1, y1, x2, y2 );
 	}
@@ -640,9 +516,8 @@ function gra_create( cv )	//2021/06/01
 			gra.ctx.beginPath();
 		    gra.ctx.rect(sx,sy,ex-sx,ey-sy);
 			gra.ctx.closePath();
-			gra.ctx.fillStyle = "#000000";
 			gra.ctx.fill();
-			gra.ctx.stroke();
+			//gra.ctx.stroke();
 		}
 		func( x1, y1, x2, y2 );
 
@@ -658,7 +533,6 @@ function gra_create( cv )	//2021/06/01
 			case "hasen": gra.ctx.setLineDash([2,4]);	break;
 			default: alert("破線パターン異常 gra.pattern()");
 		}
-//		gra.ctx.setLineDash([2,4]);
 	}
 	//-------------------------------------------------------------------------
 	gra.line = function( x1, y1, x2, y2, mode="" )
@@ -667,26 +541,54 @@ function gra_create( cv )	//2021/06/01
 		function func( sx,sy, ex,ey )
 		{
 			gra.ctx.beginPath();
-//			gra.ctx.setLineDash(style);
-			gra.ctx.strokeStyle = gra.col;
-//			gra.ctx.strokeStyle = "#000000";
-//			gra.ctx.lineWidth = 1.0;
 			gra.ctx.moveTo( sx, sy );
 			gra.ctx.lineTo( ex, ey );
 			gra.ctx.closePath();
 			gra.ctx.stroke();
 		}
 
-		[x1,y1]=win_abs(x1,y1);
-		[x2,y2]=win_abs(x2,y2);
+		[x1,y1]=gra.win_abs(x1,y1);
+		[x2,y2]=gra.win_abs(x2,y2);
 
-//		let style = [];
-//		switch( mode )
-//		{
-//			case "hasen": style = [2,4];
-//		}
-	
 		func( x1, y1, x2, y2 );
+	}
+
+	//-------------------------------------------------------------------------
+	gra.path_n = function( V, mode="/loop/fill" ) // vec2 V
+	//-------------------------------------------------------------------------
+	{
+		for ( let v of V )
+		{
+			[v.x,v.y]=gra.win_abs(v.x,v.y);
+		}
+
+		{
+			gra.ctx.beginPath();
+
+			gra.ctx.moveTo( V[0].x, V[0].y );
+			
+			for ( let i = 1 ; i < V.length ; i++ )
+			{
+				gra.ctx.lineTo( V[i].x, V[i].y );
+			}
+
+
+			if ( mode == 'fill' ) 
+			{
+				gra.ctx.fill();
+			}
+			else
+			if ( mode == 'loop' )
+			{
+				gra.ctx.closePath();
+				gra.ctx.stroke();
+			}
+			else
+			{
+				gra.ctx.stroke();
+			}
+
+		}
 	}
 
 	//-------------------------------------------------------------------------
@@ -705,12 +607,10 @@ function gra_create( cv )	//2021/06/01
   			gra.ctx.font = "16px Courier";	// iOSでも使えるモノスペースフォントただし漢字はモノスペースにはならない 見栄えもある
 			gra.ctx.textAlign = "left";
 			gra.ctx.textBaseline = "alphabetic";
-			gra.ctx.fillStyle = gra.col;
 			gra.ctx.fillText( str, tx+2, ty+16 );
-
 		}
 
-		[x1,y1]=win_abs(x1,y1);
+		[x1,y1]=gra.win_abs(x1,y1);
 		func( str, x1, y1 );
 
 		gra.x = x1;
@@ -720,13 +620,12 @@ function gra_create( cv )	//2021/06/01
 	gra.symbol = function( str, x1,y1, size = 30, aligh="center" )
 	//-------------------------------------------------------------------------
 	{
-		[x1,y1]=win_abs(x1,y1);
-		let [sw,sh] = win_range(size,size);
+		[x1,y1]=gra.win_abs(x1,y1);
+		let [sw,sh] = gra.win_range(size,size);
 
 		gra.ctx.font = sw+"px "+"Courier";
 		gra.ctx.textAlign = aligh;
 		gra.ctx.textBaseline = "top";
-		gra.ctx.fillStyle = gra.col;
 		gra.ctx.fillText( str, x1, y1 );
 	}
 
@@ -747,10 +646,8 @@ function gra_create( cv )	//2021/06/01
 	gra.setLineWidth = function( val=1.0 ) //2021/07/26 追加
 	//-----------------------------------------------------------------------------
 	{
-//			gra.lineWidth(gra.ctx.canvas.height/(gra.ey-gra.sy) *val);
-
-			gra.lineWidth = gra.ctx.canvas.height/(gra.ey-gra.sy) *val;
-			gra.ctx.lineWidth = gra.lineWidth;
+		gra.lineWidth = gra.ctx.canvas.height/(gra.ey-gra.sy) *val;
+		gra.ctx.lineWidth = gra.lineWidth;
 	}
 
 	//-----------------------------------------------------------------------------
@@ -766,7 +663,10 @@ function gra_create( cv )	//2021/06/01
 		let c = (r<<16)+(g<<8)+(b<<0);
 		
 		let s = "#"+("000000"+c.toString(16)).substr(-6);
-		gra.col = s;
+
+		gra.ctx.strokeStyle = s;
+
+		gra.ctx.fillStyle = s;
 	}
 
 	//-----------------------------------------------------------------------------
@@ -786,56 +686,179 @@ function gra_create( cv )	//2021/06/01
 	}
 	
 	//-----------------------------------------------------------------------------
-	gra.circle = function( x1,y1,r, st=0, en=Math.PI*2 ) // 2021/07/21　circle にst en を追加
+	gra.bezier_n = function( v, mode='/loop/fill/loopfill' ) // vec2[] v;  2021/07/29 add
 	//-----------------------------------------------------------------------------
 	{
-		let func = function( x,y,rw,rh )
+		if ( v.length < 4 ) return;
+
+		for ( let a of v )
+		{
+			[a.x,a.y]=gra.win_abs(a.x,a.y);
+		}
+
 		{
 			gra.ctx.beginPath();
-//			gra.ctx.setLineDash([]);
-			gra.ctx.strokeStyle = gra.col;
 
+			{
+				let p = 0;
+				let x0,y0;
+				let x1,y1;
+				let [x2,y2] = [v[p+0].x,v[p+0].y];
+				let [x3,y3] = [v[p+1].x,v[p+1].y];
+				gra.ctx.moveTo( x2, y2 );
+				//--
+				for ( let i = 0 ; i < v.length/2 ; i++ )
+				{
+					p += 2;
+					if ( mode == 'loop' || mode == 'loopfill' )	p %= v.length;
+					if ( p >= v.length ) break;
+					[x0,y0] = [x2,y2];
+					[x1,y1] = [x3,y3];
+					[x2,y2] = [v[p+0].x,v[p+0].y];
+					[x3,y3] = [v[p+1].x,v[p+1].y];
+
+					if ( (i%2)==0 )
+					{
+						gra.ctx.bezierCurveTo( x1, y1, x2, y2, x3, y3 );
+					}
+					else
+					{
+						let x0b = 2*x1-x0;
+						let y0b = 2*y1-y0;
+						let x3b = 2*x2-x3;
+						let y3b = 2*y2-y3;
+						gra.ctx.bezierCurveTo( x0b, y0b, x3b, y3b, x2, y2 );
+					}
+				}
+			}
+
+			if ( mode == 'fill' || mode == 'loopfill' )	gra.ctx.fill();
+			gra.ctx.stroke();
+		}
+
+	}
+	//-----------------------------------------------------------------------------
+	gra.circle = function( x1,y1,r, st=0, en=Math.PI*2, mode="/loop/fill" ) // 2021/07/21　circle にst en を追加
+	//-----------------------------------------------------------------------------
+	{
+		[x1,y1]=gra.win_abs(x1,y1);
+//		let [rw,rh] = gra.win_range(r*gra.as,r); // 2021/07/29 windowとcanvasのアスペクト比を反映
+		let [rw,rh] = gra.win_range(r,r); // 2021/07/29 windowとcanvasのアスペクト比を反映
+	
+//		func( x1, y1,rw,rh );
+		{
+			gra.ctx.beginPath();
 
 			let rotation = 0;
-			let startAngle = st;
-			let endAngle = en;
-			gra.ctx.ellipse( x, y, rw, rh, rotation, startAngle, endAngle );
-			gra.ctx.closePath();
-			gra.ctx.stroke();
-		};
-		[x1,y1]=win_abs(x1,y1);
-		let [rw,rh] = win_range(r,r);
-		func( x1, y1,rw,rh );
+			gra.ctx.ellipse( x1, y1, rw, rh, rotation, st, en );
+
+			if ( mode == 'loop' ) 
+			{
+				gra.ctx.closePath();
+				gra.ctx.stroke();
+			}
+			else
+			if ( mode == 'fill' ) 
+			{
+				gra.ctx.fill();
+			}
+			else
+			{
+				gra.ctx.stroke();
+			}
+		}
 	}
 	//-----------------------------------------------------------------------------
 	gra.circlefill = function( x1,y1,r, st=0, en=Math.PI*2 ) // 2021/07/21　circle にst en を追加 )
 	//-----------------------------------------------------------------------------
 	{
-		let func = function( x,y,rw,rh )
+		[x1,y1]=gra.win_abs(x1,y1);
+//		let [rw,rh] = gra.win_range(r*gra.as,r); // 2021/07/29 windowとcanvasのアスペクト比を反映
+		let [rw,rh] = gra.win_range(r,r); // 2021/07/29 windowとcanvasのアスペクト比を反映
 		{
 			gra.ctx.beginPath();
-//			gra.ctx.setLineDash([]);
 			let rotation = 0;
-			let startAngle = st;
-			let endAngle = en;
-			gra.ctx.ellipse( x, y, rw, rh, rotation, startAngle, endAngle );
-			gra.ctx.closePath();
-			gra.ctx.fillStyle = gra.col;// 2021/07/19 修正 "rgba(0,0,0,1)" ;
+			gra.ctx.ellipse( x1, y1, rw, rh, rotation, st, en );
 			gra.ctx.fill();
 		};
-		[x1,y1]=win_abs(x1,y1);
-		let [rw,rh] = win_range(r,r);
-		func( x1, y1,rw,rh );
 	}
 
+	//-----------------------------------------------------------------------------
+	gra.drawpictgrambone = function( p1, r1, p2, r2 )	// 2021/07/30 ピクトグラム風、円が二つ連なった図形の描画
+	//-----------------------------------------------------------------------------
+	{
+
+		function vrot( v, th )
+		{
+			let s = Math.sin(th);
+			let c = Math.cos(th);
+			// c,  s,  0,
+			//-s,  c,  0,
+			// 0,  0,  1
+			let nx = v.x*c + v.y*s;
+			let ny =-v.x*s + v.y*c;
+
+			return new vec2( nx, ny );
+		}
+		let l = length2(vsub2(p2,p1));
+		let rot = Math.atan2(p1.x-p2.x, p1.y-p2.y);
+		let th = -Math.asin( (r1-r2)/l);
+
+		let c = Math.cos(th);
+		let s = Math.sin(th);
+		let va=vec2( r1*c,r1*s);
+		let vb=vec2( r2*c,r2*s);
+		let vc=vec2(-r1*c,r1*s);
+		let vd=vec2(-r2*c,r2*s);
+
+		let pa = vadd2(vrot(va,rot),p1);
+		let pb = vadd2(vrot(vb,rot),p2);
+		let pc = vadd2(vrot(vc,rot),p1);
+		let pd = vadd2(vrot(vd,rot),p2);
+
+		function path_circle( x1,y1,r, st, en )
+		{
+			[x1,y1]=gra.win_abs(x1,y1);
+			let [rw,rh] = gra.win_range(r,r); // 2021/07/29 windowとcanvasのアスペクト比を反映
+			{
+				let rotation = 0;
+				gra.ctx.ellipse( x1, y1, rw, rh, rotation, st, en );
+			};
+		}
+		
+		function path_line( V ) // vec2 V
+		{
+			for ( let v of V )
+			{
+				[v.x,v.y]=gra.win_abs(v.x,v.y);
+			}
+
+
+			gra.ctx.moveTo( V[0].x, V[0].y );
+			
+			for ( let i = 1 ; i < V.length ; i++ )
+			{
+				gra.ctx.lineTo( V[i].x, V[i].y );
+			}
+		}
+
+		gra.ctx.beginPath();
+		path_circle( p1.x, p1.y, r1, Math.PI+th+rot, -th+rot );
+		path_circle( p2.x, p2.y, r2, -th+rot, Math.PI+th+rot );
+		path_line( [pd, pc, pa, pb ] );
+		gra.ctx.fill();
+
+	}
 	//-----------------------------------------------------------------------------
 	gra.cls = function()
 	//-----------------------------------------------------------------------------
 	{
+		let c = gra.ctx.fillStyle;
 		gra.ctx.fillStyle = gra.backcol;//"#ffffff";
 		gra.ctx.fillRect( 0, 0, gra.ctx.canvas.width, gra.ctx.canvas.height );
 		gra.x=0;
 		gra.y=0;
+		gra.ctx.fillStyle = c;
 	}
 	return gra;
 };

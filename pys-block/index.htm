@@ -118,7 +118,7 @@ html,body,a{
 				<br>
 
 		
-					<input type="button" value="RESET" onClick="main()" >
+					<input type="button" value="RESET" onClick="html_onchange('reset')" >
 					<input type="button" value="フルスクリーン" onClick="html_onchange('fullscreen')" >
 				
 			</div>
@@ -127,14 +127,13 @@ html,body,a{
 				<tr>	<th></th><th>GAME:</th>	<th>ハイスコア</th>  </tr>
 				<!-- id:書き換えるのに使う name:radioボタンを読むのに使う
 				-->
-					<tr> <td><input type="radio" name="html_game" onchange="html_onchange('basic');		"checked></td>			
+					<tr> <td><input type="radio" name="html_game" onchange="html_onchange('basic');		"></td>			
 						<td>Basic:<br>	</td>	<td "><a id="html_basic" ></a></td> <tr>
 <!--
 					<tr> <td><input type="radio" name="html_game" 	onchange="html_onchange('super');	"></td>	
 						<td>Super:<br>	</td>	<td><a id="html_super" ></a></td> <tr>
 					<tr> <td><input type="radio" name="html_game" onchange="html_onchange('heavy');		"></td>			
 						<td>Heavy:<br>	</td>	<td><a id="html_heavy" ></a></td> <tr>
--->
 					<tr> <td><input type="radio" name="html_game" onchange="html_onchange('mitu');		"></td>			
 						<td>Mitu:<br>	</td>	<td><a id="html_mitu" ></a></td> <tr>
 					<tr> <td><input type="radio" name="html_game" onchange="html_onchange('wild');		"></td>			
@@ -143,19 +142,21 @@ html,body,a{
 						<td>Special:<br>	</td>	<td><a id="html_special" ></a></td> <tr>
 					<tr> <td><input type="radio" name="html_game" onchange="html_onchange('atom');		"></td>			
 						<td>Atom:<br>	</td>	<td><a id="html_atom" ></a></td> <tr>
-					<tr> <td><input type="radio" name="html_game" onchange="html_onchange('dot');		"></td>			
-						<td>Dot:<br>		</td>	<td><a id="html_dot" ></a></td> <tr>
 					<tr> <td><input type="radio" name="html_game" onchange="html_onchange('hex');		"></td>			
 						<td>Hex:<br>		</td>	<td><a id="html_hex" ></a></td> <tr>
 					<tr> <td><input type="radio" name="html_game" onchange="html_onchange('bio');		"></td>		
 						<td>Bio:<br>	</td>	<td><a id="html_bio" ></a></td> <tr>
+-->
+					<tr> <td><input type="radio" name="html_game" onchange="html_onchange('moves');		"checked></td>		
+						<td>Moves:<br>	</td>	<td><a id="html_moves" ></a></td> <tr>
+					<tr> <td><input type="radio" name="html_game" onchange="html_onchange('dot');		"></td>			
+						<td>Dot:<br>		</td>	<td><a id="html_dot" ></a></td> <tr>
 
 				</table>
 			</div> 
 
 			<br>
 		<br>
-		<a href="https://twitter.com/intent/tweet?button_hashtag=BreakoutRoundBlock&ref_src=twsrc%5Etfw" data-size="large" class="twitter-share-button" data-show-count="false"></a><script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
 
  
 			<br>
@@ -164,6 +165,8 @@ html,body,a{
 
 
 <!--
+
+		<a href="https://twitter.com/intent/tweet?button_hashtag=BreakoutRoundBlock&ref_src=twsrc%5Etfw" data-size="large" class="twitter-share-button" data-show-count="false"></a><script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
 				<div class="group">
 				</div>
 
