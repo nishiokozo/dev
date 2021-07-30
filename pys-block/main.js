@@ -29,22 +29,24 @@ function bo_create()
 	let count = 1;
 	let m_highscore = 
 	{
-		basic:1,
+		multi:100,
 	//	super:1,
 	//	mitu:1,
 	//	wild:1,
 	//	special:1,
 	//	atom:1,
 	//	heavy:1,
-		dot:1,
+		dot:100,
 	//	hex:1,
 	//	bio:1,
-		moves:1,
+		moves:100,
 	};
 
 	const BALL_SP_BASE	= 160;	//	基準になるボールの速度。平均的にゲームに快適な速度
+	const BALL_SP_MAX	= 500;	//	ゲーム性の限界の速度 ※天井加速の閾値なので、運動量交換でこれ以上はあり得る。マウスだと500,パッドだと400,キーだともう少し下にしたい所だけどマウス基準にしておく。
 	const BALL_SP_Y		= 20;	//	殆ど真横でバウンドし続けるのを抑制するための、Y軸移動量下限値
 	const BALL_SP_CEIL	= 1.1;	//	天井に当たったときの加速率
+	const BALL_1UP		= 100;	// 100回ボールを打つたびに1up
 	const BALL_M = 0.8;
 	const BALL_X = bo.reso_x/2-100;
 	const BALL_Y = 212;
@@ -85,14 +87,15 @@ function bo_create()
 	let info_timerlost;
 	let info_stockballs;
 	let info_score;
-	let info_stage;
+	let info_cntStage;
 	let info_activeblocks;
 	let info_activeballs;
 	let info_scaleball;
 	let info_cntServe;
+	let info_cntRally = 0;
 	let balls = [];
 	let blocks = [];
-	let prev_x;
+//	let prev_x;
 	let pad;
 
 	let info_mouseslowtime = 0;
@@ -148,24 +151,24 @@ function bo_create()
 
 		let r = calc_r( m );
 		if ( r < 0 ) r = 1;
-		balls.push({typ:typ, p:vec2(px, py),v:vec2(vx, vy),m:m ,r:r, flg:true });
+		balls.push({typ:typ, p:vec2(px, py),v:vec2(vx, vy),m:m ,r:r, flgActive:true, cntCnv:0 });
 	}
 	//-----------------------------------------------------------------------------
 	function create_block( typ='blk:nml',px, py, r )
 	//-----------------------------------------------------------------------------
 	{
-		blocks.push({typ:typ, n:1,p:vec2(px, py),r:r, flg:true});
+		blocks.push({typ:typ, n:1,p:vec2(px, py),r:r, flgActive:true});
 	}
 
 	// ステージ生成関数
 	//-----------------------------------------------------------------------------
-	function init_stage( game, info_stage )
+	function init_stage( game, info_cntStage )
 	//-----------------------------------------------------------------------------
 	{
 
 		if(0)// ラケットサイズをステージが進むと小さく→ラケットを小さくしても、ボールコントロールの面白みがそがれるから没
 		{
-			let m = RACKET_M - (info_stage-1)/10;
+			let m = RACKET_M - (info_cntStage-1)/10;
 			if ( m < RACKET_MIN ) m =  RACKET_MIN;
 			racket = {p:{x:bo.reso_x/2,y:RACKET_Y},v:{x:0,y:0},a:{x:0,y:0},r:16, m:m, req_a:{x:0,y:0}};
 			racket.r = calc_r( racket.m )*2; // ラケットは半円なので、半径は倍
@@ -180,13 +183,14 @@ function bo_create()
 			let tmp = [];
 			for ( let b of balls )
 			{
-				if ( b.flg == false ) continue; 
+				if ( b.flgActive == false ) continue; 
 				if ( ++cnt > 6 ) break;										// 持ち越しは最大六個
 				if ( 'bal:hard' == b.typ ) continue;							// ブロックボールは持ち越さない
 
 				if ( length2(b.v) > 0 && length2(b.v)>BALL_SP_BASE )
 				{
 					b.v  = vmul_scalar2( normalize2(b.v), BALL_SP_BASE );	// クリア時に早すぎるボールを一旦速度を落とす。
+					b.cntCnv = 0;
 				}
 				tmp.push(b);
 			}
@@ -219,7 +223,7 @@ function bo_create()
 				}
 				break;
 
-			case 'basic':	
+			case 'multi':	
 				{
 					let r = BLOCK_R;
 					let st = r*2+1;
@@ -231,10 +235,10 @@ function bo_create()
 					{
 						let x = i * st+st/2+ax;
 						let y = j * st+st/2+BLOCK_Y;
-						if ( j == 2 && ( i == 2 || i == 9 ) )
-						blocks.push({typ:'blk:hard',n:1,p:vec2(x, y),r:r, flg:true});
+						if ( j == 2 && ( i == 2 || i == 7 ) )
+						blocks.push({typ:'blk:hard',n:1,p:vec2(x, y),r:r, flgActive:true});
 						else
-						blocks.push({typ:'blk:nml',n:1,p:vec2(x, y),r:r, flg:true});
+						blocks.push({typ:'blk:nml',n:1,p:vec2(x, y),r:r, flgActive:true});
 					}
 					create_ball( 'bal:nml',bo.reso_x/2, BLOCK_Y-st, BALL_M, 0 );
 
@@ -258,9 +262,9 @@ function bo_create()
 						let y = j * st+st/2+BLOCK_Y;
 
 
-						blocks.push({typ:'blk:nml',n:1,p:vec2(x, y),r:r, flg:true});
+						blocks.push({typ:'blk:nml',n:1,p:vec2(x, y),r:r, flgActive:true});
 					}
-					for ( let i = 0 ; i < info_stage && i < 4 ; i++ )
+					for ( let i = 0 ; i < info_cntStage && i < 4 ; i++ )
 					{
 						let a = Math.floor(Math.random()*2)*6+1;
 						let m = BALL_M*a;
@@ -283,12 +287,25 @@ function bo_create()
 					{
 						let x = i * st+st/2+ax;
 						let y = j * st+st/2+BLOCK_Y;
-		//				blocks.push({typ:'blk:nml',n:1,p:vec2(x, y),r:r, flg:true});
+		//				blocks.push({typ:'blk:nml',n:1,p:vec2(x, y),r:r, flgActive:true});
 						create_block( 'blk:nml', x, y, r )
 					}
-					create_ball( 'bal:hard',bo.reso_x/2, BLOCK_Y-16, BALL_M*3,  0, radians(0) );
-					create_ball( 'bal:hard',bo.reso_x/2-50, BLOCK_Y-16, BALL_M*0.1,    0, radians(0) );
-					create_ball( 'bal:hard',bo.reso_x/2+50, BLOCK_Y-16, BALL_M*0.3,  200, radians(0) );
+					if (0 )
+					{
+						create_ball( 'bal:hard',bo.reso_x/2, BLOCK_Y-16, BALL_M*3,  0, radians(0) );
+						create_ball( 'bal:hard',bo.reso_x/2-50, BLOCK_Y-16, BALL_M*1.0,    0, radians(0) );
+						create_ball( 'bal:hard',bo.reso_x/2+50, BLOCK_Y-16, BALL_M*0.4,  400, radians(0) );
+					}
+					else
+					{
+						create_ball( 'bal:hard',bo.reso_x/2+50, BLOCK_Y-16, BALL_M*0.4,  400, radians(0) );
+						for ( let i =0 ; i < info_cntStage && i < 5 ; i++ )
+						{
+							let x = bo.reso_x/2-100+Math.random()*100; 
+							let m = BALL_M*(Math.random()*2.7+0.3); 
+							create_ball( 'bal:hard',x, BLOCK_Y-16, m,  0, radians(0) );
+						}
+					}
 				}
 				break;
 	
@@ -308,9 +325,9 @@ function bo_create()
 //						if ( (j == 1 && ( i == 2 || i == 9 ) ) 
 //						||   ( j == 2 && ( i == 2 || i ==  9 ) ) )
 						if ( (j == 3 && ( i == 0 || i == 11 ) ) )
-						blocks.push({typ:'blk:hard',n:1,p:vec2(x, y),r:r, flg:true});
+						blocks.push({typ:'blk:hard',n:1,p:vec2(x, y),r:r, flgActive:true});
 						else
-						blocks.push({typ:'blk:nml',n:1,p:vec2(x, y),r:r, flg:true});
+						blocks.push({typ:'blk:nml',n:1,p:vec2(x, y),r:r, flgActive:true});
 					}
 					create_ball( 'bal:nml',bo.reso_x/2-16, BLOCK_Y-st, BALL_M, -50, radians(180) );
 					create_ball( 'bal:nml',bo.reso_x/2+16, BLOCK_Y-st, BALL_M,  20, radians(0) );
@@ -329,7 +346,7 @@ function bo_create()
 					{
 						let x = i * st+st/2+ax;
 						let y = j * st+st/2+BLOCK_Y;
-						blocks.push({typ:'blk:nml',n:1,p:vec2(x, y),r:r, flg:true});
+						blocks.push({typ:'blk:nml',n:1,p:vec2(x, y),r:r, flgActive:true});
 					}
 					create_ball( 'bal:nml',bo.reso_x/2-50, BLOCK_Y+st*5, BALL_M/2, 100, radians(0) );
 					create_ball( 'bal:nml',bo.reso_x/2+50, BLOCK_Y+st*5, BALL_M*4, 0 );
@@ -353,9 +370,9 @@ function bo_create()
 						let y = j * st+st/2+BLOCK_Y;
 
 				//		if ( j == 3 && ( i == 4 || i == 7 ) ) 
-				//		blocks.push({typ:'blk:hard',n:1,p:vec2(x, y),r:r, flg:true});
+				//		blocks.push({typ:'blk:hard',n:1,p:vec2(x, y),r:r, flgActive:true});
 				//		else
-						blocks.push({typ:'blk:nml',n:1,p:vec2(x, y),r:r, flg:true});
+						blocks.push({typ:'blk:nml',n:1,p:vec2(x, y),r:r, flgActive:true});
 					}
 					create_ball( 'bal:nml',bo.reso_x/2, BLOCK_Y+st*4, BALL_M*6, 0 );
 				}
@@ -376,9 +393,9 @@ function bo_create()
 						let x = i * st+st/2+ax;
 						let y = j * st+st/2+BLOCK_Y - st;
 						if ( 2 == j && ( 2 == i || 8 == i ) ) 
-						blocks.push({typ:'blk:hard',n:1,p:vec2(x, y),r:r, flg:true});
+						blocks.push({typ:'blk:hard',n:1,p:vec2(x, y),r:r, flgActive:true});
 						else
-						blocks.push({typ:'blk:nml',n:1,p:vec2(x, y),r:r, flg:true});
+						blocks.push({typ:'blk:nml',n:1,p:vec2(x, y),r:r, flgActive:true});
 					}
 
 					for ( let i = 0 ; i<4/2 ; i++ )
@@ -405,9 +422,9 @@ function bo_create()
 						let y = j * st + +BLOCK_Y-st*2;
 						if ( j == 3 ) continue;
 						if ( j == 1 && ( i == 0 || i == 11 ) ) 
-						blocks.push({typ:'blk:hard',n:1,p:vec2(x, y),r:r, flg:true});
+						blocks.push({typ:'blk:hard',n:1,p:vec2(x, y),r:r, flgActive:true});
 						else
-						blocks.push({typ:'blk:nml',n:1,p:vec2(x, y),r:r, flg:true});
+						blocks.push({typ:'blk:nml',n:1,p:vec2(x, y),r:r, flgActive:true});
 					}
 
 //						create_ball( 'bal:nml',bo.reso_x/2,BLOCK_Y-st-10 +50, BALL_M*0.1, 700, radians(0) );
@@ -434,9 +451,9 @@ function bo_create()
 						let y = j * st+st/2+BLOCK_Y;
 						if ( (j == 1 && ( i == 1 || i == 10 ) ) 
 						||   ( j == 2 && ( i == 3 || i ==  8 ) ) )
-						blocks.push({typ:'blk:hard',n:1,p:vec2(x, y),r:r, flg:true});
+						blocks.push({typ:'blk:hard',n:1,p:vec2(x, y),r:r, flgActive:true});
 						else
-						blocks.push({typ:'blk:nml',n:1,p:vec2(x, y),r:r, flg:true});
+						blocks.push({typ:'blk:nml',n:1,p:vec2(x, y),r:r, flgActive:true});
 					}
 				//	create_ball( 'bal:nml',bo.reso_x/2, BLOCK_Y-st, BALL_M, 0 );
 
@@ -468,9 +485,9 @@ function bo_create()
 							let x = i * st+ax+aax;
 							let y = j * st*0.85+BLOCK_Y;
 							if ( j == 2 && ( i == 0 || i == 10 ) ) 
-							blocks.push({typ:'blk:hard',n:1,p:vec2(x, y),r:r, flg:true});
+							blocks.push({typ:'blk:hard',n:1,p:vec2(x, y),r:r, flgActive:true});
 							else
-							blocks.push({typ:'blk:nml',n:1,p:vec2(x, y),r:r, flg:true});
+							blocks.push({typ:'blk:nml',n:1,p:vec2(x, y),r:r, flgActive:true});
 						}
 					}
 					create_ball( 'bal:nml',bo.reso_x/2-st*6, BLOCK_Y+st*0.85*2 , BALL_M, 0 );
@@ -508,9 +525,9 @@ function bo_create()
 							let l = Math.sqrt(u*u+v*v);
 							if ( l < st*4+st/2  ) continue;
 							if ( l < st*4.7 && y < st*8 && ( j == 1 || j == 6 ) ) 
-							blocks.push({typ:'blk:hard',n:1,p:vec2(x, y),r:r, flg:true});
+							blocks.push({typ:'blk:hard',n:1,p:vec2(x, y),r:r, flgActive:true});
 							else
-							blocks.push({typ:'blk:nml',n:1,p:vec2(x, y),r:r, flg:true});
+							blocks.push({typ:'blk:nml',n:1,p:vec2(x, y),r:r, flgActive:true});
 						}
 					}
 					create_ball( 'bal:nml',bo.reso_x/2-32, BLOCK_Y+64+32, BALL_M*Math.random()*3, 0 );
@@ -527,7 +544,7 @@ function bo_create()
 
 			default:
 				{
-					blocks.push({typ:'blk:nml',p:vec2(bo.reso_x/2, bo.reso_y/2),r:20, flg:true});
+					blocks.push({typ:'blk:nml',p:vec2(bo.reso_x/2, bo.reso_y/2),r:20, flgActive:true});
 					create_ball( 'bal:nml',bo.reso_x/2, BLOCK_Y, BALL_M, 0 );
 				
 					console.log("ERROR game name:"+game );
@@ -544,13 +561,13 @@ function bo_create()
 
 		racket = {p:{x:bo.reso_x/2,y:RACKET_Y},v:{x:0,y:0},a:{x:0,y:0},r:16, m:RACKET_M};
 		racket.r = calc_r( racket.m )*2; // ラケットは半円なので、半径は倍
-		prev_x	= racket.p.x;
+//		prev_x	= racket.p.x;
 		pad = pad_create();
 
 		balls = [];
 		blocks = [];
 		info_flg_mouseinput = false;
-		info_stage = 1;
+		info_cntStage = 1;
 		info_stockballs = 3;
 		info_pause = false;
 		info_stat = 'start';
@@ -560,7 +577,7 @@ function bo_create()
 		info_activeballs = 0;
 		info_scaleball = 1;
 		info_cntServe = 0;
-		init_stage( bo.game, info_stage );
+		init_stage( bo.game, info_cntStage );
 
 		// ハイスコアのHTMLへの反映
 		for ( let id of Object.keys(m_highscore) )
@@ -588,7 +605,7 @@ function bo_create()
 			case 'se:lost':		bo.se.play( 177,0.1,71,0.67,  'sawtooth', 0.1*vol );	break;	//se_ring([262]);break;//,263
 			case 'se:lost2':		bo.se.play( 177,0.0,71,0.27,  'sawtooth', 0.08*vol );	break;	//se_ring([262]);break;//,263
 			case 'se:wall':		bo.se.play( 19,0.03,269,0.05,  'triangle', 0.4*vol );	break;	//se_ring([37]);break;//37,171,241,257,223,113
-			case 'se:ceil':		bo.se.play( 19,0.03,106,0.4,  'triangle', 0.5*vol );	break;		//se_ring([193]);break;//,
+			case 'se:ceil':		bo.se.play( 19,0.03,106,0.4,  'triangle', 0.8*vol );	break;		//se_ring([193]);break;//,
 	//		case 'se:ceil':		bo.se.play( 2871,0.00,106,0.37,  'square', 0.08*vol );	break;		//se_ring([193]);break;//,
 			case 'se:uzu':		bo.se.play(  574,0.08,286,0.12,  'triangle', 0.25*vol );	break;		//se_ring([24]);break;//24,40,248,116,28,31,61
 	//		case 'se:break':	bo.se.play( 330,0.02,440,0.08,  'square', 0.08*vol );	break;		//se_ring([24]);break;//24,40,248,116,28,31,61
@@ -604,7 +621,7 @@ function bo_create()
 //			case 'se:hard':	bo.se.play(  659,0.0,231,0.137,  'square', 0.1*vol );	break;		//se_ring([115]);break;//57,26,58,81,127,,213,26
 			case 'se:1up':	bo.se.play( 792,0.140,672,0.82,  'sine', 0.3*vol );break;
 //			case 'se:clear':	bo.se.play( 4200,0.0,3200,0.1,  'square', 0.3*vol );break;
-			case 'se:clear':	bo.se.play( 2000,0.05,2000,0.1,  'sine', 0.4*vol );	break;	//se_ring([100]);break;	//242,100
+			case 'se:clear':	bo.se.play( 2000,0.05,2000,0.04,  'sine', 0.2*vol );	break;	//se_ring([100]);break;	//242,100
 			case 'se:highscore':	bo.se.play( 872,0.05,972,1.3,  'sine', 0.2*vol );	break;		//se_ring([132]);break;//,156,98,158,118,132
 			case 'se:gameover':	bo.se.play( 199,0.19,95,0.855,  'sine', 0.6*vol );	break;	//se_ring([139]);break;//183,47
 			default:
@@ -673,14 +690,14 @@ function bo_create()
 		pad.getinfo();
 
 
-			if ( bo.key[KEY_N] ) // 強制クリア
+			if ( flgdebug &&  bo.key[KEY_N] ) // 強制クリア
 			{
 				bo.key[KEY_N] = 0;
 				for ( let o of blocks )
 				{
-					if ( o.flg == false ) continue;
+					if ( o.flgActive == false ) continue;
 					if ( o.typ == 'blk:hard' ) continue;
-					o.flg = false;
+					o.flgActive = false;
 				}
 
 			}
@@ -754,12 +771,12 @@ function bo_create()
 				}
 				if ( bo.key[KEY_RIGHT] ) 
 				{
-					s = bo.reso_x;
+					s = bo.reso_x*1.5;
 
 				}
 				if ( bo.key[KEY_LEFT] ) 
 				{
-					s = -bo.reso_x;
+					s = -bo.reso_x*1.5;
 				}
 				{
 					let v = racket.v.x;					// 
@@ -850,12 +867,16 @@ function bo_create()
 				}
 			}
 
+			//1up exec
+			{
+			}
+
 			// count active blocks 
 			{
 				info_activeblocks=0;
 				for ( let o of blocks )
 				{
-					if ( o.flg == false ) continue;
+					if ( o.flgActive == false ) continue;
 					if ( o.typ == 'blk:hard' ) continue;
 					
 					info_activeblocks++;
@@ -868,7 +889,7 @@ function bo_create()
 				info_activeballs=0;
 				for ( let b of balls )
 				{
-					if ( b.flg == false ) continue;
+					if ( b.flgActive == false ) continue;
 					if ( b.typ == 'bal:hard' ) continue;
 					if ( b.v.x ==0 && b.v.y == 0  ) continue;
 					
@@ -882,6 +903,7 @@ function bo_create()
 			{
 				let sp = BALL_SP_BASE*0.75 + info_cntServe*BALL_SP_BASE*0.3;
 				create_ball( 'bal:nml',BALL_X, BALL_Y, BALL_M*info_scaleball, sp, radians(45) );
+//				create_ball( 'bal:nml',BALL_X, 10, BALL_M*info_scaleball, sp, radians(45) );
 				info_stat = 'serve';
 				info_cntServe++;
 			}
@@ -893,7 +915,7 @@ function bo_create()
 				if ( info_stat == 'serve' )
 				{
 					bo.se_ring_by_name("se:service");
-					console.log('control by ',info_flg_mouseinput?'mouse only':'key or pad');
+					//console.log('control by ',info_flg_mouseinput?'mouse only':'key or pad');
 
 					console.log('service');
 					info_stat = 'ingame';
@@ -909,9 +931,9 @@ function bo_create()
 			// check clear
 			if ( info_activeblocks <= 0 )
 			{
-				info_stage++;
-				bo.se_ring_by_name("se:clear");
-				init_stage( bo.game, info_stage );
+				info_cntStage++;
+				//bo.se_ring_by_name("se:clear"); // →クリア音と最後のブロックの破壊音重なっていまいちなのでなくす。
+				init_stage( bo.game, info_cntStage );
 			}
 
 
@@ -935,7 +957,7 @@ function bo_create()
 			{
 				for ( let b of balls )
 				{
-					if ( b.flg == false ) continue;
+					if ( b.flgActive == false ) continue;
 
 					b.p.x = b.p.x + b.v.x * delta
 					b.p.y = b.p.y + b.v.y * delta
@@ -971,7 +993,7 @@ function bo_create()
 			// collition ball to wall
 			for ( let b of balls )
 			{
-				if ( b.flg == false ) continue;
+				if ( b.flgActive == false ) continue;
 
 				let wl = b.r;
 				let wr = bo.reso_x-b.r;
@@ -1014,8 +1036,16 @@ function bo_create()
 		 			b.v.y = -b.v.y;
 					if ( b.typ == 'bal:nml' )
 					{
-						b.v  = vmul_scalar2( b.v, BALL_SP_CEIL ); // 天井に当たるたび速度アップ
-						bo.se_ring_by_name("se:ceil" );
+						if ( length2(b.v) <  BALL_SP_MAX )	// ゲーム性の大体の限界
+						{
+							b.v  = vmul_scalar2( b.v, BALL_SP_CEIL ); // 天井に当たるたび速度アップ
+							bo.se_ring_by_name("se:ceil" );
+						}
+						else
+						{
+							bo.se_ring_by_name("se:wall" );
+						}
+//						console.log( "sp ",length2(b.v) );
 					}
 					else
 					{
@@ -1036,7 +1066,7 @@ function bo_create()
 					if ( b.p.y > wb )
 					{
 						// ロストボール
-						b.flg = false;
+						b.flgActive = false;
 
 						if ( info_activeballs == 1 )
 						{
@@ -1065,11 +1095,11 @@ function bo_create()
 			// collition to block
 			for ( let b of balls )
 			{
-				if ( b.flg == false ) continue;
+				if ( b.flgActive == false ) continue;
 
 				for ( let blk of blocks )
 				{
-					if ( blk.flg == false ) continue;
+					if ( blk.flgActive == false ) continue;
 
 					let l = chkhit(b,blk);
 					if ( l < 0 )
@@ -1085,7 +1115,6 @@ function bo_create()
 
 							b.v = reflect2( b.v, normalize2( vsub2( blk.p, b.p ) ) );
 							bo.se_ring_by_name("se:toball2", 1.0 );
-//							bo.se_ring_by_name("se:toblock");
 						}
 						else
 						if ( blk.typ == 'blk:uzu' ) 
@@ -1093,14 +1122,14 @@ function bo_create()
 							b.v = reflect2( b.v, normalize2( vsub2( blk.p, b.p ) ) );
 							b.v = vmul_scalar2(b.v,1.1);
 							bo.se_ring_by_name("se:uzu");
-							blk.flg = false;
+							blk.flgActive = false;
 							info_score++;
 						}
 						else
 						{
 							b.v = reflect2( b.v, normalize2( vsub2( blk.p, b.p ) ) );
 							bo.se_ring_by_name("se:break");
-							blk.flg = false;
+							blk.flgActive = false;
 							info_score++;
 						}
 					}
@@ -1155,10 +1184,11 @@ function bo_create()
 
 				for ( let b of balls )
 				{
-					if ( b.flg == false ) continue;
+					if ( b.flgActive == false ) continue;
 
 					let P0 = racket.p;
-					let P1 = vec2( prev_x,racket.p.y);
+//					let P1 = vec2( prev_x,racket.p.y);
+					let P1 = vec2( racket.p.x-racket.v.x*delta,racket.p.y);
 					let P2 = b.p;
 					let r = b.r+racket.r;
 
@@ -1168,7 +1198,6 @@ function bo_create()
 						let iy= b.v.y; 
 
  						let k = calcbound( r, b );
-
 
 						{	// 速度下限調整
 							//
@@ -1233,8 +1262,10 @@ function bo_create()
 					}
 
 
-					if ( b.p.y < racket.p.y )//+b.r ) // 上半分だけ
+					let prev = b.cntCnv;
+					if ( b.p.y < racket.p.y )//+b.r ) // 上半円
 					{
+						let flgcoll = false;
 						let [flg,d,Q] = func_intersect_SegLine_Point2( P0, P1, P2 );  // フレーム間を線形で衝突判定
 						if ( flg && d < r ) 
 						{
@@ -1259,8 +1290,8 @@ function bo_create()
 							o.m = racket.m;
 
 							let k = coll( b,o );
-							if ( k > 0 ) bo.se_ring_by_name("se:racket");
-							info_mouseslowtime += 0.1;//(s) 
+							flgcoll = true;
+
 						}
 						else 
 						{	// フレーム間以外の通常の当たり判定
@@ -1268,9 +1299,33 @@ function bo_create()
 							if ( l<0 )
 							{
 								let k = coll( b,racket );
-								if ( k > 0 ) bo.se_ring_by_name("se:racket");
-								info_mouseslowtime += 0.1;//(s)
+								flgcoll = true;
 							}
+						}
+						if ( flgcoll )
+						{
+							info_mouseslowtime += 0.1;//(s) 
+							b.cntCnv++;
+							if ( b.typ=='bal:nml' )
+							{
+								if ( ((++info_cntRally) % BALL_1UP )== 0 )
+								{
+									info_stockballs++;
+									bo.se_ring_by_name("se:1up");
+								}
+							}
+						}
+					}
+					
+					if ( prev == b.cntCnv )
+					{
+						if ( b.cntCnv > 0 ) 
+						{
+							//console.log('conv ',b.cntCnv );
+							let f = 1;//b.cntCnv;
+							if ( f > 2 ) f= 2; // 重い場合は音程を低くしようと試したが、パッとしないのでやめる。
+							bo.se_ring_by_name("se:racket",f);
+							b.cntCnv = 0;
 						}
 					}
 				}
@@ -1280,12 +1335,12 @@ function bo_create()
 			for ( let i = 0 ; i < balls.length ; i++ )
 			{
 				let a = balls[i];
-				if ( a.flg == false ) continue;
+				if ( a.flgActive == false ) continue;
 
 				for ( let j = i+1 ; j < balls.length ; j++ )
 				{
 					let b = balls[j];
-					if ( b.flg == false ) continue;
+					if ( b.flgActive == false ) continue;
 					let l = chkhit(a,b);
 					if ( l < 0 )
 					{
@@ -1306,7 +1361,6 @@ function bo_create()
 							else
 							{
 								bo.se_ring_by_name("se:toball2", 1.0 );
-//								bo.se_ring_by_name("se:toblock", 1.0 );
 							}
 						}
 
@@ -1353,7 +1407,7 @@ function bo_create()
 			gra.color(1,1,1);
 			for ( let o of blocks )
 			{
-				if ( o.flg == false ) continue;
+				if ( o.flgActive == false ) continue;
 
 				if ( o.typ == 'blk:nml' )
 				{
@@ -1390,15 +1444,37 @@ function bo_create()
 		}
 
 		// ブラーボールの表示
-		function blurball( o, n=-1 , st=0, en=Math.PI*2 )
+		function blurball( b, typ, n=-1 , st=0, en=Math.PI*2 )
 		{
-			if ( n==-1 ) n = Math.floor(length2(o.v)/o.r*0.03)+1;
-			let ax = o.v.x*delta/n;
-			let ay = o.v.y*delta/n;
+			if ( info_stat != 'ingame' ) n = 1;
+			if ( n==-1 ) n = Math.floor(length2(b.v)/b.r*0.03)+1;
+			let ax = b.v.x*delta/n;
+			let ay = b.v.y*delta/n;
 			gra.alpha(1.5/n, 'add' );
 			for ( let i = 0 ; i < n ; i++ )
 			{
-				gra.circlefill( o.p.x-ax*i, o.p.y-ay*i, o.r, st, en  );
+				let x = b.p.x-ax*i;
+				let y = b.p.y-ay*i;
+				if ( typ=='bal:nml' )
+				{
+					gra.circlefill( x, y, b.r, st, en  );
+//					blurball( b );
+				}
+				else
+				if ( typ=='bal:hard' )
+				{
+					for ( let i = 0 ; i < 1 ; i++ )
+					{
+						let r = b.r-i*4;
+						if ( r < 1 ) break;
+						gra.circle( x, y, r );
+					}
+					let r = b.r-4;
+					if ( r <=0 ) r= 1.0
+					gra.circlefill( x, y, r );
+
+				}
+		
 			}
 			gra.alpha(1);
 		}
@@ -1408,17 +1484,19 @@ function bo_create()
 			gra.color(1,1,1);
 			for ( let b of balls )
 			{
-				if ( b.flg == false ) continue;
-
-
+				if ( b.flgActive == false ) continue;
 			
 				if ( b.typ=='bal:nml' )
 				{
-					blurball( b );
+					blurball( b, b.typ );
 				}
 				else
 				if ( b.typ=='bal:hard' )
 				{
+					gra.setLineWidth(3);
+					blurball( b, b.typ );
+					gra.setLineWidth(1);
+/*
 					gra.setLineWidth(3);
 					for ( let i = 0 ; i < 1 ; i++ )
 					{
@@ -1430,6 +1508,7 @@ function bo_create()
 					let r = b.r-4;
 					if ( r <=0 ) r= 1.0
 					gra.circlefill( b.p.x, b.p.y, r );
+*/
 
 				}
 				else
@@ -1440,12 +1519,10 @@ function bo_create()
 			
 				if ( flgdebug ) 
 				{
-//					gra.symbol( 'error stat'		,bo.reso_x/2,16*14,16,"center" );
 					gra.color(0.25,0.5,1);
 					gra.symbol( Math.floor(length2(b.v)).toString(), b.p.x, b.p.y, 16);
 					gra.symbol( Math.floor(length2(b.v)).toString(), b.p.x+1, b.p.y, 16);
 					gra.color(1,1,1);
-//				gra.print( Math.floor(length2(b.v)).toString(), b.p.x,b.p.y );
 				}
 
 			}
@@ -1453,29 +1530,21 @@ function bo_create()
 
 
 		// draw racket 
-		if (1)
-		{
-			blurball( racket, 32, Math.PI, Math.PI*2 );
-		}
-		else
-		{
-			gra.circlefill( racket.p.x, racket.p.y, racket.r, Math.PI, Math.PI*2  );
-		}
+		blurball( racket, 'bal:nml' , 32, Math.PI, Math.PI*2 );
 	
 
 		//draw debug
 		{
 			if( flgdebug )
 			{
+				gra.setLineWidth(2);
+
 				gra.color(1,0,0);
 				if ( hit_q )	gra.circle( hit_q.x, hit_q.y+1, hit_q.r );
-				gra.color(1,0,0);
-				if ( hit_st )	gra.line( hit_st.x, hit_st.y+1, hit_en.x, hit_en.y+1 );
-			}
+				gra.color(1,1,0);
+//				if ( hit_st )	gra.line( hit_st.x, hit_st.y+1, hit_en.x, hit_en.y+1 );
+				if ( hit_st )	gra.line( hit_st.x, bo.reso_y-2, hit_en.x, bo.reso_y-2 );
 
-			if(flgdebug)
-			{
-				gra.setLineWidth(2);
 				let n = 2;
 				for ( let i = 0 ; i < n && i < hit_buf_ball.length; i++ )							//	ボールの軌跡
 				{
@@ -1528,7 +1597,7 @@ function bo_create()
 */						
 
 			let str_score = "SCORE "+("0000"+info_score.toString()).substr(-4);
-			let str_stage = "STAGE "+info_stage.toString();
+			let str_stage = "STAGE "+info_cntStage.toString();
 			let str_balls = "BALLS "+info_stockballs.toString();
 			gra.symbol( str_score,1,0,16,"left" );
 			gra.symbol( str_stage,bo.reso_x/2,0,16,"center" );
@@ -1601,7 +1670,7 @@ function bo_create()
 			let K=0;
 			for ( let b of balls )	
 			{
-				if ( b.flg == false ) continue;
+				if ( b.flgActive == false ) continue;
 
 				let k = 1/2*b.m*dot2(b.v,b.v);
 				K+=k;
@@ -1609,7 +1678,7 @@ function bo_create()
 			gra.print( "K="+ K,0,html_canvas.height-16 );
 			//gra.print( 1/delta +"fps",html_canvas.width-50,html_canvas.height-16 );
 		}
-		prev_x	= racket.p.x;
+//		prev_x	= racket.p.x;
 
 	}
 	return bo;
@@ -1821,7 +1890,7 @@ window.onkeydown = function( ev )
 	if ( c == KEY_R ) bo.req = 'reset';
 	if ( c == KEY_F ) bo.req = 'fullscreen';
 
-	if ( c == KEY_Q ) bo.se_ring_by_name( "se:clear" );
+//	if ( c == KEY_Q ) bo.se_ring_by_name( "se:clear" );
 	
 
 }
