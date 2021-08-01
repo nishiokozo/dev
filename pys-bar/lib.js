@@ -1,19 +1,434 @@
-// 2021/07/02	ver1.09 geom 2021/07/02 vec2追加 gra_create 追加
-// 2021/05/28	ver1.08	行列式のコメント追加
-// 2021/05/26	ver1.07	minvers再びアルゴリズム交換
-// 2021/05/25	ver1.06	minvers別のアルゴリズムに交換
-// 2021/05/24	ver1.05	行列のコメントを修正
-// 2021/05/23	ver1.04	列優先バグ修正vec4->vec3
-// 2021/05/17	ver1.03	mrotx / vrotx 等、名称変更
-// 2021/05/09	ver1.02	minverts追加、mlookat変更
-// 2021/05/07	ver1.01	デバッグ、vec3対応
-// 2021/05/06	ver1.00	分離
+// 2021/07/30 gra.drawpictgrambone ピクトグラム風、円が二つ連なった図形の描画
+// 2021/07/29 gra.bezier_n 追加
+// 2021/07/29 gra windowとcanvasのアスペクト比を反映
+// 2021/07/26 効果音ライブラリ
+// 2021/07/24 KEY追加
+// 2021/07/23 半直線と点との距離,	線分と点との距離,直線と直線の距離,半直線と線分の距離,線分と線分の距離 関数追加
+// 2021/07/23 pad_create ゲームパッド入力ライブラリ追加
+// 2021/07/22 フルスクリーン用にアスペクト機能を追加
+// 2021/07/19 ver1.12 gra backcolor()追加
+// 2021/07/10 ver1.11 フォント送りサイズ変更
+// 2021/07/10 ver1.10 gra.alpha追加
+// 2021/07/02 ver1.09 geom 2021/07/02 vec2追加 gra_create 追加
+// 2021/05/28 ver1.08	行列式のコメント追加
+// 2021/05/26 ver1.07	minvers再びアルゴリズム交換
+// 2021/05/25 ver1.06	minvers別のアルゴリズムに交換
+// 2021/05/24 ver1.05	行列のコメントを修正
+// 2021/05/23 ver1.04	列優先バグ修正vec4->vec3
+// 2021/05/17 ver1.03	mrotx / vrotx 等、名称変更
+// 2021/05/09 ver1.02	minverts追加、mlookat変更
+// 2021/05/07 ver1.01	デバッグ、vec3対応
+// 2021/05/06 ver1.00	分離
 //
 //	行列ライブラリコンセプト
 //	GLSLと同じ数式同じ行列がメインプログラムでも同様に機能する
 //
 // OpenGL® Programming Guide: The Official Guide 
 // https://www.cs.utexas.edu/users/fussell/courses/cs354/handouts/Addison.Wesley.OpenGL.Programming.Guide.8th.Edition.Mar.2013.ISBN.0321773039.pdf
+
+//-----------------------------------------------------------------------------
+function se_create()	// 2021/07/26 効果音ライブラリ
+//-----------------------------------------------------------------------------
+{
+	let se = {};
+	let	audioctx
+	let analyser;
+
+	//-----------------------------------------------------------------------------
+	se.play = function( freq1,len1,freq2,len2, type = 'square', vol=0.5) 
+	//-----------------------------------------------------------------------------
+	{
+		// 二つの周波数の音を繋げて鳴らす、簡易効果音再生
+		// 音程周波数1(Hz),長さ1(s),音程周波数2(Hz),長さ2(s),音色タイプ,ボリューム
+
+		//type = "triangle";
+		//type = "sawtooth";
+		//type = "sine";
+		//type = "square";
+		// 最初の初期化。起動時に同時に行うとwarnningが出るため、最初に鳴らすときに行う
+		if ( audioctx == undefined )
+		{
+			let	func = window.AudioContext || window.webkitAudioContext;
+			audioctx = new func();
+		}
+		if ( analyser == undefined )
+		{
+			analyser = audioctx.createAnalyser();
+			analyser.connect( audioctx.destination );
+		}
+		//--
+
+		let t0 = audioctx.currentTime;			// コンテクストが作られてからの経過時間(s)
+		let t1 = t0 + len1;
+		let t2 = t1 + len2;
+
+		let oscillator = audioctx.createOscillator();
+		let gain = audioctx.createGain();
+
+		oscillator.type = type;
+		oscillator.frequency.setValueAtTime( freq1, t0 );
+		oscillator.frequency.setValueAtTime( freq2, t1 );
+		oscillator.start( t0 );
+		oscillator.stop( t2 );
+		oscillator.connect( gain );
+
+		gain.gain.setValueAtTime( vol, t0 );
+		gain.gain.setValueAtTime( vol, t1 );
+		gain.gain.linearRampToValueAtTime( 0, t2 );	//前にスケジュールされているパラメーター値から指定された値まで、直線的に連続して値を変化させる
+		gain.connect( analyser );
+	}
+
+	return se;
+}
+
+//------------------------------------------------------------------------------
+function func_intersect_Line_Point2( P0, I0, P1 )	// 直線と点との距離
+//------------------------------------------------------------------------------
+{
+	// P0:始点
+	// I0:方向（単位ベクトル）
+	// P1:点
+	// Q :衝突点
+	// t :P0からQまでの距離
+
+	let I1 = vsub2(P1 , P0);
+	let t = dot2(I0,I1);	// P0からQまでのQ距離
+	let Q = vadd2( P0, vmul_scalar2(I0,t));
+	let	d =  length2(vsub2(Q , P1));
+	return [true,d,Q,t];
+}
+
+//------------------------------------------------------------------------------
+function func_intersect_HarfLine_Point2( P0, I0, P1 )	// 半直線と点との距離 2021/07/23
+//------------------------------------------------------------------------------
+{
+	let [flg,d,Q,t] = func_intersect_Line_Point2( P0, I0, P1 );
+
+	if ( t <= 0 ) flg = false; 			// 始点トリミング：範囲外でも使える衝突点等の値が返る
+
+	return [flg,d,Q,t];
+}
+
+//------------------------------------------------------------------------------
+function func_intersect_SegLine_Point2( P0, Q0, P1 )	// 線分と点との距離 2021/07/23
+//------------------------------------------------------------------------------
+{
+	// P0:始点
+	// Q0:終点
+	// P1:点
+ 	let L = vsub2(Q0 , P0)
+ 	let I0 = normalize2(L)
+
+	let [flg,d,Q,t] = func_intersect_Line_Point2( P0, I0, P1 );
+	if ( t <= 0 ) flg = false; 			// 始点トリミング：範囲外でも使える衝突点等の値が返る
+	if ( t >= length2(L) ) flg = false;	// 終点トリミング：範囲外でも使える衝突点等の値が返る
+
+	return [flg,d,Q,t];
+}
+
+
+//------------------------------------------------------------------------------
+function func_intersect_Line_Line2( P0, I0, P1, I1 ) // 直線と直線の距離 2021/07/23
+//------------------------------------------------------------------------------
+{
+	if ( (I0.x==0 && I0.y==0) || (I1.x==0 && I1.y==0) ) return [false,0,vec2(0,0),vec2(0,0),0,0];
+
+	//    P0       P1
+	//    |        |
+	//    |}t0     |}t1(時間:Iベクトル方向、負の数ならP1より前)
+	//    |        |
+	// Q0 +--------+ Q1(衝突位置)
+	//    |        |
+	//    v        v
+	//    I0       I1 (I0,I1は単位ベクトル)
+	//
+	//	交点ができたときは、Q0=Q1 , d=0 になる
+
+	if (  cross2( I0, I1 ) == 0 ) // 平行だった時
+	{
+		let Q0 = vec2(0.0);
+		let Q1 = vec2(0.0);
+		let d = Math.abs( cross2( vsub2(P1 , P0), I0 ) );	// func_intersect_Line_Point2():点と線との距離
+		return [false,d,Q0,Q1,0,0];
+	}
+
+	let d0 = dot2( vsub2(P1 , P0), I0 );
+	let d1 = dot2( vsub2(P1 , P0), I1 );
+	let d2 = dot2( I0, I1 );
+
+	let t0 = ( d0 - d1 * d2 ) / ( 1.0 - d2 * d2 );
+	let t1 = ( d1 - d0 * d2 ) / ( d2 * d2 - 1.0 );
+
+	let	Q0 = vadd2(P0 , vmul_scalar2(I0,t0));
+	let	Q1 = vadd2(P1 , vmul_scalar2(I1,t1));
+	let	d =  length2(vsub2(Q1 , Q0));
+
+	return [true,d,Q0,Q1,t0,t1];
+}
+//------------------------------------------------------------------------------
+function func_intersect_HarfLine_HarfLine2( P0, I0, P1, I1 )	//2021/07/23 半直線と線分の距離
+//------------------------------------------------------------------------------
+{
+	if ( (I0.x==0 && I0.y==0) || (I1.x==0 && I1.y==0) ) return [false,0,vec2(0,0),vec2(0,0),0,0];
+
+	// 半直線と線分の距離
+	// 半直線   : P0+I0
+	// 半直線   : p1+I1
+	// 距離     : d = |Q1-Q0|
+	// 戻り値   : d距離 Q0,Q1	※false でもdだけは取得できる
+	
+	let [flg,d,Q0,Q1,t0,t1] = func_intersect_Line_Line2( P0, I0, P1, I1 );
+
+	if ( flg )
+	{
+		// 半直線
+		if ( t0 < 0 ) flg = false;
+		if ( t1 < 0 ) flg = false;
+	}
+
+	return [flg,d,Q0,Q1,t0,t1];
+}
+//------------------------------------------------------------------------------
+function func_intersect_SegLine_SegLine2( p0, q0, p1, q1 )	//2021/07/23 線分と線分の距離
+//------------------------------------------------------------------------------
+{
+	if ( q0.x == p0.x && q0.y == p0.y || q1.x == p1.x && q1.y == p1.y ) return [false,0,vec2(0,0),vec2(0,0),0,0];
+
+	// 線分と線分の距離
+	// 線分0開始: p0
+	// 線分0終了: q0
+	// 線分1開始: p1
+	// 線分1終了: q1
+	// 距離     : d = |Q1-Q0|
+	// 戻り値   : d距離 Q0,Q1	※false でもdだけは取得できる
+	
+	let	P0 = p0;
+	let	I0 = normalize2( vsub2(q0,p0) );
+	let	P1 = p1;
+	let	I1 = normalize2( vsub2(q1,p1) );
+
+	let [flg,d,Q0,Q1,t0,t1] = func_intersect_Line_Line2( P0, I0, P1, I1 );
+
+	if ( flg )
+	{
+		// 線分処理
+		if ( t1 < 0 ) flg = false;
+		if ( t1 > length2(vsub2(q1,p1)) ) flg = false;
+
+		// 線分処理
+		if ( t0 < 0 ) flg = false;
+		if ( t0 > length2(vsub2(q0,p0)) ) flg = false;
+
+	}
+
+	return [flg,d,Q0,Q1,t0,t1];
+}
+
+//-----------------------------------------------------------------------------
+function pad_create()	// 2021/07/23 追加
+//-----------------------------------------------------------------------------
+{
+	// PS4パッド、XBOX one パッド、switchパッドでは同じように使える様子
+	// 電源ボタン,L3R3アナログボタン押し込み、メニューボタンのようなものは使えず。button[16]もバッファはあるけどアサインは不明
+
+	let body = 
+	{
+		lx:0,
+		ly:0,
+		rx:0,
+		ry:0,
+		a:false,
+		b:false,
+		x:false,
+		y:false,
+		l1:false,
+		r1:false,
+		l2:0,
+		r2:0,
+		se:false,
+		st:false,
+		u:false,
+		d:false,
+		l:false,
+		r:false,
+		B16:false,
+		trig:
+		{
+			a:false,
+			b:false,
+			x:false,
+			y:false,
+			l1:false,
+			r1:false,
+			se:false,
+			st:false,
+			u:false,
+			d:false,
+			l:false,
+			r:false,
+			B16:false,
+		},
+		release:
+		{
+			a:false,
+			b:false,
+			x:false,
+			y:false,
+			l1:false,
+			r1:false,
+			se:false,
+			st:false,
+			u:false,
+			d:false,
+			l:false,
+			r:false,
+			B16:false,
+		}
+	};
+
+	//-----------------------------------------------------------------------------
+	body.getinfo = function()
+	//-----------------------------------------------------------------------------
+	{
+		if(navigator.getGamepads)
+		{
+			let list = navigator.getGamepads();
+			for ( let pad of list )
+			{
+				if ( pad != null )		
+				{
+					if ( body.prevButtons == undefined ) 
+					{
+						body.lx = pad.axes[0];
+						body.ly = pad.axes[1];
+						body.rx = pad.axes[2];
+						body.ry = pad.axes[3];
+						body.a  = pad.buttons[ 0].value == 1;
+						body.b  = pad.buttons[ 1].value == 1;
+						body.x  = pad.buttons[ 2].value == 1;
+						body.y  = pad.buttons[ 3].value == 1;
+						body.l1 = pad.buttons[ 4].value == 1;
+						body.r1 = pad.buttons[ 5].value == 1;
+						body.l2 = pad.buttons[ 6].value;
+						body.r2 = pad.buttons[ 7].value;
+						body.se = pad.buttons[ 8].value == 1;
+						body.st = pad.buttons[ 9].value == 1;
+						body.u  = pad.buttons[12].value == 1;
+						body.d  = pad.buttons[13].value == 1;
+						body.l  = pad.buttons[14].value == 1;
+						body.r  = pad.buttons[15].value == 1;
+						body.B16= pad.buttons[16].value == 1;
+
+						body.trig.a  = pad.buttons[ 0].value == 1;
+						body.trig.b  = pad.buttons[ 1].value == 1;
+						body.trig.x  = pad.buttons[ 2].value == 1;
+						body.trig.y  = pad.buttons[ 3].value == 1;
+						body.trig.l1 = pad.buttons[ 4].value == 1;
+						body.trig.r1 = pad.buttons[ 5].value == 1;
+						body.trig.se = pad.buttons[ 8].value == 1;
+						body.trig.st = pad.buttons[ 9].value == 1;
+						body.trig.u  = pad.buttons[12].value == 1;
+						body.trig.d  = pad.buttons[13].value == 1;
+						body.trig.l  = pad.buttons[14].value == 1;
+						body.trig.r	 = pad.buttons[15].value == 1;
+						body.trig.B16= pad.buttons[16].value == 1;
+
+						body.release.a  = false;
+						body.release.b  = false;
+						body.release.x  = false;
+						body.release.y  = false;
+						body.release.l1 = false;
+						body.release.r1 = false;
+						body.release.se = false;
+						body.release.st = false;
+						body.release.u  = false;
+						body.release.d  = false;
+						body.release.l  = false;
+						body.release.r	= false;
+						body.release.B16= false;
+					}
+					else
+					{
+						body.lx =  pad.axes[0];
+						body.ly =  pad.axes[1];
+						body.rx =  pad.axes[2];
+						body.ry =  pad.axes[3];
+						body.a  =  pad.buttons[ 0].value == 1;
+						body.b  =  pad.buttons[ 1].value == 1;
+						body.x  =  pad.buttons[ 2].value == 1;
+						body.y  =  pad.buttons[ 3].value == 1;
+						body.l1 =  pad.buttons[ 4].value == 1;
+						body.r1 =  pad.buttons[ 5].value == 1;
+						body.l2 =  pad.buttons[ 6].value;
+						body.r2 =  pad.buttons[ 7].value;
+						body.se =  pad.buttons[ 8].value == 1;
+						body.st =  pad.buttons[ 9].value == 1;
+						body.u  =  pad.buttons[12].value == 1;
+						body.d  =  pad.buttons[13].value == 1;
+						body.l  =  pad.buttons[14].value == 1;
+						body.r  =  pad.buttons[15].value == 1;
+						body.B16=  pad.buttons[16].value == 1;
+
+						body.trig.a  = (pad.buttons[ 0].value == 1 ) && ( body.prevButtons[ 0].value != 1 );
+						body.trig.b  = (pad.buttons[ 1].value == 1 ) && ( body.prevButtons[ 1].value != 1 );
+						body.trig.x  = (pad.buttons[ 2].value == 1 ) && ( body.prevButtons[ 2].value != 1 );
+						body.trig.y  = (pad.buttons[ 3].value == 1 ) && ( body.prevButtons[ 3].value != 1 );
+						body.trig.l1 = (pad.buttons[ 4].value == 1 ) && ( body.prevButtons[ 4].value != 1 );
+						body.trig.r1 = (pad.buttons[ 5].value == 1 ) && ( body.prevButtons[ 5].value != 1 );
+						body.trig.se = (pad.buttons[ 8].value == 1 ) && ( body.prevButtons[ 8].value != 1 );
+						body.trig.st = (pad.buttons[ 9].value == 1 ) && ( body.prevButtons[ 9].value != 1 );
+						body.trig.u  = (pad.buttons[12].value == 1 ) && ( body.prevButtons[12].value != 1 );
+						body.trig.d  = (pad.buttons[13].value == 1 ) && ( body.prevButtons[13].value != 1 );
+						body.trig.l  = (pad.buttons[14].value == 1 ) && ( body.prevButtons[14].value != 1 );
+						body.trig.r  = (pad.buttons[15].value == 1 ) && ( body.prevButtons[15].value != 1 );
+						body.trig.B16= (pad.buttons[16].value == 1 ) && ( body.prevButtons[16].value != 1 );
+
+						body.release.a  = (pad.buttons[ 0].value == 0 ) && ( body.prevButtons[ 0].value != 0 );
+						body.release.b  = (pad.buttons[ 1].value == 0 ) && ( body.prevButtons[ 1].value != 0 );
+						body.release.x  = (pad.buttons[ 2].value == 0 ) && ( body.prevButtons[ 2].value != 0 );
+						body.release.y  = (pad.buttons[ 3].value == 0 ) && ( body.prevButtons[ 3].value != 0 );
+						body.release.l1 = (pad.buttons[ 4].value == 0 ) && ( body.prevButtons[ 4].value != 0 );
+						body.release.r1 = (pad.buttons[ 5].value == 0 ) && ( body.prevButtons[ 5].value != 0 );
+						body.release.se = (pad.buttons[ 8].value == 0 ) && ( body.prevButtons[ 8].value != 0 );
+						body.release.st = (pad.buttons[ 9].value == 0 ) && ( body.prevButtons[ 9].value != 0 );
+						body.release.u  = (pad.buttons[12].value == 0 ) && ( body.prevButtons[12].value != 0 );
+						body.release.d  = (pad.buttons[13].value == 0 ) && ( body.prevButtons[13].value != 0 );
+						body.release.l  = (pad.buttons[14].value == 0 ) && ( body.prevButtons[14].value != 0 );
+						body.release.r  = (pad.buttons[15].value == 0 ) && ( body.prevButtons[15].value != 0 );
+						body.release.B16= (pad.buttons[16].value == 0 ) && ( body.prevButtons[16].value != 0 );
+
+						let border = 0.15; //15%を遊び
+						if ( Math.abs( body.lx ) < border ) body.lx = 0;
+						if ( Math.abs( body.ly ) < border ) body.ly = 0;
+						if ( Math.abs( body.rx ) < border ) body.rx = 0;
+						if ( Math.abs( body.ry ) < border ) body.ry = 0;
+					}
+
+					body.prevButtons = pad.buttons;
+				}
+			}
+		}
+		return body;
+	}
+
+	body.test_press = function()
+	{
+		let p = body;
+		console.log( "press:",p.a,p.b,p.x,p.y,p.l1,p.r1,p.se,p.st,p.lx,p.ly,p.rx,p.ry,p.l2,p.r2,p.u,p.d,p.l,p.r,p.B16 );
+	}
+	body.test_trig = function()
+	{
+		let p = body.trig;
+		console.log( "trig:",p.a,p.b,p.x,p.y,p.l1,p.r1,p.se,p.st,p.lx,p.ly,p.rx,p.ry,p.l2,p.r2,p.u,p.d,p.l,p.r,p.B16 );
+	}
+	body.test_release = function()
+	{
+		let p = body.trig;
+		console.log( "release:",p.a,p.b,p.x,p.y,p.l1,p.r1,p.se,p.st,p.lx,p.ly,p.rx,p.ry,p.l2,p.r2,p.u,p.d,p.l,p.r,p.B16 );
+	}
+
+	return body;
+}
 
 //-----------------------------------------------------------------------------
 function gra_create( cv )	//2021/06/01
@@ -31,7 +446,15 @@ function gra_create( cv )	//2021/06/01
 	let ox = 0;
 	let oy = 0;
 
-	gra.col = "#000000";
+	gra.backcol = "#FFFFFF";
+//	gra.ctx.font = "12px monospace";	// iOSだとCourierになる	読める限界の小ささ
+//	gra.ctx.font = "14px monospace";	// iOSだとCourierになる 程よい小ささ
+	gra.ctx.font = "16px Courier";	// iOSでも使えるモノスペースフォントただし漢字はモノスペースにはならない 見栄えもある
+	gra.ctx.textAlign = "left";
+	gra.ctx.textBaseline = "alphabetic";
+	gra.fontw = gra.ctx.measureText("_").width;
+
+	gra.lineWidth = 1;
 
 	//-------------------------------------------------------------------------
 	gra.window = function( _sx, _sy, _ex, _ey )
@@ -43,57 +466,136 @@ function gra_create( cv )	//2021/06/01
 		gra.ey = _ey;
 		ox = -_sx;
 		oy = -_sy;
-	}
 
-	function win_abs( x, y )
+		gra.ctx.lineWidth = gra.lineWidth;
+	}
+	
+	//2021/07/22 フルスクリーン用にアスペクト機能を追加
+	gra.as = 1/(gra.ctx.canvas.width/gra.ctx.canvas.height);
+	gra.ab = (gra.ctx.canvas.width-gra.ctx.canvas.height)/2;
+
+	gra.win_abs = function( x, y )
 	{
 		let w = gra.ex-gra.sx;
 		let h = gra.ey-gra.sy;
 		x = (x+ox)/w * gra.ctx.canvas.width;
 		y = (y+oy)/h * gra.ctx.canvas.height;
-		return [x,y];
+		return [x*gra.as+gra.ab,y];
 	}
-	function win_range( x, y )
+	gra.win_range = function( x, y )
 	{
 		let w = Math.abs(gra.ex-gra.sx);
 		let h = Math.abs(gra.ey-gra.sy);
 		x = (x)/w * gra.ctx.canvas.width;
 		y = (y)/h * gra.ctx.canvas.height;
-		return [x,y];
+		return [x*gra.as,y];
+	}
+	//-----------------------------------------------------------------------------
+	gra.box = function( x1, y1, x2, y2, mode="" )
+	//-----------------------------------------------------------------------------
+	{
+		function func( sx,sy, ex,ey )
+		{
+			gra.ctx.beginPath();
+		    gra.ctx.rect(sx,sy,ex-sx,ey-sy);
+			gra.ctx.closePath();
+			gra.ctx.stroke();
+		}
+
+		[x1,y1]=gra.win_abs(x1,y1);
+		[x2,y2]=gra.win_abs(x2,y2);
+
+		func( x1, y1, x2, y2 );
+	}
+	//-----------------------------------------------------------------------------
+	gra.fill= function( sx,sy, ex,ey )
+	//-----------------------------------------------------------------------------
+	{
+		function func( sx,sy, ex,ey )
+		{
+			gra.ctx.beginPath();
+		    gra.ctx.rect(sx,sy,ex-sx,ey-sy);
+			gra.ctx.closePath();
+			gra.ctx.fill();
+			//gra.ctx.stroke();
+		}
+		func( x1, y1, x2, y2 );
+
+	}
+	
+	//-------------------------------------------------------------------------
+	gra.pattern = function( type = 'normal' )
+	//-------------------------------------------------------------------------
+	{
+		switch( type )
+		{
+			case "normal": gra.ctx.setLineDash([]);	break;
+			case "hasen": gra.ctx.setLineDash([2,4]);	break;
+			default: alert("破線パターン異常 gra.pattern()");
+		}
 	}
 	//-------------------------------------------------------------------------
 	gra.line = function( x1, y1, x2, y2, mode="" )
 	//-------------------------------------------------------------------------
 	{
-		function func( sx,sy, ex,ey, style =[1] )
+		function func( sx,sy, ex,ey )
 		{
 			gra.ctx.beginPath();
-			gra.ctx.setLineDash(style);
-			gra.ctx.strokeStyle = gra.col;
-//			gra.ctx.strokeStyle = "#000000";
-			gra.ctx.lineWidth = 1.0;
 			gra.ctx.moveTo( sx, sy );
 			gra.ctx.lineTo( ex, ey );
 			gra.ctx.closePath();
 			gra.ctx.stroke();
 		}
 
-		[x1,y1]=win_abs(x1,y1);
-		[x2,y2]=win_abs(x2,y2);
+		[x1,y1]=gra.win_abs(x1,y1);
+		[x2,y2]=gra.win_abs(x2,y2);
 
-		let style = [];
-		switch( mode )
-		{
-			case "hasen": style = [2,4];
-		}
-	
-		func( x1, y1, x2, y2, style );
+		func( x1, y1, x2, y2 );
 	}
+
+	//-------------------------------------------------------------------------
+	gra.path_n = function( V, mode="/loop/fill" ) // vec2 V
+	//-------------------------------------------------------------------------
+	{
+		for ( let v of V )
+		{
+			[v.x,v.y]=gra.win_abs(v.x,v.y);
+		}
+
+		{
+			gra.ctx.beginPath();
+
+			gra.ctx.moveTo( V[0].x, V[0].y );
+			
+			for ( let i = 1 ; i < V.length ; i++ )
+			{
+				gra.ctx.lineTo( V[i].x, V[i].y );
+			}
+
+
+			if ( mode == 'fill' ) 
+			{
+				gra.ctx.fill();
+			}
+			else
+			if ( mode == 'loop' )
+			{
+				gra.ctx.closePath();
+				gra.ctx.stroke();
+			}
+			else
+			{
+				gra.ctx.stroke();
+			}
+
+		}
+	}
+
 	//-------------------------------------------------------------------------
 	gra.locate = function( x1, y1 )
 	//-------------------------------------------------------------------------
 	{
-		gra.x=x1*6;
+		gra.x=x1*gra.fontw/gra.as;
 		gra.y=y1*16;
 	}
 	//-------------------------------------------------------------------------
@@ -102,18 +604,52 @@ function gra_create( cv )	//2021/06/01
 	{
 		function func( str, tx, ty )
 		{
-			gra.ctx.font = "12px monospace";
-			gra.ctx.fillStyle = gra.col;
+  			gra.ctx.font = "16px Courier";	// iOSでも使えるモノスペースフォントただし漢字はモノスペースにはならない 見栄えもある
+			gra.ctx.textAlign = "left";
+			gra.ctx.textBaseline = "alphabetic";
 			gra.ctx.fillText( str, tx+2, ty+16 );
-
 		}
 
-		[x1,y1]=win_abs(x1,y1);
+		[x1,y1]=gra.win_abs(x1,y1);
 		func( str, x1, y1 );
 
-			gra.x = x1;
-			gra.y = y1+16;
+		gra.x = x1;
+		gra.y = y1+16;
 	}
+	//-------------------------------------------------------------------------
+	gra.symbol = function( str, x1,y1, size = 30, aligh="center" )
+	//-------------------------------------------------------------------------
+	{
+		[x1,y1]=gra.win_abs(x1,y1);
+		let [sw,sh] = gra.win_range(size,size);
+
+		gra.ctx.font = sw+"px "+"Courier";
+		gra.ctx.textAlign = aligh;
+		gra.ctx.textBaseline = "top";
+		gra.ctx.fillText( str, x1, y1 );
+	}
+
+	//-----------------------------------------------------------------------------
+	gra.alpha = function( fa=1.0, func='none' ) // 2021/07/10 追加
+	//-----------------------------------------------------------------------------
+	{
+		gra.ctx.globalAlpha=fa;
+
+		switch( func )
+		{
+			case 'add':		gra.ctx.globalCompositeOperation = "lighter"; 		break;	// 加算合成
+			default:		gra.ctx.globalCompositeOperation = "source-over";	break;	// src*(1-α)+dst*α
+		}
+	}
+
+	//-----------------------------------------------------------------------------
+	gra.setLineWidth = function( val=1.0 ) //2021/07/26 追加
+	//-----------------------------------------------------------------------------
+	{
+		gra.lineWidth = gra.ctx.canvas.height/(gra.ey-gra.sy) *val;
+		gra.ctx.lineWidth = gra.lineWidth;
+	}
+
 	//-----------------------------------------------------------------------------
 	gra.color = function( fr=0.0, fg=0.0, fb=0.0 )
 	//-----------------------------------------------------------------------------
@@ -127,41 +663,202 @@ function gra_create( cv )	//2021/06/01
 		let c = (r<<16)+(g<<8)+(b<<0);
 		
 		let s = "#"+("000000"+c.toString(16)).substr(-6);
-		gra.col = s;
 
-//		gra.ctx.fillStyle = s;
-//		gra.ctx.strokeStyle = s;
+		gra.ctx.strokeStyle = s;
+
+		gra.ctx.fillStyle = s;
+	}
+
+	//-----------------------------------------------------------------------------
+	gra.backcolor = function( fr=0.0, fg=0.0, fb=0.0 ) // 2021/07/19 追加
+	//-----------------------------------------------------------------------------
+	{
+		let r = fr*255;
+		let g = fg*255;
+		let b = fb*255;
+		if ( r > 255 ) r = 255;
+		if ( g > 255 ) g = 255;
+		if ( b > 255 ) b = 255;
+		let c = (r<<16)+(g<<8)+(b<<0);
+		
+		let s = "#"+("000000"+c.toString(16)).substr(-6);
+		gra.backcol = s;
 	}
 	
 	//-----------------------------------------------------------------------------
-	gra.circle = function( x1,y1,r )
+	gra.bezier_n = function( v, mode='/loop/fill/loopfill' ) // vec2[] v;  2021/07/29 add
 	//-----------------------------------------------------------------------------
 	{
-		let func = function( x,y,rw,rh )
+		if ( v.length < 4 ) return;
+
+		for ( let a of v )
+		{
+			[a.x,a.y]=gra.win_abs(a.x,a.y);
+		}
+
 		{
 			gra.ctx.beginPath();
-			gra.ctx.setLineDash([]);
-			gra.ctx.strokeStyle = gra.col;
-			let rotation = 0;
-			let startAngle = 0;
-			let endAngle = Math.PI*2;
-			gra.ctx.ellipse( x, y, rw, rh, rotation, startAngle, endAngle );
-			gra.ctx.closePath();
+
+			{
+				let p = 0;
+				let x0,y0;
+				let x1,y1;
+				let [x2,y2] = [v[p+0].x,v[p+0].y];
+				let [x3,y3] = [v[p+1].x,v[p+1].y];
+				gra.ctx.moveTo( x2, y2 );
+				//--
+				for ( let i = 0 ; i < v.length/2 ; i++ )
+				{
+					p += 2;
+					if ( mode == 'loop' || mode == 'loopfill' )	p %= v.length;
+					if ( p >= v.length ) break;
+					[x0,y0] = [x2,y2];
+					[x1,y1] = [x3,y3];
+					[x2,y2] = [v[p+0].x,v[p+0].y];
+					[x3,y3] = [v[p+1].x,v[p+1].y];
+
+					if ( (i%2)==0 )
+					{
+						gra.ctx.bezierCurveTo( x1, y1, x2, y2, x3, y3 );
+					}
+					else
+					{
+						let x0b = 2*x1-x0;
+						let y0b = 2*y1-y0;
+						let x3b = 2*x2-x3;
+						let y3b = 2*y2-y3;
+						gra.ctx.bezierCurveTo( x0b, y0b, x3b, y3b, x2, y2 );
+					}
+				}
+			}
+
+			if ( mode == 'fill' || mode == 'loopfill' )	gra.ctx.fill();
 			gra.ctx.stroke();
+		}
+
+	}
+	//-----------------------------------------------------------------------------
+	gra.circle = function( x1,y1,r, st=0, en=Math.PI*2, mode="/loop/fill" ) // 2021/07/21　circle にst en を追加
+	//-----------------------------------------------------------------------------
+	{
+		[x1,y1]=gra.win_abs(x1,y1);
+//		let [rw,rh] = gra.win_range(r*gra.as,r); // 2021/07/29 windowとcanvasのアスペクト比を反映
+		let [rw,rh] = gra.win_range(r,r); // 2021/07/29 windowとcanvasのアスペクト比を反映
+	
+//		func( x1, y1,rw,rh );
+		{
+			gra.ctx.beginPath();
+
+			let rotation = 0;
+			gra.ctx.ellipse( x1, y1, rw, rh, rotation, st, en );
+
+			if ( mode == 'loop' ) 
+			{
+				gra.ctx.closePath();
+				gra.ctx.stroke();
+			}
+			else
+			if ( mode == 'fill' ) 
+			{
+				gra.ctx.fill();
+			}
+			else
+			{
+				gra.ctx.stroke();
+			}
+		}
+	}
+	//-----------------------------------------------------------------------------
+	gra.circlefill = function( x1,y1,r, st=0, en=Math.PI*2 ) // 2021/07/21　circle にst en を追加 )
+	//-----------------------------------------------------------------------------
+	{
+		[x1,y1]=gra.win_abs(x1,y1);
+//		let [rw,rh] = gra.win_range(r*gra.as,r); // 2021/07/29 windowとcanvasのアスペクト比を反映
+		let [rw,rh] = gra.win_range(r,r); // 2021/07/29 windowとcanvasのアスペクト比を反映
+		{
+			gra.ctx.beginPath();
+			let rotation = 0;
+			gra.ctx.ellipse( x1, y1, rw, rh, rotation, st, en );
+			gra.ctx.fill();
 		};
-		[x1,y1]=win_abs(x1,y1);
-		let [rw,rh] = win_range(r,r);
-		func( x1, y1,rw,rh );
 	}
 
+	//-----------------------------------------------------------------------------
+	gra.drawpictgrambone = function( p1, r1, p2, r2 )	// 2021/07/30 ピクトグラム風、円が二つ連なった図形の描画
+	//-----------------------------------------------------------------------------
+	{
+
+		function vrot( v, th )
+		{
+			let s = Math.sin(th);
+			let c = Math.cos(th);
+			// c,  s,  0,
+			//-s,  c,  0,
+			// 0,  0,  1
+			let nx = v.x*c + v.y*s;
+			let ny =-v.x*s + v.y*c;
+
+			return new vec2( nx, ny );
+		}
+		let l = length2(vsub2(p2,p1));
+		let rot = Math.atan2(p1.x-p2.x, p1.y-p2.y);
+		let th = -Math.asin( (r1-r2)/l);
+
+		let c = Math.cos(th);
+		let s = Math.sin(th);
+		let va=vec2( r1*c,r1*s);
+		let vb=vec2( r2*c,r2*s);
+		let vc=vec2(-r1*c,r1*s);
+		let vd=vec2(-r2*c,r2*s);
+
+		let pa = vadd2(vrot(va,rot),p1);
+		let pb = vadd2(vrot(vb,rot),p2);
+		let pc = vadd2(vrot(vc,rot),p1);
+		let pd = vadd2(vrot(vd,rot),p2);
+
+		function path_circle( x1,y1,r, st, en )
+		{
+			[x1,y1]=gra.win_abs(x1,y1);
+			let [rw,rh] = gra.win_range(r,r); // 2021/07/29 windowとcanvasのアスペクト比を反映
+			{
+				let rotation = 0;
+				gra.ctx.ellipse( x1, y1, rw, rh, rotation, st, en );
+			};
+		}
+		
+		function path_line( V ) // vec2 V
+		{
+			for ( let v of V )
+			{
+				[v.x,v.y]=gra.win_abs(v.x,v.y);
+			}
+
+
+			gra.ctx.moveTo( V[0].x, V[0].y );
+			
+			for ( let i = 1 ; i < V.length ; i++ )
+			{
+				gra.ctx.lineTo( V[i].x, V[i].y );
+			}
+		}
+
+		gra.ctx.beginPath();
+		path_circle( p1.x, p1.y, r1, Math.PI+th+rot, -th+rot );
+		path_circle( p2.x, p2.y, r2, -th+rot, Math.PI+th+rot );
+		path_line( [pd, pc, pa, pb ] );
+		gra.ctx.fill();
+
+	}
 	//-----------------------------------------------------------------------------
 	gra.cls = function()
 	//-----------------------------------------------------------------------------
 	{
-		gra.ctx.fillStyle = "#ffffff";
+		let c = gra.ctx.fillStyle;
+		gra.ctx.fillStyle = gra.backcol;//"#ffffff";
 		gra.ctx.fillRect( 0, 0, gra.ctx.canvas.width, gra.ctx.canvas.height );
 		gra.x=0;
 		gra.y=0;
+		gra.ctx.fillStyle = c;
 	}
 	return gra;
 };
@@ -205,6 +902,7 @@ function vmul2( a, b )
 function reflect2( I, N )
 //------------------------------------------------------------------------------
 {
+	// R = I-dot(I,N)*2
 	let d = 2*(I.x*N.x + I.y*N.y);
  	return vsub2( I , vec2( d*N.x, d*N.y ) );
 }
@@ -215,6 +913,15 @@ function vmul_scalar2( a, s )
 	return vec2(
 		a.x * s,
 		a.y * s 
+	);
+}
+//------------------------------------------------------------------------------
+function vdiv_scalar2( a, s ) // 2021/07/26 追加
+//------------------------------------------------------------------------------
+{
+	return vec2(
+		a.x / s,
+		a.y / s 
 	);
 }
 //------------------------------------------------------------------------------
@@ -229,11 +936,18 @@ function dot2( a, b )
 {
 	return a.x*b.x + a.y*b.y;
 }
+//------------------------------------------------------------------------------
+function cross2( a, b )
+//------------------------------------------------------------------------------
+{
+	return a.x*b.y-a.y*b.x;
+}
 
 //------------------------------------------------------------------------------
 function length2( v )	//	 as abs()
 //------------------------------------------------------------------------------
 {
+	if ( v.x==0 && v.y==0) return 0; // 2021/07/28 add
 	return Math.sqrt(v.x*v.x+v.y*v.y);
 }
 //------------------------------------------------------------------------------
@@ -803,3 +1517,68 @@ function mlookat( eye, at, up=vec3(0,1,0)  )	// V マトリクスを作成
 
 ////
 
+
+// 2021/07/24 KEY追加
+const	KEY_F1	= 112;
+const	KEY_F2	= 113;
+const	KEY_F3	= 114;
+const	KEY_F4	= 115;
+const	KEY_F5	= 116;
+const	KEY_F6	= 117;
+const	KEY_F7	= 118;
+const	KEY_F8	= 119;
+const	KEY_F9	= 121;
+const	KEY_F10	= 122;
+const	KEY_F11	= 123;
+const	KEY_F12 = 124;
+const	KEY_DEL	= 46;
+const	KEY_ESC	= 27;
+const	KEY_BS	= 8;
+const	KEY_TAB	= 9;
+const	KEY_CAPS	= 20;
+const	KEY_SHIFT	= 16;
+const	KEY_CTRL	= 17;
+const	KEY_ALT		= 18;
+const	KEY_CR	= 13;
+const	KEY_SPC	= 32;
+const	KEY_0	= 48;	//0x30
+const	KEY_1	= 49;	//0x31
+const	KEY_2	= 50;	//0x32
+const	KEY_3	= 51;	//0x33
+const	KEY_4	= 52;	//0x34
+const	KEY_5	= 53;	//0x35
+const	KEY_6	= 54;	//0x36
+const	KEY_7	= 55;	//0x37
+const	KEY_8	= 56;	//0x38
+const	KEY_9	= 57;	//0x39
+const	KEY_A	= 65;	//0x41
+const	KEY_B	= 66;	//0x42
+const	KEY_C	= 67;	//0x43
+const	KEY_D	= 68;	//0x44
+const	KEY_E	= 69;	//0x45
+const	KEY_F	= 70;	//0x46
+const	KEY_G	= 71;	//0x47
+const	KEY_H	= 72;	//0x48
+const	KEY_I	= 73;	//0x49
+const	KEY_J	= 74;	//0x4a
+const	KEY_K	= 75;	//0x4b
+const	KEY_L	= 76;	//0x4c
+const	KEY_M	= 77;	//0x4d
+const	KEY_N	= 78;	//0x4e
+const	KEY_O	= 79;	//0x4f
+const	KEY_P	= 80;	//0x50
+const	KEY_Q	= 81;	//0x51
+const	KEY_R	= 82;	//0x52
+const	KEY_S	= 83;	//0x53
+const	KEY_T	= 84;	//0x54
+const	KEY_U	= 85;	//0x55
+const	KEY_V	= 86;	//0x56
+const	KEY_W	= 87;	//0x57
+const	KEY_X	= 88;	//0x58
+const	KEY_Y	= 89;	//0x59
+const	KEY_Z	= 90;	//0x5a
+
+const	KEY_LEFT	= 37;
+const	KEY_UP		= 38;
+const	KEY_RIGHT	= 39;
+const	KEY_DOWN	= 40;

@@ -146,41 +146,53 @@ function main()
 			let l = length2(vsub2(a.p,b.p))-r;
 			if ( l < 0 )
 			{
-				function vinpact2( I, dir )
+			// 衝突計算関数
+				function calcbound( a, b ) // .v .p .m mark
 				{
-					let N = normalize2( dir );	 
-					let d = dot2( I, N );
-					return vec2( N.x*d, N.y*d );
+					// 伝達ベクトル
+					let N = normalize2( vsub2( b.p, a.p ) );
+					let va = dot2( a.v, N )
+					let vb = dot2( b.v, N )
+
+					//console.log( vb-va);
+					if ( vb > va ) return 0 ; // 離れてゆく場合は計算しない
+
+					let a1 = vec2( N.x*va, N.y*va );
+					let b1 = vec2( N.x*vb, N.y*vb );
+
+					// 残留ベクトル
+					let a2 = vsub2( a.v, a1 );
+					let b2 = vsub2( b.v, b1 );
+
+					// 運動量交換
+					// m1v1+m2v2=m1v1'+m2v2'
+					// v1-v2=-(v1'-v2')
+					let a3 = vec2(
+						(a.m*a1.x +b.m*(2*b1.x-a1.x))/(a. m+b.m),
+						(a.m*a1.y +b.m*(2*b1.y-a1.y))/(a.m+b.m)
+					);
+					let b3 = vec2(
+						a1.x-b1.x+a3.x,
+						a1.y-b1.y+a3.y
+					);
+
+					// a,b:運動量合成
+					a.v = vadd2( a2, a3 );
+					b.v = vadd2( b2, b3 );
+
+					return Math.abs(va-vb); // 衝突速度を返す
+						
+					let ka = (1/2*a.m*va*va);
+					let kb = (1/2*b.m*vb*vb);
+					return  ka+kb; // 衝突エネルギーKを返す
+
 				}
-				
-				// 衝突ベクトル
-				let a1 = vinpact2( a.v, vsub2( b.p, a.p ) );		// a -> b ベクトル
-				let b1 = vinpact2( b.v, vsub2( a.p, b.p ) );		// b -> a ベクトル
-
-				// 残留ベクトル
-				let a2 = vsub2( a.v, a1 );
-				let b2 = vsub2( b.v, b1 );
-
-				// 速度交換
-				// m1v1+m2v2=m1v1'+m2v2'
-				// v1-v2=-(v1'-v2')
-				let a3 = vec2(
-					(a.m*a1.x +b.m*(2*b1.x-a1.x))/(a.m+b.m),
-					(a.m*a1.y +b.m*(2*b1.y-a1.y))/(a.m+b.m)
-				);
-				let b3 = vec2(
-					a1.x-b1.x+a3.x,
-					a1.y-b1.y+a3.y
-				);
-
-				// a,b:運動量伝達と合成
-				a.v = vadd2( a2, a3 );
-				b.v = vadd2( b2, b3 );
+				calcbound( a, b );
 
 				// 埋まりを矯正
 				{
 					let n = normalize2( vsub2(a.p,b.p) );
-					let v = vmul_scalar2(n,l);
+					let v = vmul_scalar2(n,l/2);
 					a.p = vsub2( a.p, v );
 					b.p = vadd2( b.p, v );
 				}
@@ -209,16 +221,16 @@ function main()
 			let K=0;
 			let x = 0;
 			let y = 0;
-			gra.locate(x,y++);gra.print( "name | 速さv              | 質量m | 運動エネルギーK    |" );
+			gra.locate(x,y++);gra.print( "   | v              | m | K       |" );
 			for ( let t of balls )	
 			{
 				let k = 1/2*t.m*dot2(t.v,t.v);
 //				let k = t.m*length2(t.v);
 				gra.locate(x,y);gra.print( t.name  );
-				gra.locate(x+5,y);gra.print( "| " + length2(t.v)  );
-				gra.locate(x+26,y);gra.print( "| " +t.m );
-				gra.locate(x+34,y);gra.print( "| " + k );
-				gra.locate(x+55,y);gra.print( "| " );
+				gra.locate(x-2+5,y);gra.print( "| " + length2(t.v)  );
+				gra.locate(x-2+26,y);gra.print( "| " +t.m );
+				gra.locate(x-2+30,y);gra.print( "| " + k );
+				gra.locate(x-2+55,y);gra.print( "| " );
 
 				K+=k;
 				y++;
