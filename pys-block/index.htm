@@ -2,7 +2,7 @@
 <html>
 	<head>
 		<meta charset="UTF-8">
-		<title>丸いブロック崩しv1.0</title>
+		<title>丸いブロック崩しv1.1</title>
 		<style>
 
 			.group
@@ -53,66 +53,19 @@
 				font-family:monospace;
 			}
 
-//			table,td,thead,tfoot 
-//			{
-//				border: 1px solid;
-//			}
-.gamearea
- {
-  cursor: none;
-}
-/*
-html,body,a{
-  cursor: none;
-}
-#cursor{
-  transform: translate(0,0);
-    pointer-events: none;
-    position: fixed;
-    top: -4px;    //座標調節（カーソル位置と円の中心を合わせる）
-    left: -4px;   //座標調節（カーソル位置と円の中心を合わせる）
-    width: 8px;   //カーソルの直径
-    height: 8px;  //カーソルの直径
-    background: rgba(0,0,0,0.75);
-    border-radius: 50%;
-    z-index: 999;
-    transition: width .3s, height .3s, top .3s, left .3s;
-  
-  &.hov_{
-    top: -12px;    //大きくなった分の座標調節
-    left: -12px;   //大きくなった分の座標調節
-    width: 32px;   //カーソルの直径
-    height: 32px;  //カーソルの直径
-    background: rgba(200,50,50,0.75);
-  }
-}
+	}
+	.gamearea
+	{
+	  cursor: none;
+	}
 
-// 以下、カーソルに関係ない部分
-.btn {
-    display: block;
-    width: 160px;
-    margin: 40px auto;
-    text-align: center;
-    font-size: 14px;
-    line-height: 1;
-
-    a {
-      display: block;
-      color: #fff;
-      text-decoration: none;
-      padding: 8px;
-      background-color: #007adf;
-    }
-
-}
-*/
 
 		</style>
 	</head>
 	<body align="center">
-		<H1>丸いブロック崩しv1.0</H1>
+		<H1>丸いブロック崩しv1.1</H1>
 			<div class="group">
-				<canvas class="gamearea" id="html_canvas"  width="512" height="384" style="border:1px solid" ></canvas>
+				<canvas class="gamearea" id="html_canvas"  width="756" height="640" style="border:1px solid" ></canvas>
 				<script src="lib.js"></script>
 				<script src="main.js"></script>
 				<br>
@@ -129,28 +82,11 @@ html,body,a{
 				-->
 					<tr> <td><input type="radio" name="html_game" onchange="html_onchange('multi');		"></td>			
 						<td>Multi:<br>	</td>	<td "><a id="html_multi" ></a></td> <tr>
-<!--
-					<tr> <td><input type="radio" name="html_game" 	onchange="html_onchange('super');	"></td>	
-						<td>Super:<br>	</td>	<td><a id="html_super" ></a></td> <tr>
-					<tr> <td><input type="radio" name="html_game" onchange="html_onchange('heavy');		"></td>			
-						<td>Heavy:<br>	</td>	<td><a id="html_heavy" ></a></td> <tr>
-					<tr> <td><input type="radio" name="html_game" onchange="html_onchange('mitu');		"></td>			
-						<td>Mitu:<br>	</td>	<td><a id="html_mitu" ></a></td> <tr>
-					<tr> <td><input type="radio" name="html_game" onchange="html_onchange('wild');		"></td>			
-						<td>Wild:<br>	</td>	<td><a id="html_wild" ></a></td> <tr>
-					<tr> <td><input type="radio" name="html_game" onchange="html_onchange('special');	"></td>		
-						<td>Special:<br>	</td>	<td><a id="html_special" ></a></td> <tr>
-					<tr> <td><input type="radio" name="html_game" onchange="html_onchange('atom');		"></td>			
-						<td>Atom:<br>	</td>	<td><a id="html_atom" ></a></td> <tr>
-					<tr> <td><input type="radio" name="html_game" onchange="html_onchange('hex');		"></td>			
-						<td>Hex:<br>		</td>	<td><a id="html_hex" ></a></td> <tr>
-					<tr> <td><input type="radio" name="html_game" onchange="html_onchange('bio');		"></td>		
-						<td>Bio:<br>	</td>	<td><a id="html_bio" ></a></td> <tr>
--->
+
 					<tr> <td><input type="radio" name="html_game" onchange="html_onchange('moves');		"checked></td>		
 						<td>Moves:<br>	</td>	<td><a id="html_moves" ></a></td> <tr>
-					<tr> <td><input type="radio" name="html_game" onchange="html_onchange('dot');		"></td>			
-						<td>Dot:<br>		</td>	<td><a id="html_dot" ></a></td> <tr>
+					<tr> <td><input type="radio" name="html_game" onchange="html_onchange('dots');		"></td>			
+						<td>Dots:<br>		</td>	<td><a id="html_dots" ></a></td> <tr>
 
 				</table>
 			</div> 
@@ -164,49 +100,15 @@ html,body,a{
 
 
 
-<!--
-
-		<a href="https://twitter.com/intent/tweet?button_hashtag=BreakoutRoundBlock&ref_src=twsrc%5Etfw" data-size="large" class="twitter-share-button" data-show-count="false"></a><script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
-				<div class="group">
-				</div>
-
-
-				<div class="group">
-				ステージ選択<br>
-					<input type="radio" name="html_game" onchange="html_onchange('basic');">Basic
-					<input type="radio" name="html_game" onchange="html_onchange('super');">Super
-					<input type="radio" name="html_game" onchange="html_onchange('mitu');">Mitu
-					<input type="radio" name="html_game" onchange="html_onchange('wild');">Wild
-					<input type="radio" name="html_game" onchange="html_onchange('special');">Special
-					<input type="radio" name="html_game" onchange="html_onchange('giant');">Giant
-					<input type="radio" name="html_game" onchange="html_onchange('dot');">Dot
-					<input type="radio" name="html_game" onchange="html_onchange('hex');">Hex
-					<input type="radio" name="html_game" onchange="html_onchange('bio');"checked>Castle
-				</div>
-
-				<canvas class="gamearea" id="html_canvas"  width="384" height="384" style="border:1px solid" ></canvas>
-				<canvas class="gamearea" id="html_canvas"  width="640" height="360" style="border:1px solid" ></canvas>
-				
-				
-		<div class="group">
-			速度計算
-			<br>
-			<input type="radio" name="html_reso" value="1" onchange="html_onchange('v^2');" checked 	>衝撃＝速度の二乗
-			<br>
-			<input type="radio" name="html_reso" value="0.5" onchange="html_onchange('v');" 	>衝撃＝速度
-		</div>
-			<input type="button" value="play/stop" onClick="html_onchange('play/stop')" >
-			<input type="button" value="info" onClick="html_onchange('info')" >
--->
 			
 			<br>
 
-	<br>～概要 2021/07/30～<br>
-			衝突の物理演算をブロック崩しに持ち込んでみたらどうなるか？というテーマ<br>
+	<br>～概要 2021/07/31～<br>
+			物理演算をブロック崩しに適用して新しいゲーム性を模索する実験<br>
 
 	<br>～操作方法～<br>
 
-			<div id="html_table" class="group-left">
+			<div id="html_table" class="group">
 				<table style="width:100%">
 				<tr>	<th>デバイス　　　　</th> <th>左右移動　　　　　　</th>	<th>サーブ　　　　　　　</th>	<th>ポーズ　　　　　　</th>  </tr>
 					<tr> <td>キーボード</td>	<td>カーソルキー←→</td>	<td>スペースバー</td>	<td>Pキー</td>	<tr>

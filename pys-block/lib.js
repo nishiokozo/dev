@@ -95,14 +95,15 @@ function func_intersect_Line_Point2( P0, I0, P1 )	// 直線と点との距離
 	let t = dot2(I0,I1);	// P0からQまでのQ距離
 	let Q = vadd2( P0, vmul_scalar2(I0,t));
 	let	d =  length2(vsub2(Q , P1));
-	return [true,d,Q,t];
+	return [d,Q,t]; // 意味のないflg:trueの戻り値を省く。
 }
 
 //------------------------------------------------------------------------------
 function func_intersect_HarfLine_Point2( P0, I0, P1 )	// 半直線と点との距離 2021/07/23
 //------------------------------------------------------------------------------
 {
-	let [flg,d,Q,t] = func_intersect_Line_Point2( P0, I0, P1 );
+	let [d,Q,t] = func_intersect_Line_Point2( P0, I0, P1 );
+	let flg = true;
 
 	if ( t <= 0 ) flg = false; 			// 始点トリミング：範囲外でも使える衝突点等の値が返る
 
@@ -119,13 +120,13 @@ function func_intersect_SegLine_Point2( P0, Q0, P1 )	// 線分と点との距離
  	let L = vsub2(Q0 , P0)
  	let I0 = normalize2(L)
 
-	let [flg,d,Q,t] = func_intersect_Line_Point2( P0, I0, P1 );
+	let [d,Q,t] = func_intersect_Line_Point2( P0, I0, P1 );
+	let flg = true;
 	if ( t <= 0 ) flg = false; 			// 始点トリミング：範囲外でも使える衝突点等の値が返る
 	if ( t >= length2(L) ) flg = false;	// 終点トリミング：範囲外でも使える衝突点等の値が返る
 
 	return [flg,d,Q,t];
 }
-
 
 //------------------------------------------------------------------------------
 function func_intersect_Line_Line2( P0, I0, P1, I1 ) // 直線と直線の距離 2021/07/23
@@ -148,7 +149,7 @@ function func_intersect_Line_Line2( P0, I0, P1, I1 ) // 直線と直線の距離
 	{
 		let Q0 = vec2(0.0);
 		let Q1 = vec2(0.0);
-		let d = Math.abs( cross2( vsub2(P1 , P0), I0 ) );	// func_intersect_Line_Point2():点と線との距離
+		let d = Math.abs( cross2( vsub2(P1 , P0), I0 ) );	// 点と線との距離
 		return [false,d,Q0,Q1,0,0];
 	}
 
@@ -642,6 +643,12 @@ function gra_create( cv )	//2021/06/01
 		}
 	}
 
+	//-----------------------------------------------------------------------------
+	gra.getLineWidth = function() //2021/07/26 追加
+	//-----------------------------------------------------------------------------
+	{
+		return gra.lineWidth;
+	}
 	//-----------------------------------------------------------------------------
 	gra.setLineWidth = function( val=1.0 ) //2021/07/26 追加
 	//-----------------------------------------------------------------------------

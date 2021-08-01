@@ -9,24 +9,26 @@ function bo_create()
 
 	// public
 	bo.req = '';
+	bo.prev_req = '';
 	bo.key=Array(256);
 	bo.game;
 	bo.hdlRequest = null;
 	bo.reso_x = 360;
 	bo.reso_y = 360;
+	bo.se;
+	bo.mouse_tst_x=0;
+	bo.mouse_tst_y=0;
 	bo.mouse_x;
 	bo.mouse_click;
-	bo.tst_x=0;
-	bo.tst_y=0;
-	bo.inter = false;
-	bo.se;
-	bo.hdlClick = null;	// マウスクリックのチャタリング防止用
+//	bo.mouse_hdlClick = null;	// マウスクリックのチャタリング防止用
+//	bo.mouse_inter = false;
 	// public
 
 
 	let m_hdlTimeout = null;
 	let first = 1;
 	let count = 1;
+	let log = 0;
 	let m_highscore = 
 	{
 		multi:100,
@@ -36,15 +38,15 @@ function bo_create()
 	//	special:1,
 	//	atom:1,
 	//	heavy:1,
-		dot:100,
+		dots:100,
 	//	hex:1,
 	//	bio:1,
 		moves:100,
 	};
 
 	const BALL_SP_BASE	= 160;	//	基準になるボールの速度。平均的にゲームに快適な速度
-	const BALL_SP_MAX	= 500;	//	ゲーム性の限界の速度 ※天井加速の閾値なので、運動量交換でこれ以上はあり得る。マウスだと500,パッドだと400,キーだともう少し下にしたい所だけどマウス基準にしておく。
-	const BALL_SP_Y		= 20;	//	殆ど真横でバウンドし続けるのを抑制するための、Y軸移動量下限値
+	const BALL_SP_MAX	= 400;	//	ゲーム性の限界の速度 ※天井加速の閾値なので、運動量交換でこれ以上はあり得る。マウスだと500,パッドだと400,キーだともう少し下にしたい所。簡単な400にしておく。
+//	const BALL_SP_Y		= 20;	//	殆ど真横でバウンドし続けるのを抑制するための、Y軸移動量下限値→手を加えない方が面白みに思えるので取りやめ
 	const BALL_SP_CEIL	= 1.1;	//	天井に当たったときの加速率
 	const BALL_1UP		= 100;	// 100回ボールを打つたびに1up
 	const BALL_M = 0.8;
@@ -73,16 +75,17 @@ function bo_create()
 	// 初期化
 	if ( bo.hdlRequest ) window.cancelAnimationFrame( bo.hdlRequest ); // bo_create呼び出しで多重化を防ぐ
 	if ( m_hdlTimeout ) clearTimeout( m_hdlTimeout 	);	 // bo_create呼び出しで多重化を防ぐ
-	if ( bo.hdlClick ) clearTimeout( bo.hdlClick 	);	 // bo_create呼び出しで多重化を防ぐ
+//	if ( bo.mouse_hdlClick ) clearTimeout( bo.mouse_hdlClick 	);	 // bo_create呼び出しで多重化を防ぐ
 	gra = gra_create( html_canvas );
 	first = 1;
 	count = 1;
 	bo.mouse_x = 0;
-	bo.mouse_click = false;
+//	bo.mouse_click = false;
+	bo.mouse_flginput = false;	// マウスの排他制御。キー、コントロールパッドを使っている間はマウスを使えなくする。逆も然り。
 
 	//---
-	let info_flg_mouseinput = false;
-	let info_pause;
+	let info_flgpause;
+//	let info_flgstep;
 	let info_stat;
 	let info_timerlost;
 	let info_stockballs;
@@ -95,7 +98,6 @@ function bo_create()
 	let info_cntRally = 0;
 	let balls = [];
 	let blocks = [];
-//	let prev_x;
 	let pad;
 
 	let info_mouseslowtime = 0;
@@ -151,7 +153,7 @@ function bo_create()
 
 		let r = calc_r( m );
 		if ( r < 0 ) r = 1;
-		balls.push({typ:typ, p:vec2(px, py),v:vec2(vx, vy),m:m ,r:r, flgActive:true, cntCnv:0 });
+		balls.push({typ:typ, p:vec2(px, py),v:vec2(vx, vy),m:m ,r:r, flgActive:true, cntCnv:0, prev_p:vec2(0,0) });
 	}
 	//-----------------------------------------------------------------------------
 	function create_block( typ='blk:nml',px, py, r )
@@ -170,7 +172,7 @@ function bo_create()
 		{
 			let m = RACKET_M - (info_cntStage-1)/10;
 			if ( m < RACKET_MIN ) m =  RACKET_MIN;
-			racket = {p:{x:bo.reso_x/2,y:RACKET_Y},v:{x:0,y:0},a:{x:0,y:0},r:16, m:m, req_a:{x:0,y:0}};
+			racket = {p:{x:bo.reso_x/2,y:RACKET_Y},v:{x:0,y:0},a:{x:0,y:0},r:16, m:m, req_a:{x:0,y:0}, prev_p:vec2(0,0)};
 			racket.r = calc_r( racket.m )*2; // ラケットは半円なので、半径は倍
 		}
 
@@ -276,10 +278,10 @@ function bo_create()
 				}
 				break;
 
-			case 'dot':	// 
+			case 'dots':	// 
 				{
-					let r = 2;
-					let st = 29;
+					let r = 2+1;
+					let st = 29+1;
 					let w = Math.floor(bo.reso_x / st);
 					let ax = (bo.reso_x-w*st)/2;
 					for ( let j = 0 ; j < 4 ; j++ )
@@ -290,20 +292,45 @@ function bo_create()
 		//				blocks.push({typ:'blk:nml',n:1,p:vec2(x, y),r:r, flgActive:true});
 						create_block( 'blk:nml', x, y, r )
 					}
-					if (0 )
+					if ( 0 )
 					{
-						create_ball( 'bal:hard',bo.reso_x/2, BLOCK_Y-16, BALL_M*3,  0, radians(0) );
-						create_ball( 'bal:hard',bo.reso_x/2-50, BLOCK_Y-16, BALL_M*1.0,    0, radians(0) );
-						create_ball( 'bal:hard',bo.reso_x/2+50, BLOCK_Y-16, BALL_M*0.4,  400, radians(0) );
+						let lvl_sp = 1;
+						if ( 0 )
+						{
+							create_ball( 'bal:hard',bo.reso_x/2, BLOCK_Y-16, BALL_M*3,  0, radians(0) );
+							create_ball( 'bal:hard',bo.reso_x/2-50, BLOCK_Y-16, BALL_M*1.0,    0, radians(0) );
+							create_ball( 'bal:hard',bo.reso_x/2+50, BLOCK_Y-16, BALL_M*0.4,  200, radians(0) );
+						}
+						else
+						{
+							create_ball( 'bal:hard',bo.reso_x/2+50, BLOCK_Y-16, BALL_M*0.4,  400, radians(0) );
+							for ( let i = 0 ; i < info_cntStage && i < 5 ; i++ )
+							{
+								let x = bo.reso_x/2-100+Math.random()*100; 
+								let m = BALL_M*(Math.random()*1.2+0.3); 
+								create_ball( 'bal:hard',x, BLOCK_Y-16, m,  0, radians(0) );
+							}
+						}
 					}
 					else
 					{
-						create_ball( 'bal:hard',bo.reso_x/2+50, BLOCK_Y-16, BALL_M*0.4,  400, radians(0) );
-						for ( let i =0 ; i < info_cntStage && i < 5 ; i++ )
+						let LVL=3;
+						let sp = 1;
+						if ( info_cntStage > LVL )
 						{
-							let x = bo.reso_x/2-100+Math.random()*100; 
-							let m = BALL_M*(Math.random()*2.7+0.3); 
-							create_ball( 'bal:hard',x, BLOCK_Y-16, m,  0, radians(0) );
+							sp *=(Math.floor(info_cntStage/LVL))/2+1;
+console.log(sp);
+						}
+						for ( let i = 0 ; i < ((info_cntStage-1) % LVL)+1 ; i++ )
+						{
+//							let x = bo.reso_x;/2-bo.reso_x/4+Math.random()*(bo.reso_x/4); 
+							let x = bo.reso_x*Math.random();
+//							let x = bo.reso_x/4+Math.random()*(bo.reso_x/4); 
+							let m = BALL_M*(Math.random()*1.7+0.3); 
+
+//							m = BALL_M*2;
+//							create_ball( 'bal:hard',x, BLOCK_Y-16, m, 400, radians(0) );
+							create_ball( 'bal:hard',x, BLOCK_Y+126, m, 100*sp, radians(0) );
 						}
 					}
 				}
@@ -558,18 +585,17 @@ function bo_create()
 	//-------------------------------------------------------------------------
 	{
 		console.log("reset");
-
-		racket = {p:{x:bo.reso_x/2,y:RACKET_Y},v:{x:0,y:0},a:{x:0,y:0},r:16, m:RACKET_M};
+		count = 0;
+		racket = {p:{x:bo.reso_x/2,y:RACKET_Y},v:{x:0,y:0},a:{x:0,y:0},r:16, m:RACKET_M,prev_p:vec2(0,0)};
 		racket.r = calc_r( racket.m )*2; // ラケットは半円なので、半径は倍
-//		prev_x	= racket.p.x;
-		pad = pad_create();
 
 		balls = [];
 		blocks = [];
-		info_flg_mouseinput = false;
+		bo.mouse_flginput = false;
 		info_cntStage = 1;
 		info_stockballs = 3;
-		info_pause = false;
+		info_flgpause = false;
+//		info_flgstep = false;
 		info_stat = 'start';
 		info_timerlost = 0;
 		info_score = 0;
@@ -578,6 +604,7 @@ function bo_create()
 		info_scaleball = 1;
 		info_cntServe = 0;
 		init_stage( bo.game, info_cntStage );
+		info_cntRally = 0;
 
 		// ハイスコアのHTMLへの反映
 		for ( let id of Object.keys(m_highscore) )
@@ -631,12 +658,15 @@ function bo_create()
 
 
 	bo.se = se_create();
+	pad = pad_create();
 
 	
 	//-------------------------------------------------------------------------
 	bo.frame_update = function( delta )
 	//-------------------------------------------------------------------------
 	{
+		pad.getinfo();
+
 		gra.window( 0,0,bo.reso_x,bo.reso_y );
 		gra.backcolor(0,0,0);
 		gra.color(1,1,1);
@@ -652,16 +682,25 @@ function bo_create()
 		let flgdebug = (document.getElementsByName( "html_debug" )
 					&& document.getElementsByName( "html_debug" )[0]
 					&& document.getElementsByName( "html_debug" )[0].checked );
+		let	flgstep = false;
 
 
-		if ( 'pause' == bo.req )
+		if ( bo.req != '' ) bo.prev_req = bo.req;
+		if ( bo.req == 'pause' )
 		{
 			bo.req ='';
 			if ( info_stat=='ingame' ) 
 			{
-				info_pause = !info_pause;
+				info_flgpause = !info_flgpause;
 			}
 		}
+		else
+		if ( bo.req == 'debug' )
+		{
+			bo.req ='';
+			document.getElementsByName( "html_debug" )[0].checked = !document.getElementsByName( "html_debug" )[0].checked;
+		}
+		else
 		if ( bo.req == 'fullscreen' )
 		{
 			bo.req ='';
@@ -673,12 +712,119 @@ function bo_create()
 				});		
 			}
 		}
+		else
 		if ( bo.req == 'reset' )
 		{
 			bo.req ='';
 			bo.resetall();
 		}
+		else
+		if ( bo.req == 'step' )
+		{
+			bo.req ='';
+			flgstep = true;
+		}
+		else
+		if ( bo.req == 'req_next' )
+		{
+			bo.req = ''
+			if ( info_stat == 'gameover' )
+			{
+				if ( info_flgpause == false ) bo.req='reset';
+			}
+			else
+			if ( info_stat == 'serve' )
+			{
+				bo.se_ring_by_name("se:service");
+				//console.log('control by ',bo.mouse_flginput?'mouse only':'key or pad');
 
+				console.log('service');
+				info_stat = 'ingame';
+
+				hit_st = {};
+				hit_en = {};
+				hit_q = {};
+				hit_buf_ball = [];
+				hit_buf_racket = [];
+			}
+			else
+			if ( info_stat == 'result' )
+			{
+				info_stat = 'start';
+			}
+			else
+			if ( info_flgpause && flgdebug )
+			{
+				bo.req = 'step';//info_flgstep = true;;
+			}
+
+
+		}
+
+
+		if ( info_stat == 'lostball' )
+		{
+			info_timerlost += delta;
+			if ( info_timerlost >= 1.0 )
+			{
+				if ( info_stockballs > 0 )
+				{
+					info_stat = 'start';
+				}
+				else
+				{
+					if ( info_score > m_highscore[ bo.game ] )
+					{
+						bo.se_ring_by_name("se:highscore");
+						m_highscore[ bo.game ] = info_score;
+					}
+					else
+					{
+						bo.se_ring_by_name("se:gameover");
+					}
+					info_stat = 'gameover';	// ゲームオーバー
+				}
+
+			}
+		}
+
+
+		// count active blocks 
+		{
+			info_activeblocks=0;
+			for ( let o of blocks )
+			{
+				if ( o.flgActive == false ) continue;
+				if ( o.typ == 'blk:hard' ) continue;
+				
+				info_activeblocks++;
+			}
+			
+		}
+
+		// count active balls 
+		{
+			info_activeballs=0;
+			for ( let b of balls )
+			{
+				if ( b.flgActive == false ) continue;
+				if ( b.typ == 'bal:hard' ) continue;
+				if ( b.v.x ==0 && b.v.y == 0  ) continue;
+				
+				info_activeballs++;
+			}
+			
+		}
+
+		// check clear
+		if ( info_activeblocks <= 0 )
+		{
+			info_cntStage++;
+			//bo.se_ring_by_name("se:clear"); // →クリア音と最後のブロックの破壊音重なっていまいちなのでなくす。
+			init_stage( bo.game, info_cntStage );
+		}
+					
+		// ------------
 
 		function gra_cvx( mx ) // canvas座標系のxをgra.window()座標系に変換する
 		{
@@ -687,48 +833,58 @@ function bo_create()
 			return (mx-ad)/wx*bo.reso_x;
 		}
 
-		pad.getinfo();
 
-
-			if ( flgdebug &&  bo.key[KEY_N] ) // 強制クリア
+		if ( flgdebug &&  bo.key[KEY_C] ) // デバッグ：カウンタクリア
+		{
+			count = 0;
+		}
+		if ( flgdebug &&  bo.key[KEY_N] ) // デバッグ：強制ステージクリア
+		{
+			bo.key[KEY_N] = 0;
+			for ( let o of blocks )
 			{
-				bo.key[KEY_N] = 0;
-				for ( let o of blocks )
+				if ( o.flgActive == false ) continue;
+				if ( o.typ == 'blk:hard' ) continue;
+				o.flgActive = false;
+			}
+			
+
+		}
+
+		// input serve 
+		{
+
+			if ( pad.trig.a ) 
+			{
+				bo.req = 'req_next';	// game pad
+				bo.mouse_flginput = false;
+			}
+
+			{// input pad
+
+				if ( pad.l1 && pad.trig.st ) 
 				{
-					if ( o.flgActive == false ) continue;
-					if ( o.typ == 'blk:hard' ) continue;
-					o.flgActive = false;
+					bo.req='reset';
+				}
+				else
+				if ( pad.trig.se ) 	
+				{
+					bo.req='debug';
+				}
+				else
+				if ( pad.trig.st ) 
+				{
+					bo.req='pause';
+					bo.mouse_flginput = false;
 				}
 
 			}
 
-		// input serve 
-		if ( info_stat == 'serve' || info_stat == 'gameover' )
-		{
-
-			if ( bo.mouse_click )	// mouse
-			{
-				bo.req = 'req_next';
-				bo.mouse_click = false;
-				info_flg_mouseinput = true;
-			}
-			else
-			if ( bo.key[KEY_SPC] )	// key
-			{
-				bo.req = 'req_next';
-				info_flg_mouseinput = false;
-			}
-			else
-			if ( pad.trig.a ) 
-			{
-				bo.req = 'req_next';	// game pad
-				info_flg_mouseinput = false;
-			}
 		}
 
 
 
-		if ( info_flg_mouseinput )
+		if ( bo.mouse_flginput )
 		{// input mouse
 
 
@@ -746,9 +902,9 @@ function bo_create()
 			}
 
 			{
-				let v = racket.v.x;					// 
-				let t = delta;						// 
-				let a = (s-v*t)/(t*t);			//
+				let v = racket.v.x;	
+				let t = delta;		
+				let a = (s-v*t)/(t*t);
 				racket.a.x += a;
 			}
 		
@@ -757,18 +913,6 @@ function bo_create()
 		{ 
 			{	// input key
 				let s = 0;
-				if ( flgdebug && bo.key[KEY_CR] ) 
-				{
-					bo.key[KEY_CR] = 0;
-					let r = BLOCK_R;
-					let st = r*2+1;
-					create_ball( 'bal:hard',bo.reso_x/2, BLOCK_Y+st*4, BALL_M*6, 0 );
-				}
-				if ( bo.key[KEY_P] ) 
-				{
-					bo.req='pause';
-					bo.key[KEY_P] = false;
-				}
 				if ( bo.key[KEY_RIGHT] ) 
 				{
 					s = bo.reso_x*1.5;
@@ -779,33 +923,24 @@ function bo_create()
 					s = -bo.reso_x*1.5;
 				}
 				{
-					let v = racket.v.x;					// 
-					let t = delta*20;						// 
-					let a = (s-v*t)/(t*t);			//
+					let v = racket.v.x;
+					let t = delta*20;
+					let a = (s-v*t)/(t*t);
 					racket.a.x += a;
 				}
 			}
 
 			{// pad
 
-				{// input pad
-
-					if ( pad.l1 && pad.trig.st ) {bo.req='reset';}
-					else
-					if ( pad.trig.se ) 	document.getElementsByName( "html_debug" )[0].checked = !document.getElementsByName( "html_debug" )[0].checked;
-					else
-					if ( pad.trig.st ) {bo.req='pause';}
-
-				}
 
 				let mx = (pad.rx+pad.lx);		// 入力値(-1~+1) 
 
 				let s = mx*bo.reso_x;
 
 				{
-					let v = racket.v.x;					// 
-					let t = delta*20;						// 
-					let a = (s-v*t)/(t*t);			//
+					let v = racket.v.x;
+					let t = delta*20;
+					let a = (s-v*t)/(t*t);
 					racket.a.x += a;
 				}
 			}
@@ -813,129 +948,28 @@ function bo_create()
 				// raket y accel
 		{
 			let s = (RACKET_Y-racket.p.y);
-			let v = racket.v.y;					// 
-			let t = delta*4;						// 
-			let a = (s-v*t)/(t*t);			//
+			let v = racket.v.y;
+			let t = delta*4;
+			let a = (s-v*t)/(t*t);
 
 			racket.a.y += a;
 		}
 
 
-		if ( info_pause == false )
+
+
+		// update
+		if ( info_flgpause == false || flgstep )
 		{
-			// exec request
-			if ( info_stat == 'gameover' )
-			{
-				if ( bo.req == 'req_next' )
-				{
-					bo.req='reset';
-				}
-
-			}
-			if ( info_stat == 'lostball' )
-			{
-				info_timerlost += delta;
-				if ( info_timerlost >= 1.0 )
-				{
-					if ( info_stockballs > 0 )
-					{
-						info_stat = 'start';
-					}
-					else
-					{
-						if ( info_score > m_highscore[ bo.game ] )
-						{
-							bo.se_ring_by_name("se:highscore");
-							m_highscore[ bo.game ] = info_score;
-						}
-						else
-						{
-							bo.se_ring_by_name("se:gameover");
-						}
-						info_stat = 'gameover';	// ゲームオーバー
-					}
-
-				}
-			}
-
-			if ( info_stat == 'result' )
-			{
-				if ( bo.req == 'req_next' )
-				{
-					bo.req='';
-					info_stat = 'start';
-				}
-			}
-
-			//1up exec
-			{
-			}
-
-			// count active blocks 
-			{
-				info_activeblocks=0;
-				for ( let o of blocks )
-				{
-					if ( o.flgActive == false ) continue;
-					if ( o.typ == 'blk:hard' ) continue;
-					
-					info_activeblocks++;
-				}
-				
-			}
-
-			// count active balls 
-			{
-				info_activeballs=0;
-				for ( let b of balls )
-				{
-					if ( b.flgActive == false ) continue;
-					if ( b.typ == 'bal:hard' ) continue;
-					if ( b.v.x ==0 && b.v.y == 0  ) continue;
-					
-					info_activeballs++;
-				}
-				
-			}
 
 			// ボール生成
 			if( info_stat=='start')
 			{
 				let sp = BALL_SP_BASE*0.75 + info_cntServe*BALL_SP_BASE*0.3;
 				create_ball( 'bal:nml',BALL_X, BALL_Y, BALL_M*info_scaleball, sp, radians(45) );
-//				create_ball( 'bal:nml',BALL_X, 10, BALL_M*info_scaleball, sp, radians(45) );
 				info_stat = 'serve';
 				info_cntServe++;
 			}
-
-			// サーブ
-			if ( bo.req == 'req_next' )
-			{
-				bo.req=''
-				if ( info_stat == 'serve' )
-				{
-					bo.se_ring_by_name("se:service");
-					//console.log('control by ',info_flg_mouseinput?'mouse only':'key or pad');
-
-					console.log('service');
-					info_stat = 'ingame';
-
-					hit_st = {};
-					hit_en = {};
-					hit_q = {};
-					hit_buf_ball = [];
-					hit_buf_racket = [];
-				}
-			}
-
-			// check clear
-			if ( info_activeblocks <= 0 )
-			{
-				info_cntStage++;
-				//bo.se_ring_by_name("se:clear"); // →クリア音と最後のブロックの破壊音重なっていまいちなのでなくす。
-				init_stage( bo.game, info_cntStage );
-			}
-
 
 			// accel racket
 			{
@@ -964,7 +998,7 @@ function bo_create()
 
 					if ( b.typ=='bal:hard' )
 					{
-				//		b.v = vmul_scalar2( b.v, 0.999 );
+				//		b.v = vmul_scalar2( b.v, 0.999 );	// 減速、高速化しすぎないように→ここだけ摩擦があるのも作為的なのでやめる。
 					}
 				}
 			}
@@ -1002,32 +1036,35 @@ function bo_create()
 
 				if ( b.p.x < wl )
 				{
-					bo.se_ring_by_name("se:wall" );
+					bo.se_ring_by_name("se:wall",(b.typ == 'bal:nml')?1.0:0.5 );
 					b.p.x += (wl-b.p.x)*2;
 		 			b.v.x = -b.v.x;
-					if ( b.type == 'bal:nml' )
+/*
+					if ( b.typ == 'bal:nml' )
 					{
-						if ( Math.abs(b.v.y) < BALL_SP_Y ) 			//	y軸下限
+						if ( Math.abs(b.v.y) < BALL_SP_Y ) 			//	y軸下限	→ 手を加えない方が面白みに思えるので取りやめ
 						{
 							if ( b.v.y == 0 ) b.v.y = 1;
 							b.v.y = b.v.y/Math.abs(b.v.y)*BALL_SP_Y;
 						}
 					}
-
+*/
 		 		}
 				if ( b.p.x > wr )
 				{
-					bo.se_ring_by_name("se:wall" );
+					bo.se_ring_by_name("se:wall",(b.typ == 'bal:nml')?1.0:0.5 );
 					b.p.x += (wr-b.p.x)*2;
 		 			b.v.x = -b.v.x;
-					if ( b.type == 'bal:nml' )
+/*
+					if ( b.typ == 'bal:nml' )
 					{
-						if ( Math.abs(b.v.y) < BALL_SP_Y ) 			//	y軸下限
+						if ( Math.abs(b.v.y) < BALL_SP_Y ) 			//	y軸下限	→ 手を加えない方が面白みに思えるので取りやめ
 						{
 							if ( b.v.y == 0 ) b.v.y = 1;
 							b.v.y = b.v.y/Math.abs(b.v.y)*BALL_SP_Y;
 						}
 					}
+*/
 		 		}
 
 				if ( b.p.y < wt )
@@ -1045,11 +1082,10 @@ function bo_create()
 						{
 							bo.se_ring_by_name("se:wall" );
 						}
-//						console.log( "sp ",length2(b.v) );
 					}
 					else
 					{
-						bo.se_ring_by_name("se:wall" );
+						bo.se_ring_by_name("se:wall",(b.typ == 'bal:nml')?1.0:0.5 );
 					}
 		 		}
 				if ( b.typ == "bal:hard" )// ブロックみたいなボールは落ちない
@@ -1058,6 +1094,7 @@ function bo_create()
 					{
 						b.p.y += (wb-(b.p.y+b.r*2))*2;
 			 			b.v.y = -b.v.y;
+						bo.se_ring_by_name("se:wall" );
 					}
 				}
 				else
@@ -1097,42 +1134,82 @@ function bo_create()
 			{
 				if ( b.flgActive == false ) continue;
 
+				let flgcoll = false;
+				let min_d = 9999;
+				let min_Q;
+				let min_P1;
+				let min_blk;
 				for ( let blk of blocks )
 				{
 					if ( blk.flgActive == false ) continue;
 
-					let l = chkhit(b,blk);
-					if ( l < 0 )
+					// 1段階目、フレーム間衝突判定
+					let P0 = b.p;
+					let P1 = vec2( b.p.x-b.v.x*delta, b.p.y-b.v.y*delta );
+					let P2 = blk.p;
+					let r = blk.r+b.r;
+					let [flg,d,Q] = func_intersect_SegLine_Point2( P0, P1, P2 );  // フレーム間を線形で衝突判定
+					if ( flg && d < r && d < min_d ) 
 					{
-						if ( blk.typ == 'blk:hard' || b.typ == 'bal:hard' ) 
+						flgcoll = true;
+						min_d = d;
+						min_Q = Q;
+						min_P1 = P1;
+						min_blk = blk;
+					}
+					else
+					{	// ２段階目、現在位置の衝突判定
+						let l = chkhit(b,blk);
+						if ( l < 0 )
 						{
-							{ // 埋まりを解消
-								let l = chkhit(blk,b);
-								let N = normalize2( vsub2(blk.p,b.p) );
-								let m = vmul_scalar2(N,l);
-								b.p = vadd2( b.p, m );
-							}
-
-							b.v = reflect2( b.v, normalize2( vsub2( blk.p, b.p ) ) );
-							bo.se_ring_by_name("se:toball2", 1.0 );
-						}
-						else
-						if ( blk.typ == 'blk:uzu' ) 
-						{
-							b.v = reflect2( b.v, normalize2( vsub2( blk.p, b.p ) ) );
-							b.v = vmul_scalar2(b.v,1.1);
-							bo.se_ring_by_name("se:uzu");
-							blk.flgActive = false;
-							info_score++;
-						}
-						else
-						{
-							b.v = reflect2( b.v, normalize2( vsub2( blk.p, b.p ) ) );
-							bo.se_ring_by_name("se:break");
-							blk.flgActive = false;
-							info_score++;
+							flgcoll = true;
+							min_d = d;
+							min_Q = Q;
+							min_P1 = P1;
+							min_blk = blk;
 						}
 					}
+				}
+				if ( flgcoll )
+				{
+					let blk = min_blk;
+					let r = blk.r+b.r;
+					let d = min_d;
+					let Q = min_Q;
+					let P1 = min_P1;
+			
+					// X=Q+I*√(r^2-d^2)	衝突時のボールの位置
+					let s = Math.sqrt(r*r-d*d);
+					let I = normalize2( vsub2( P1, Q ) );
+
+					b.p = vadd2( Q, vmul_scalar2( I, s ) );
+
+					if ( blk.typ == 'blk:hard' || b.typ == 'bal:hard' ) 
+					{
+						if(0)
+						{ // 埋まりを解消
+							let l = chkhit(blk,b);
+							let N = normalize2( vsub2(blk.p,b.p) );
+							let m = vmul_scalar2(N,l);
+							b.p = vadd2( b.p, m );
+						}
+
+						b.v = reflect2( b.v, normalize2( vsub2( blk.p, b.p ) ) );
+						bo.se_ring_by_name("se:toball2",(b.typ == 'bal:nml')?1.0:0.5 );
+					}
+					else
+					{
+						b.v = reflect2( b.v, normalize2( vsub2( blk.p, b.p ) ) );
+						bo.se_ring_by_name("se:break");
+						blk.flgActive = false;
+						info_score++;
+					}
+
+					hit_q.x = b.p.x
+					hit_q.y = b.p.y;
+					hit_q.r = b.r;
+
+
 
 				}
 			}
@@ -1186,12 +1263,6 @@ function bo_create()
 				{
 					if ( b.flgActive == false ) continue;
 
-					let P0 = racket.p;
-//					let P1 = vec2( prev_x,racket.p.y);
-					let P1 = vec2( racket.p.x-racket.v.x*delta,racket.p.y);
-					let P2 = b.p;
-					let r = b.r+racket.r;
-
 					function coll( b, r ) //  ball && racket 
 					{
 						let ix= b.v.x; // 衝突前の速度ベクトル
@@ -1229,8 +1300,9 @@ function bo_create()
 								else
 								{
 									sp = c_sp;								
-									let F = r.m*racket.v.x;	// ラケットの力を計算
-									let a = vdiv_scalar2(F,b.m);		// ボールに掛かる加速度
+								sp = i_sp;								
+				//					let F = r.m*racket.v.x;	// ラケットの力を計算
+				//					let a = vdiv_scalar2(F,b.m);		// ボールに掛かる加速度
 									
 								}
 							}
@@ -1266,7 +1338,13 @@ function bo_create()
 					if ( b.p.y < racket.p.y )//+b.r ) // 上半円
 					{
 						let flgcoll = false;
+
+						let P0 = racket.p;
+						let P1 = vec2( racket.p.x-racket.v.x*delta,racket.p.y);
+						let P2 = b.p;
+						let r = b.r+racket.r;
 						let [flg,d,Q] = func_intersect_SegLine_Point2( P0, P1, P2 );  // フレーム間を線形で衝突判定
+
 						if ( flg && d < r ) 
 						{
 							// X=Q+I*√(r^2-d^2)	衝突時のラケットの位置
@@ -1341,13 +1419,14 @@ function bo_create()
 				{
 					let b = balls[j];
 					if ( b.flgActive == false ) continue;
+
 					let l = chkhit(a,b);
 					if ( l < 0 )
 					{
 					
 						if ( a.p.x == b.p.x && a.p.y == b.p.y ) 
 						{
-							b.p.x+=0.01; // 同一座標解消
+							b.p.x+=0.01; // 同一座標解消、主にクリア時の持越しボール対応
 						}
 	
 						let k = calcbound( a, b );
@@ -1360,7 +1439,7 @@ function bo_create()
 							}
 							else
 							{
-								bo.se_ring_by_name("se:toball2", 1.0 );
+								bo.se_ring_by_name("se:toball2" );
 							}
 						}
 
@@ -1376,6 +1455,7 @@ function bo_create()
 			}
 
 
+
 		}
 		else
 		{
@@ -1383,13 +1463,12 @@ function bo_create()
 			racket.a.x = 0;
 			racket.a.y = 0;
 		} // end of pause
-		
 
 		if ( info_stat == 'serve' )
 		{// draw mouse coursor
 			gra.color(1,1,1)
 			let x = gra_cvx(bo.mouse_x);
-			let y = bo.tst_y;
+			let y = bo.mouse_tst_y;
 			let s = 10;
 			gra.line( x  , y, x+s, y+s/2  );
 			gra.line( x  , y, x+s/2  , y+s);
@@ -1412,6 +1491,7 @@ function bo_create()
 				if ( o.typ == 'blk:nml' )
 				{
 					gra.setLineWidth(3);
+					//gra.setLineWidth(1);
 					gra.circle( o.p.x, o.p.y, o.r );
 					gra.setLineWidth(1);
 				}
@@ -1419,6 +1499,7 @@ function bo_create()
 				if ( o.typ == 'blk:hard' )
 				{
 					gra.setLineWidth(3);
+					//gra.setLineWidth(1);
 					for ( let i = 0 ; i < 1 ; i++ )
 					{
 						let r = o.r-i*4;
@@ -1432,6 +1513,7 @@ function bo_create()
 				if ( o.typ == 'blk:uzu' )
 				{
 					gra.setLineWidth(2);
+					//gra.setLineWidth(1);
 					for ( let i = 0 ; i < 5 ; i++ )
 					{
 						let r = o.r-i*3;
@@ -1447,18 +1529,52 @@ function bo_create()
 		function blurball( b, typ, n=-1 , st=0, en=Math.PI*2 )
 		{
 			if ( info_stat != 'ingame' ) n = 1;
-			if ( n==-1 ) n = Math.floor(length2(b.v)/b.r*0.03)+1;
-			let ax = b.v.x*delta/n;
-			let ay = b.v.y*delta/n;
-			gra.alpha(1.5/n, 'add' );
+			if ( n==-1 ) n = Math.floor(length2(b.v)/b.r*0.2)+1;
+			let av = vmul_scalar2( b.v, delta/n ); 
+
+			let n2 = n;
 			for ( let i = 0 ; i < n ; i++ )
 			{
-				let x = b.p.x-ax*i;
-				let y = b.p.y-ay*i;
+				let bv = vmul_scalar2( av, i);
+				let p = vsub2( b.p, bv );
+				if ( n > 1 )
+				{
+					let wl = b.r;
+					let wr = bo.reso_x-b.r;
+					let wt = b.r;
+					let wb = bo.reso_y+b.r;
+					if ( p.x > wr ) continue;
+					if ( p.x < wl ) continue;
+					if ( p.y < wt ) continue;
+					if ( p.y > wb ) continue;
+				}
+				n2=i+1;
+			}
+
+			gra.alpha(1.0/n2, 'add' );
+			av = vmul_scalar2( b.v, delta/n2 ); 
+
+			for ( let i = 0 ; i < n2 ; i++ )
+			{
+				let bv = vmul_scalar2( av, i);
+				let p = vsub2( b.p, bv );
+
+/*				if ( n > 1 )
+				{
+					let wl = b.r;
+					let wr = bo.reso_x-b.r;
+					let wt = b.r;
+					let wb = bo.reso_y+b.r;
+					if ( p.x > wr ) continue;
+					if ( p.x < wl ) continue;
+					if ( p.y < wt ) continue;
+					if ( p.y > wb ) continue;
+				}
+*/
+
 				if ( typ=='bal:nml' )
 				{
-					gra.circlefill( x, y, b.r, st, en  );
-//					blurball( b );
+					gra.circlefill( p.x, p.y, b.r, st, en  );
 				}
 				else
 				if ( typ=='bal:hard' )
@@ -1467,11 +1583,11 @@ function bo_create()
 					{
 						let r = b.r-i*4;
 						if ( r < 1 ) break;
-						gra.circle( x, y, r );
+						gra.circle( p.x, p.y, r );
 					}
 					let r = b.r-4;
 					if ( r <=0 ) r= 1.0
-					gra.circlefill( x, y, r );
+					gra.circlefill( p.x, p.y, r );
 
 				}
 		
@@ -1494,22 +1610,9 @@ function bo_create()
 				if ( b.typ=='bal:hard' )
 				{
 					gra.setLineWidth(3);
+					//gra.setLineWidth(1);
 					blurball( b, b.typ );
 					gra.setLineWidth(1);
-/*
-					gra.setLineWidth(3);
-					for ( let i = 0 ; i < 1 ; i++ )
-					{
-						let r = b.r-i*4;
-						if ( r < 1 ) break;
-						gra.circle( b.p.x, b.p.y, r );
-					}
-					gra.setLineWidth(1);
-					let r = b.r-4;
-					if ( r <=0 ) r= 1.0
-					gra.circlefill( b.p.x, b.p.y, r );
-*/
-
 				}
 				else
 				{
@@ -1531,19 +1634,21 @@ function bo_create()
 
 		// draw racket 
 		blurball( racket, 'bal:nml' , 32, Math.PI, Math.PI*2 );
-	
+//		racket.prev_p.x = racket.p.x;
+//		racket.prev_p.y = racket.p.y;
+
 
 		//draw debug
 		{
 			if( flgdebug )
 			{
 				gra.setLineWidth(2);
+				//gra.setLineWidth(1);
 
 				gra.color(1,0,0);
 				if ( hit_q )	gra.circle( hit_q.x, hit_q.y+1, hit_q.r );
 				gra.color(1,1,0);
-//				if ( hit_st )	gra.line( hit_st.x, hit_st.y+1, hit_en.x, hit_en.y+1 );
-				if ( hit_st )	gra.line( hit_st.x, bo.reso_y-2, hit_en.x, bo.reso_y-2 );
+				if ( hit_st )	gra.line( hit_st.x, hit_st.y, hit_en.x, hit_en.y );
 
 				let n = 2;
 				for ( let i = 0 ; i < n && i < hit_buf_ball.length; i++ )							//	ボールの軌跡
@@ -1559,7 +1664,6 @@ function bo_create()
 					gra.color(1,0,0);
 					gra.line( o.p.x, o.p.y, o.p.x+ov.x*sc, o.p.y+ov.y*sc );
 					let deg  = Math.atan2( -ov.y ,-ov.x ) * 180 / Math.PI ;
-					//if ( i == 0 ) gra.print( deg, o.p.x+3, o.p.y-10 );
 				}
 				for ( let i = 0 ; i < n && i < hit_buf_racket.length; i++ )							//	ラケットの軌跡
 				{
@@ -1582,19 +1686,6 @@ function bo_create()
 
 		// draw score
 		{
-/*
-			gra.color(1,1,1);
-			function putcenter( str, x, y )
-			{
-				x += (40 - str.length)/2;
-				gra.locate(x,y);gra.print( str );
-			}
-			function putright( str, x, y )
-			{
-				x += (40 - str.length);
-				gra.locate(x,y);gra.print( str );
-			}
-*/						
 
 			let str_score = "SCORE "+("0000"+info_score.toString()).substr(-4);
 			let str_stage = "STAGE "+info_cntStage.toString();
@@ -1606,12 +1697,13 @@ function bo_create()
 			{
 				let str_abals = "A-BAL "+info_activeballs.toString();
 				let str_ablks = "A-BLK "+info_activeblocks.toString();
-				gra.symbol( str_abals,bo.reso_x-2,16,16,"right" );
-				gra.symbol( str_ablks,bo.reso_x-2,32,16,"right" );
+				gra.symbol( str_abals,bo.reso_x-2,12,12,"right" );
+				gra.symbol( str_ablks,bo.reso_x-2,24,12,"right" );
+				gra.symbol( info_stat,bo.reso_x-2,36,12, "right" );
 			}
 
 		
-			if ( info_pause )
+			if ( info_flgpause )
 			{
 					gra.symbol( 'PAUSE'		,bo.reso_x/2,16*14,16,"center" );
 			}
@@ -1676,9 +1768,7 @@ function bo_create()
 				K+=k;
 			}
 			gra.print( "K="+ K,0,html_canvas.height-16 );
-			//gra.print( 1/delta +"fps",html_canvas.width-50,html_canvas.height-16 );
 		}
-//		prev_x	= racket.p.x;
 
 	}
 	return bo;
@@ -1821,8 +1911,12 @@ function mousemovedown(e)
 	let	W = html_canvas.width * (bo.reso_x/bo.reso_y);
 	let	H = html_canvas.height;
 
-	if ( e.buttons==3 ) bo.req='reset';
-	if ( e.buttons==2 ) bo.req='pause';
+//	if ( e.buttons==3 ) bo.req='reset';
+	if ( e.buttons==2 ) 
+	{
+		bo.req='pause';
+		bo.mouse_flginput = true;
+	}
 	if ( e.buttons==1 )
 	{
 
@@ -1831,13 +1925,17 @@ function mousemovedown(e)
         let y= (e.clientY - rect.top)/ html_canvas.height;
 		if ( x > 0 && x < 1 && y >0 && y < 1 )
 		{
-			bo.mouse_click = true;	
+			bo.req = 'req_next';
+			bo.mouse_flginput = true;
 
-			if ( bo.inter == false ) //  チャタリング防止 ms間連続クリックの禁止
-			{
-				bo.inter = true;
-				bo.hdlClick = setTimeout( function(){bo.inter = false;bo.mouse_click=false;}, 200 ); // チャタリング防止 ms間連続クリックの禁止
-			}
+
+
+//			bo.mouse_click = true;	
+//			if ( bo.mouse_inter == false ) //  チャタリング防止 ms間連続クリックの禁止
+//			{
+//				bo.mouse_inter = true;
+//				bo.mouse_hdlClick = setTimeout( function(){bo.mouse_inter = false;bo.mouse_click=false;}, 200 ); // チャタリング防止 ms間連続クリックの禁止
+//			}
 		}
 	}
 
@@ -1865,8 +1963,8 @@ function onmousemove(e)
 	    var rect = html_canvas.getBoundingClientRect();
         let x= (e.clientX - rect.left)/ html_canvas.width *bo.reso_x;
         let y= (e.clientY - rect.top )/ html_canvas.height *bo.reso_y
-		bo.tst_x = x;
-		bo.tst_y = y;
+		bo.mouse_tst_x = x;
+		bo.mouse_tst_y = y;
 	}
 
 }
@@ -1885,14 +1983,21 @@ window.onkeydown = function( ev )
 {
 	let	c = ev.keyCode;
 	bo.key[c]=true;
-	if ( c == KEY_SPC ) return false; // falseを返すことでスペースバーでのスクロールを抑制
-	if ( c == KEY_D ) document.getElementsByName( "html_debug" )[0].checked = !document.getElementsByName( "html_debug" )[0].checked;
+	if ( c == KEY_D ) bo.req = 'debug';//document.getElementsByName( "html_debug" )[0].checked = !document.getElementsByName( "html_debug" )[0].checked;
 	if ( c == KEY_R ) bo.req = 'reset';
 	if ( c == KEY_F ) bo.req = 'fullscreen';
+	if ( bo.key[KEY_SPC] )	// key
+	{
+		bo.req = 'req_next';
+		bo.mouse_flginput = false;
+	}
+	if ( bo.key[KEY_P] ) 
+	{
+		bo.req='pause';
+		bo.mouse_flginput = false;
+	}
 
-//	if ( c == KEY_Q ) bo.se_ring_by_name( "se:clear" );
-	
-
+	if ( c == KEY_SPC ) return false; // falseを返すことでスペースバーでのスクロールを抑制
 }
 
 // 右クリックでのコンテキストメニューを抑制
