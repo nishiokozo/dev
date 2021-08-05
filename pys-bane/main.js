@@ -33,83 +33,6 @@ function create_lab()
 	// 初期化
 	let gra = gra_create( html_canvas );
 
-	gra.drawbane2d = function( a,b,r,step=10,l0=r*2,l1=r*2,wd=4,div=step*14 )
-	{
-		let rot = Math.atan2( b.y-a.y, b.x-a.x );
-		let p0=  vadd2( a , vrot2(vec2( l0,0),rot) );
-		let p1 = vadd2( b , vrot2(vec2(-l1,0),rot) );
-		//
-		let v0 = vec2(a.x,a.y);
-		let st = step*radians(360)/div;
-		let th = radians(0);
-		let len = length2( vsub( p1, p0) ); 
-		let d = (len / div);
-		for ( let i = 0 ; i <= div ; i++ )
-		{
-			let v1 = vec2(
-				r* Math.cos(th)/wd + d*i,
-				r* Math.sin(th)  
-			);
-			v1 = vrot2( v1, rot );
-			v1 = vadd2( v1, p0 );
-
-			gra.line( v0.x, v0.y, v1.x, v1.y );
-			v0 = v1;
-
-			th += st;
-		}
-
-		gra.line( v0.x, v0.y, b.x, b.y );
-	}
-
-	// 矢印の表示
-	gra.drawarrow2d = function( p, v, l, sc = 1 )
-	{
-		if ( l == 0 ) 
-		{
-			gra.circle( p.x, p.y, sc );
-			return;
-		}
-		else
-		if ( l < 0 )
-		{
-			l = -l;
-		}
-		
-		let rot = Math.atan2( v.y, v.x );
-		let h = 1*sc;
-		let w = h/Math.tan(radians(30));
-
-		let tbl = 
-			[
-				vec2( l,0),
-				vec2( l-w*2 ,-h*2	),
-				vec2( l-w*2 ,-h		),
-				vec2(    0  ,-h		),
-				vec2(    0  , h		),
-				vec2(    0  , h		),
-				vec2( l-w*2 , h		),
-				vec2( l-w*2 , h*2	),
-				vec2( l,0),
-			];
-		let tbl2=[];
-		for ( let v of tbl )
-		{
-			v = vrot2( v, rot );
-			v = vadd2( v, p );
-			tbl2.push(v);
-		}
-
-		gra.path_n( tbl2 );
-	}
-	function drawarrow_line2d( p, b, sc = 2 )
-	{
-		let v = normalize2(vsub2(b,p));
-		let l = length2(vsub2(b,p));
-		drawarrow2d( p, v, l, sc );
-	}
-
-
 	function calc_r( m, r0 = 10, m0 = 1 ) // 質量1の時半径10
 	{
 		let range = r0*r0*Math.PI / m0;	// 質量比率
@@ -118,58 +41,50 @@ function create_lab()
 
 	function strfloat( v, r=4, f=2 ) // r指数部桁、f小数部桁
 	{
-		{
-			let a = Math.pow(10,f);
-			let b = Math.floor( v );
-			let c = parseInt( v, 10 );	// 小数点以下切り捨て
-			let d = Math.abs(v-c);
-			let e = Math.round( d*a );	// 四捨五入
-			c = ('      '+c).substr(-r);
-			e = (e+'000000').substr(0,f);
-			return c+"."+ e;
-		}
+		let a = Math.pow(10,f);
+		let b = Math.floor( v );
+		let c = parseInt( v, 10 );	// 小数点以下切り捨て
+		let d = Math.abs(v-c);
+		let e = Math.round( d*a );	// 四捨五入
+		c = ('      '+c).substr(-r);
+		e = (e+'000000').substr(0,f);
+		return c+"."+ e;
 	}
 	
-	//
-	
 	let lab = {}
-
 	lab.hdlTimeout = null;
 	lab.mode = '';
 	lab.req = '';
 	lab.flgdebug = false;
+	//
+	let flgPause;
+	let flgStep;
+	let info_stat;
+	//
 	lab.bane_k = 0;
 	lab.ball_m = 0;
 	lab.F = 0;
 	lab.a = 0;
-
 	let box;
 	let ball;
-
 	let bane_naturallength; //自然長k
 	let bane_length; // ばね長さ
-	let bane_p0;	
-	let bane_p1;	
+	let bane_p0;
+	let bane_p1;
 	let bane_x;
 	let bane_U;
 	let ball_K;
 	let min_E;
 	let max_E;
 
-	let flgPause = false;
-	let flgStep = false;
-	let flgGo = false;
-	let info_stat;
 	//-------------------------------------------------------------------------
 	function reset()
 	//-------------------------------------------------------------------------
 	{
 		console.log('reset:',lab.mode);
-
 		flgPause = false;
 		flgStep = false;
 		info_stat = '<設定中>';
-
 		//
 		bane_naturallength = 100;
 		bane_length = bane_naturallength;
@@ -178,21 +93,15 @@ function create_lab()
 		bane_p0 = 0;	// ばね始点	boxとの接合点
 		bane_p1 = 0;	// ばね終点	ballとの接合点
 		ball_K = 0;
-
-		let r = 11;
-		box		= {p:vec2(-90,0) ,w:15,h:r+1}
-		let x = box.p.x+box.w+bane_naturallength+r;
-		ball	= {p:vec2(x,0)  ,v:vec2(0,0) ,r:r}
-
+		{
+			let r = 11;
+			box		= {p:vec2(-90,0) ,w:15,h:r+1}
+			let x = box.p.x+box.w+bane_naturallength+r;
+			ball	= {p:vec2(x,0)  ,v:vec2(0,0) ,r:r}
+		}
+		ball.p.x += 50;
 		min_E = 999999;
 		max_E = 0;
-
-		{
-			ball.p.x += 50;
-		}
-
-		//---
-
 	}
 	//-------------------------------------------------------------------------
 	lab.update = function()
@@ -215,7 +124,14 @@ function create_lab()
 		exec_Laboratory( delta );
 
 		// 描画
-		draw_Laboratory();
+		{
+			gra.cls();
+			gra.window( -120,-120,120,120 );
+
+			draw_Laboratory();
+
+			if ( flgPause ) gra.print('PAUSE');
+		}
 
 		lab.hdlTimeout = setTimeout( lab.update, delta*1000 );
 	}
@@ -228,6 +144,8 @@ function create_lab()
 			case 'pause': flgPause = !flgPause; break;
 			case 'step': flgStep = true; break;
 			case 'reset': reset(); break;
+			default:console.error("error req ",lab.req );
+			//
 			case 'streach': 
 					ball.p.x += 2;
 					info_stat = '<設定中>';
@@ -239,7 +157,6 @@ function create_lab()
 			case 'release': 
 					info_stat = '<実験中>';
 				break;
-			default:console.error("error req ",lab.req );
 		}
 	}
 	//-------------------------------------------------------------------------
@@ -251,10 +168,8 @@ function create_lab()
 		bane_length = length2( vsub2(bane_p1,bane_p0) );
 		bane_x = bane_length-bane_naturallength;
 		bane_U = 1/2*lab.bane_k*Math.pow(bane_x,2);		// 1/2kx^2
-	
 		lab.F = -lab.bane_k*bane_x;					//	F=-kx
 		lab.a = lab.F/lab.ball_m					//	a=F/m
-
 	}
 	//-------------------------------------------------------------------------
 	function exec_Laboratory( delta )
@@ -269,17 +184,13 @@ function create_lab()
 			let E = bane_U+ball_K;
 			min_E = Math.min(E,min_E);
 			max_E = Math.max(E,max_E);
-
 		}
 	}
 	//-------------------------------------------------------------------------
 	function draw_Laboratory()
 	//-------------------------------------------------------------------------
 	{
-		gra.cls();
-		let c = 0;
-		gra.window( -120,-120+c,120,120+c );
-		
+
 		// draw グラウンドに固定された箱
 		{
 			let x0 = box.p.x-box.w;
@@ -381,7 +292,7 @@ function create_lab()
 
 			gra.print( info_stat );
 		}
-		if ( flgPause ) gra.print('PAUSE');
+
 	}
 	
 	return lab;
@@ -413,33 +324,32 @@ function html_onchange( cmd )
 		lab.req = cmd;
 	}
 
-	{	// HTMLからの設定を取得
+	// HTMLからの設定を取得
 		
-		// type='checkbox'
-		if ( document.getElementsByName( "html_debug" ) ) 
+	// type='checkbox'
+	if ( document.getElementsByName( "html_debug" ) ) 
+	{
+		if ( document.getElementsByName( "html_debug" )[0] ) 
 		{
-			if ( document.getElementsByName( "html_debug" )[0] ) 
-			{
-				lab.flgdebug = document.getElementsByName( "html_debug" )[0].checked;
-			}
+			lab.flgdebug = document.getElementsByName( "html_debug" )[0].checked;
 		}
+	}
 
-		// type='radio'
-		if ( document.getElementsByName( "html_mode" ) )
-		{
-			let list = document.getElementsByName( "html_mode" ) ;
-			for ( let l of list ) if ( l.checked ) lab.mode = l.value;
-		}
+	// type='radio'
+	if ( document.getElementsByName( "html_mode" ) )
+	{
+		let list = document.getElementsByName( "html_mode" ) ;
+		for ( let l of list ) if ( l.checked ) lab.mode = l.value;
+	}
 
-		// type='text'
-		if ( document.getElementsByName( "html_k" ) )
-		{
-			lab.bane_k = document.getElementById( "html_k" ).value
-		}
-		if ( document.getElementsByName( "html_m" ) )
-		{
-			lab.ball_m = document.getElementById( "html_m" ).value
-		}
+	// type='text'
+	if ( document.getElementsByName( "html_k" ) )
+	{
+		lab.bane_k = document.getElementById( "html_k" ).value
+	}
+	if ( document.getElementsByName( "html_m" ) )
+	{
+		lab.ball_m = document.getElementById( "html_m" ).value
 	}
 }
 // キー入力
@@ -458,10 +368,12 @@ window.onkeydown = function( ev )
 	if ( g_key[KEY_D] )		html_onchange('debug');
 	if ( g_key[KEY_R] )		html_onchange('reset');
 	if ( g_key[KEY_SPC] )	html_onchange('step');
-	if ( g_key[KEY_P] )		html_onchange('pause');
+	if ( g_key[KEY_P] )		html_onchange('pause')
+	//;
 	if ( g_key[KEY_LEFT] )		html_onchange('shrink');
 	if ( g_key[KEY_RIGHT] )		html_onchange('streach');
 	if ( g_key[KEY_CR] )		html_onchange('release');
+	//
 	if ( g_key[KEY_SPC] ) return false; // falseを返すことでスペースバーでのスクロールを抑制
 }
 
@@ -489,13 +401,11 @@ function onmousemove(e)
 //-----------------------------------------------------------------------------
 {
 	//test
-	{
-	    let rect = html_canvas.getBoundingClientRect();
-        let x = (e.clientX - rect.left)/ html_canvas.width;
-        let y = (e.clientY - rect.top )/ html_canvas.height;
-		g_mouse.x = x;
-		g_mouse.y = y;
-	}
+    let rect = html_canvas.getBoundingClientRect();
+    let x = (e.clientX - rect.left)/ html_canvas.width;
+    let y = (e.clientY - rect.top )/ html_canvas.height;
+	g_mouse.x = x;
+	g_mouse.y = y;
 }
 // 右クリックでのコンテキストメニューを抑制
 document.addEventListener('contextmenu', contextmenu);

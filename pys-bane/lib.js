@@ -1,3 +1,4 @@
+// 2021/08/06 gra.drawbane2d drawarrow2d追加
 // 2021/08/05 gra.fill の修正
 // 2021/08/03 vrot2 二次元回転関数 追加
 // 2021/07/30 gra.drawpictgrambone ピクトグラム風、円が二つ連なった図形の描画
@@ -874,7 +875,90 @@ function gra_create( cv )	//2021/06/01
 		gra.y=0;
 		gra.ctx.fillStyle = c;
 	}
+
+	// ばねの表示
+	//-----------------------------------------------------------------------------
+	gra.drawbane2d = function( a,b,r,step=10,l0=r*2,l1=r*2,wd=4,div=step*14 ) // 2021/08/06 追加
+	//-----------------------------------------------------------------------------
+	{
+		let rot = Math.atan2( b.y-a.y, b.x-a.x );
+		let p0=  vadd2( a , vrot2(vec2( l0,0),rot) );
+		let p1 = vadd2( b , vrot2(vec2(-l1,0),rot) );
+		//
+		let v0 = vec2(a.x,a.y);
+		let st = step*radians(360)/div;
+		let th = radians(0);
+		let len = length2( vsub( p1, p0) ); 
+		let d = (len / div);
+		for ( let i = 0 ; i <= div ; i++ )
+		{
+			let v1 = vec2(
+				r* Math.cos(th)/wd + d*i,
+				r* Math.sin(th)  
+			);
+			v1 = vrot2( v1, rot );
+			v1 = vadd2( v1, p0 );
+
+			gra.line( v0.x, v0.y, v1.x, v1.y );
+			v0 = v1;
+
+			th += st;
+		}
+
+		gra.line( v0.x, v0.y, b.x, b.y );
+	}
+
+	// 矢印の表示
+	//-----------------------------------------------------------------------------
+	gra.drawarrow2d = function( p, v, l, sc = 1 )
+	//-----------------------------------------------------------------------------
+	{
+		if ( l == 0 ) 
+		{
+			gra.circle( p.x, p.y, sc );
+			return;
+		}
+		else
+		if ( l < 0 )
+		{
+			l = -l;
+		}
+		
+		let rot = Math.atan2( v.y, v.x );
+		let h = 1*sc;
+		let w = h/Math.tan(radians(30));
+
+		let tbl = 
+			[
+				vec2( l,0),
+				vec2( l-w*2 ,-h*2	),
+				vec2( l-w*2 ,-h		),
+				vec2(    0  ,-h		),
+				vec2(    0  , h		),
+				vec2(    0  , h		),
+				vec2( l-w*2 , h		),
+				vec2( l-w*2 , h*2	),
+				vec2( l,0),
+			];
+		let tbl2=[];
+		for ( let v of tbl )
+		{
+			v = vrot2( v, rot );
+			v = vadd2( v, p );
+			tbl2.push(v);
+		}
+
+		gra.path_n( tbl2 );
+	}
+	gra.drawarrow_line2d = function( p, b, sc = 2 )
+	{
+		let v = normalize2(vsub2(b,p));
+		let l = length2(vsub2(b,p));
+		drawarrow2d( p, v, l, sc );
+	}
+
 	return gra;
+
 };
 
 ///// geom 2021/07/02 vec2追加
