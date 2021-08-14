@@ -1,3 +1,9 @@
+// 2021/08/15 アスペクト周りバグ取り
+// 2021/08/13 追加	gra.pset() / gra.setAspect()追加
+// 2021/08/08 gra.drawmesure_line追加 strfloat追加
+// 2021/08/06 gra.drawbane2d drawarrow2d drawarrow2d_line追加
+// 2021/08/05 gra.fill の修正
+// 2021/08/03 vrot2 二次元回転関数 追加
 // 2021/07/30 gra.drawpictgrambone ピクトグラム風、円が二つ連なった図形の描画
 // 2021/07/29 gra.bezier_n 追加
 // 2021/07/29 gra windowとcanvasのアスペクト比を反映
@@ -25,6 +31,21 @@
 //
 // OpenGL® Programming Guide: The Official Guide 
 // https://www.cs.utexas.edu/users/fussell/courses/cs354/handouts/Addison.Wesley.OpenGL.Programming.Guide.8th.Edition.Mar.2013.ISBN.0321773039.pdf
+
+//-----------------------------------------------------------------------------
+function strfloat( v, r=4, f=2 ) // r指数部桁、f小数部桁
+//-----------------------------------------------------------------------------
+{
+	let a = Math.pow(10,f);
+	let b = Math.floor( v );
+	let c = parseInt( v, 10 );	// 小数点以下切り捨て
+	let d = Math.abs(v-c);
+	let e = Math.round( d*a );	// 四捨五入
+	let g = ('0'.repeat(f)+e).substr(-f);
+	let h = (g+'0'.repeat(f)).substr(0,f);
+	let i = (' '.repeat(r)+c).substr(-r);
+	return i+"."+ h;
+}
 
 //-----------------------------------------------------------------------------
 function se_create()	// 2021/07/26 効果音ライブラリ
@@ -95,15 +116,14 @@ function func_intersect_Line_Point2( P0, I0, P1 )	// 直線と点との距離
 	let t = dot2(I0,I1);	// P0からQまでのQ距離
 	let Q = vadd2( P0, vmul_scalar2(I0,t));
 	let	d =  length2(vsub2(Q , P1));
-	return [d,Q,t]; // 意味のないflg:trueの戻り値を省く。
+	return [true,d,Q,t];
 }
 
 //------------------------------------------------------------------------------
 function func_intersect_HarfLine_Point2( P0, I0, P1 )	// 半直線と点との距離 2021/07/23
 //------------------------------------------------------------------------------
 {
-	let [d,Q,t] = func_intersect_Line_Point2( P0, I0, P1 );
-	let flg = true;
+	let [flg,d,Q,t] = func_intersect_Line_Point2( P0, I0, P1 );
 
 	if ( t <= 0 ) flg = false; 			// 始点トリミング：範囲外でも使える衝突点等の値が返る
 
@@ -120,13 +140,13 @@ function func_intersect_SegLine_Point2( P0, Q0, P1 )	// 線分と点との距離
  	let L = vsub2(Q0 , P0)
  	let I0 = normalize2(L)
 
-	let [d,Q,t] = func_intersect_Line_Point2( P0, I0, P1 );
-	let flg = true;
+	let [flg,d,Q,t] = func_intersect_Line_Point2( P0, I0, P1 );
 	if ( t <= 0 ) flg = false; 			// 始点トリミング：範囲外でも使える衝突点等の値が返る
 	if ( t >= length2(L) ) flg = false;	// 終点トリミング：範囲外でも使える衝突点等の値が返る
 
 	return [flg,d,Q,t];
 }
+
 
 //------------------------------------------------------------------------------
 function func_intersect_Line_Line2( P0, I0, P1, I1 ) // 直線と直線の距離 2021/07/23
@@ -149,7 +169,7 @@ function func_intersect_Line_Line2( P0, I0, P1, I1 ) // 直線と直線の距離
 	{
 		let Q0 = vec2(0.0);
 		let Q1 = vec2(0.0);
-		let d = Math.abs( cross2( vsub2(P1 , P0), I0 ) );	// 点と線との距離
+		let d = Math.abs( cross2( vsub2(P1 , P0), I0 ) );	// func_intersect_Line_Point2():点と線との距離
 		return [false,d,Q0,Q1,0,0];
 	}
 
@@ -444,18 +464,34 @@ function gra_create( cv )	//2021/06/01
 	gra.sy = 0; 
 	gra.ex = gra.ctx.canvas.width; 
 	gra.ey = gra.ctx.canvas.height; 
-	let ox = 0;
-	let oy = 0;
+//	let ox = 0;
+//	let oy = 0;
 
 	gra.backcol = "#FFFFFF";
 //	gra.ctx.font = "12px monospace";	// iOSだとCourierになる	読める限界の小ささ
 //	gra.ctx.font = "14px monospace";	// iOSだとCourierになる 程よい小ささ
-	gra.ctx.font = "16px Courier";	// iOSでも使えるモノスペースフォントただし漢字はモノスペースにはならない 見栄えもある
-	gra.ctx.textAlign = "left";
-	gra.ctx.textBaseline = "alphabetic";
+//	gra.ctx.font = "16px Courier";	// iOSでも使えるモノスペースフォントただし漢字はモノスペースにはならない 見栄えもある
+//	gra.ctx.textAlign = "left";
+//	gra.ctx.textBaseline = "alphabetic";
 	gra.fontw = gra.ctx.measureText("_").width;
 
 	gra.lineWidth = 1;
+//	gra.win_aspect = val;
+
+/*
+	if ( mode=='as-window' )
+	{
+		//gra.windowの仮想画面に追従するモード。
+		gra.asp = 1;
+		gra.adj = 0;
+	}
+	else
+*/
+	{
+		//2021/07/22 フルスクリーン用にアスペクト機能を追加	※フルスクリーン画面の解像度はソフトウェアは把握できない。
+		gra.asp = 1/(gra.ctx.canvas.width/gra.ctx.canvas.height);
+		gra.adj = (gra.ctx.canvas.width-gra.ctx.canvas.height)/2;
+	}
 
 	//-------------------------------------------------------------------------
 	gra.window = function( _sx, _sy, _ex, _ey )
@@ -465,23 +501,37 @@ function gra_create( cv )	//2021/06/01
 		gra.sy = _sy;
 		gra.ex = _ex;
 		gra.ey = _ey;
-		ox = -_sx;
-		oy = -_sy;
+//		ox = -_sx;
+//		oy = -_sy;
 
-		gra.ctx.lineWidth = gra.lineWidth;
+//		gra.ctx.lineWidth = gra.ctx.canvas.height/(gra.ey-gra.sy) *gra.lineWidth;
+
+//		gra.ctx.lineWidth = gra.lineWidth;
 	}
+	//-------------------------------------------------------------------------
+	gra.adjust_win = function() // 2021/08/03 window scale に合わせる
+	//-------------------------------------------------------------------------
+	{
+		gra.ctx.lineWidth = gra.ctx.canvas.height/(gra.ey-gra.sy) *gra.lineWidth;
+	}	
 	
-	//2021/07/22 フルスクリーン用にアスペクト機能を追加
-	gra.as = 1/(gra.ctx.canvas.width/gra.ctx.canvas.height);
-	gra.ab = (gra.ctx.canvas.width-gra.ctx.canvas.height)/2;
+	//-------------------------------------------------------------------------
+	gra.setAspect = function( as,ab )	// 2021/08/13追加
+	//-------------------------------------------------------------------------
+	{
+		gra.asp = as;
+		gra.adj = ab;
+//		gra.win_aspect = val;
+	}
+
 
 	gra.win_abs = function( x, y )
 	{
 		let w = gra.ex-gra.sx;
 		let h = gra.ey-gra.sy;
-		x = (x+ox)/w * gra.ctx.canvas.width;
-		y = (y+oy)/h * gra.ctx.canvas.height;
-		return [x*gra.as+gra.ab,y];
+		x = (x-gra.sx)/w * gra.ctx.canvas.width;
+		y = (y-gra.sy)/h * gra.ctx.canvas.height;
+		return [x*gra.asp+gra.adj,y];
 	}
 	gra.win_range = function( x, y )
 	{
@@ -489,10 +539,11 @@ function gra_create( cv )	//2021/06/01
 		let h = Math.abs(gra.ey-gra.sy);
 		x = (x)/w * gra.ctx.canvas.width;
 		y = (y)/h * gra.ctx.canvas.height;
-		return [x*gra.as,y];
+		return [x*gra.asp,y];
 	}
+	
 	//-----------------------------------------------------------------------------
-	gra.box = function( x1, y1, x2, y2, mode="" )
+	gra.box = function( x1, y1, x2, y2 )
 	//-----------------------------------------------------------------------------
 	{
 		function func( sx,sy, ex,ey )
@@ -509,7 +560,7 @@ function gra_create( cv )	//2021/06/01
 		func( x1, y1, x2, y2 );
 	}
 	//-----------------------------------------------------------------------------
-	gra.fill= function( sx,sy, ex,ey )
+	gra.fill= function(  x1, y1, x2, y2 ) // 使えなくなっていたのを修正
 	//-----------------------------------------------------------------------------
 	{
 		function func( sx,sy, ex,ey )
@@ -518,11 +569,14 @@ function gra_create( cv )	//2021/06/01
 		    gra.ctx.rect(sx,sy,ex-sx,ey-sy);
 			gra.ctx.closePath();
 			gra.ctx.fill();
-			//gra.ctx.stroke();
 		}
-		func( x1, y1, x2, y2 );
 
+		[x1,y1]=gra.win_abs(x1,y1);
+		[x2,y2]=gra.win_abs(x2,y2);
+
+		func( x1, y1, x2, y2 );
 	}
+	
 	
 	//-------------------------------------------------------------------------
 	gra.pattern = function( type = 'normal' )
@@ -532,11 +586,12 @@ function gra_create( cv )	//2021/06/01
 		{
 			case "normal": gra.ctx.setLineDash([]);	break;
 			case "hasen": gra.ctx.setLineDash([2,4]);	break;
+			case "hasen2": gra.ctx.setLineDash([4,8]);	break;
 			default: alert("破線パターン異常 gra.pattern()");
 		}
 	}
 	//-------------------------------------------------------------------------
-	gra.line = function( x1, y1, x2, y2, mode="" )
+	gra.line = function( x1, y1, x2, y2 )
 	//-------------------------------------------------------------------------
 	{
 		function func( sx,sy, ex,ey )
@@ -552,6 +607,12 @@ function gra_create( cv )	//2021/06/01
 		[x2,y2]=gra.win_abs(x2,y2);
 
 		func( x1, y1, x2, y2 );
+	}
+	//-------------------------------------------------------------------------
+	gra.line2 = function( v0, v1 ) // 2021/08/10 追加
+	//-------------------------------------------------------------------------
+	{
+		gra.line( v0.x, v0.y, v1.x, v1.y );
 	}
 
 	//-------------------------------------------------------------------------
@@ -596,35 +657,47 @@ function gra_create( cv )	//2021/06/01
 	gra.locate = function( x1, y1 )
 	//-------------------------------------------------------------------------
 	{
-		gra.x=x1*gra.fontw/gra.as;
+		gra.x=x1*gra.fontw/gra.asp;
 		gra.y=y1*16;
 	}
 	//-------------------------------------------------------------------------
 	gra.print = function( str, x1=gra.x, y1=gra.y )
 	//-------------------------------------------------------------------------
 	{
-		function func( str, tx, ty )
-		{
-  			gra.ctx.font = "16px Courier";	// iOSでも使えるモノスペースフォントただし漢字はモノスペースにはならない 見栄えもある
-			gra.ctx.textAlign = "left";
-			gra.ctx.textBaseline = "alphabetic";
-			gra.ctx.fillText( str, tx+2, ty+16 );
-		}
-
-		[x1,y1]=gra.win_abs(x1,y1);
-		func( str, x1, y1 );
+//		[x1,y1]=gra.win_abs(x1,y1);	
+		gra.ctx.font = "14px Courier";	// iOSでも使えるモノスペースフォントただし漢字はモノスペースにはならない 16pxより綺麗に見える
+		gra.ctx.textAlign = "left";
+		gra.ctx.textBaseline = "alphabetic";
+		gra.ctx.fillText( str, x1+2, y1+16 );
 
 		gra.x = x1;
 		gra.y = y1+16;
 	}
 	//-------------------------------------------------------------------------
-	gra.symbol = function( str, x1,y1, size = 30, aligh="center" )
+	gra.symbol = function( str, x1,y1, size = 16, aligh="center" )
 	//-------------------------------------------------------------------------
 	{
+		// 画面解像度に合わせて大きさが変わるフォントサイズ	※描画サイズに関係がないので機種依存しない
+
 		[x1,y1]=gra.win_abs(x1,y1);
 		let [sw,sh] = gra.win_range(size,size);
 
-		gra.ctx.font = sw+"px "+"Courier";
+		gra.ctx.font =   sw+"px Courier";
+		gra.ctx.textAlign = aligh;
+		gra.ctx.textBaseline = "top";
+		gra.ctx.fillText( str, x1, y1 );
+	}
+
+	//-------------------------------------------------------------------------
+	gra.symbol_row = function( str, x1,y1, size = 16, aligh="center" )
+	//-------------------------------------------------------------------------
+	{
+		// 画面解像度に依存しないフォントサイズ				※文字の大きさが変わらないので情報表示用
+	
+		[x1,y1]=gra.win_abs(x1,y1);
+//		let [sw,sh] = gra.win_range(size,size);
+
+		gra.ctx.font =   size+"px Courier";
 		gra.ctx.textAlign = aligh;
 		gra.ctx.textBaseline = "top";
 		gra.ctx.fillText( str, x1, y1 );
@@ -644,17 +717,18 @@ function gra_create( cv )	//2021/06/01
 	}
 
 	//-----------------------------------------------------------------------------
-	gra.getLineWidth = function() //2021/07/26 追加
-	//-----------------------------------------------------------------------------
-	{
-		return gra.lineWidth;
-	}
-	//-----------------------------------------------------------------------------
-	gra.setLineWidth = function( val=1.0 ) //2021/07/26 追加
+	gra.setLineWidth = function( val=1.0 ) //2021/07/26 追加	windowサイズに合わせる
 	//-----------------------------------------------------------------------------
 	{
 		gra.lineWidth = gra.ctx.canvas.height/(gra.ey-gra.sy) *val;
 		gra.ctx.lineWidth = gra.lineWidth;
+	}
+	//-----------------------------------------------------------------------------
+	gra.setLineWidth_row = function( val=1.0 ) //2021/07/26 追加	生のサイズ
+	//-----------------------------------------------------------------------------
+	{
+		gra.lineWidth = val;
+		gra.ctx.lineWidth = val;
 	}
 
 	//-----------------------------------------------------------------------------
@@ -749,10 +823,7 @@ function gra_create( cv )	//2021/06/01
 	//-----------------------------------------------------------------------------
 	{
 		[x1,y1]=gra.win_abs(x1,y1);
-//		let [rw,rh] = gra.win_range(r*gra.as,r); // 2021/07/29 windowとcanvasのアスペクト比を反映
 		let [rw,rh] = gra.win_range(r,r); // 2021/07/29 windowとcanvasのアスペクト比を反映
-	
-//		func( x1, y1,rw,rh );
 		{
 			gra.ctx.beginPath();
 
@@ -780,7 +851,7 @@ function gra_create( cv )	//2021/06/01
 	//-----------------------------------------------------------------------------
 	{
 		[x1,y1]=gra.win_abs(x1,y1);
-//		let [rw,rh] = gra.win_range(r*gra.as,r); // 2021/07/29 windowとcanvasのアスペクト比を反映
+//		let [rw,rh] = gra.win_range(r*gra.asp,r); // 2021/07/29 windowとcanvasのアスペクト比を反映
 		let [rw,rh] = gra.win_range(r,r); // 2021/07/29 windowとcanvasのアスペクト比を反映
 		{
 			gra.ctx.beginPath();
@@ -791,22 +862,27 @@ function gra_create( cv )	//2021/06/01
 	}
 
 	//-----------------------------------------------------------------------------
+	gra.pset = function( x1,y1,r=1 ) // 2021/08/13 追加
+	//-----------------------------------------------------------------------------
+	{
+		[x1,y1]=gra.win_abs(x1,y1);
+////		let [rw,rh] = gra.win_range(r*gra.asp,r); // 2021/07/29 windowとcanvasのアスペクト比を反映
+//		let [rw,rh] = gra.win_range(r,r); // 2021/07/29 windowとcanvasのアスペクト比を反映
+		let st=0;
+		let en=Math.PI*2;
+		{
+			gra.ctx.beginPath();
+			let rotation = 0;
+			gra.ctx.ellipse( x1, y1, r, r, rotation, st, en );
+			gra.ctx.fill();
+		};
+	}
+
+	//-----------------------------------------------------------------------------
 	gra.drawpictgrambone = function( p1, r1, p2, r2 )	// 2021/07/30 ピクトグラム風、円が二つ連なった図形の描画
 	//-----------------------------------------------------------------------------
 	{
 
-		function vrot( v, th )
-		{
-			let s = Math.sin(th);
-			let c = Math.cos(th);
-			// c,  s,  0,
-			//-s,  c,  0,
-			// 0,  0,  1
-			let nx = v.x*c + v.y*s;
-			let ny =-v.x*s + v.y*c;
-
-			return new vec2( nx, ny );
-		}
 		let l = length2(vsub2(p2,p1));
 		let rot = Math.atan2(p1.x-p2.x, p1.y-p2.y);
 		let th = -Math.asin( (r1-r2)/l);
@@ -818,10 +894,10 @@ function gra_create( cv )	//2021/06/01
 		let vc=vec2(-r1*c,r1*s);
 		let vd=vec2(-r2*c,r2*s);
 
-		let pa = vadd2(vrot(va,rot),p1);
-		let pb = vadd2(vrot(vb,rot),p2);
-		let pc = vadd2(vrot(vc,rot),p1);
-		let pd = vadd2(vrot(vd,rot),p2);
+		let pa = vadd2(vrot2(va,rot),p1);
+		let pb = vadd2(vrot2(vb,rot),p2);
+		let pc = vadd2(vrot2(vc,rot),p1);
+		let pd = vadd2(vrot2(vd,rot),p2);
 
 		function path_circle( x1,y1,r, st, en )
 		{
@@ -867,7 +943,106 @@ function gra_create( cv )	//2021/06/01
 		gra.y=0;
 		gra.ctx.fillStyle = c;
 	}
+
+	// ばねの表示
+	//-----------------------------------------------------------------------------
+	gra.drawbane2d = function( a,b,r,step=10,l0=r*2,l1=r*2,wd=4,div=step*14 ) // 2021/08/06 追加
+	//-----------------------------------------------------------------------------
+	{
+		let rot = Math.atan2( b.y-a.y, b.x-a.x );
+		let p0=  vadd2( a , vrot2(vec2( l0,0),rot) );
+		let p1 = vadd2( b , vrot2(vec2(-l1,0),rot) );
+		//
+		let v0 = vec2(a.x,a.y);
+		let st = step*radians(360)/div;
+		let th = radians(0);
+		let len = length2( vsub( p1, p0) ); 
+		let d = (len / div);
+		for ( let i = 0 ; i <= div ; i++ )
+		{
+			let v1 = vec2(
+				r* Math.cos(th)/wd + d*i,
+				r* Math.sin(th)  
+			);
+			v1 = vrot2( v1, rot );
+			v1 = vadd2( v1, p0 );
+
+			gra.line( v0.x, v0.y, v1.x, v1.y );
+			v0 = v1;
+
+			th += st;
+		}
+
+		gra.line( v0.x, v0.y, b.x, b.y );
+	}
+
+	// 矢印の表示
+	//-----------------------------------------------------------------------------
+	gra.drawarrow2d = function( p, v, l, sc = 1 )
+	//-----------------------------------------------------------------------------
+	{
+		if ( l == 0 || length2(v)==0 ) 
+		{
+			gra.circle( p.x, p.y, sc );
+			return;
+		}
+		else
+		if ( l < 0 )
+		{
+			l = -l;
+		}
+		
+		let rot = Math.atan2( v.y, v.x );
+		let h = 1*sc;
+		let w = h/Math.tan(radians(30));
+
+		let tbl = 
+			[
+				vec2( l,0),
+				vec2( l-w*2 ,-h*2	),
+				vec2( l-w*2 ,-h		),
+				vec2(    0  ,-h		),
+				vec2(    0  , h		),
+				vec2(    0  , h		),
+				vec2( l-w*2 , h		),
+				vec2( l-w*2 , h*2	),
+				vec2( l,0),
+			];
+		let tbl2=[];
+		for ( let v of tbl )
+		{
+			v = vrot2( v, rot );
+			v = vadd2( v, p );
+			tbl2.push(v);
+		}
+
+		gra.path_n( tbl2 );
+	}
+	//-----------------------------------------------------------------------------
+	gra.drawarrow_line2d = function( p, b, sc = 2 )
+	//-----------------------------------------------------------------------------
+	{
+		let v = normalize2(vsub2(b,p));
+		let l = length2(vsub2(b,p));
+		drawarrow2d( p, v, l, sc );
+	}
+
+	//-----------------------------------------------------------------------------
+	gra.drawmesure_line = function( x0, y0, x1, y1, w = 4 )
+	//-----------------------------------------------------------------------------
+	{
+		let v = vmul_scalar2( normalize2(vsub2(vec2(x1,y1),vec2(x0,y0))), w );
+		[v.x,v.y]=[v.y,v.x];				
+		let s1 = vec2( x0, y0  ); let e1=vec2( x1, y1   );
+		let s2 = vec2( x0+v.x, y0-v.y); let e2=vec2( x0-v.x, y0+v.y );
+		let s3 = vec2( x1+v.x, y1-v.y); let e3=vec2( x1-v.x, y1+v.y );
+		gra.line( s1.x,s1.y,e1.x,e1.y);
+		gra.line( s2.x,s2.y,e2.x,e2.y);
+		gra.line( s3.x,s3.y,e3.x,e3.y);
+	}
+
 	return gra;
+
 };
 
 ///// geom 2021/07/02 vec2追加
@@ -974,6 +1149,31 @@ function normalize2( v )
 		v.y * s
 	);
 }
+
+//------------------------------------------------------------------------------
+function vrot2( v, th )	// 2021/08/03 二次元回転関数
+//------------------------------------------------------------------------------
+{
+	let s = Math.sin(th);
+	let c = Math.cos(th);
+	if(0)
+	{
+		// c,  s
+		//-s,  c
+		return new vec2( 
+			 v.x*c + v.y*s,
+			-v.x*s + v.y*c
+		);
+	}
+	else
+	{
+		return new vec2( 
+			 v.x*c - v.y*s,
+			 v.x*s + v.y*c
+		);
+	}
+}
+
 
 
 
