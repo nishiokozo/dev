@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>pys-pendulum</title>
+		<style>
+
+			.group
+			{
+				display:inline-block; 
+				padding: 6px; 
+				border-radius: 7px; 
+				border:1px solid #aaa;
+				text-align:center;
+				vertical-align: top;
+				font-size:16px;
+				font-family:monospace;
+			}
+			.group-left
+			{
+				display:inline-block; 
+				padding: 6px; 
+				border-radius: 7px; 
+				border:1px solid #aaa;
+				text-align:left;
+				vertical-align: top;
+				font-size:16px;
+				font-family:monospace;
+			}
+			.readme
+			{
+				display:inline-block; 
+				text-align:center;
+				font-size:12px;
+				font-family:monospace;
+			}
+			.readme-left
+			{
+				display:inline-block; 
+				text-align:left;
+				font-size:12px;
+				font-family:monospace;
+			}
+		</style>
+	</head>
+	<body align="center">
+		<H1>振り子運動の区分求積法による積分v1.0</H1>
+		<canvas id="html_canvas3"  width="512" height="384" style="border:0px solid" ></canvas>
+		<br>
+		<canvas id="html_canvas4"  width="512" height="256" style="border:1px solid" ></canvas>
+		<br>
+		<script src="lib.js"></script>
+		<script src="main.js"></script>
+		<br>
+			<div class="group-left">
+			 Δt　　　　　<input type="text" id="html_dt" value="0.04" size="3" onchange="html_onchange('reset');" > sec<br>
+			 重力加速度g　<input type="text" id="html_g" value="9.8" size="3" onchange="html_onchange('reset');" > m/s/s<br>
+			 開始位置θ　 <input type="text" id="html_th" value="170" size="3" onchange="html_onchange('reset');" > deg<br>
+			 紐長さl　　　<input type="text" id="html_l" value="1.2" size="3" onchange="html_onchange('reset');" > m<br>
+			 計測時間time <input type="text" id="html_time" value="5" size="3" onchange="html_onchange('reset');" > sec<br>
+			</div>
+			<div class="group">
+			<input type="button" value="リセット" onClick="html_onchange('reset');" >
+			<input type="button" value="再生/ポーズ" onClick="html_onchange('pause');" >
+			<input type="button" value="コマ送り" onClick="html_onchange('step');" >
+			</div>
+			<br>
+
+<!--
+			 ボール質量m　<input type="text" id="html_m" value="1" size="3" onchange="html_onchange('reset');" > Kg<br>
+			 開始高さh　　<input type="text" id="html_h" value="2.5" size="3" onchange="html_onchange('reset');" > m<br>
+
+
+			<div class="group">
+			<input type="button" value="縮める" onClick="html_onchange('shrink');" >
+			<input type="button" value="伸ばす" onClick="html_onchange('streach');" >
+			<input type="button" value="スタート" onClick="html_onchange('release');" >
+			</div>
+			<input type="checkbox" name="html_debug" onClick="html_onchange();" checked >debug
+			<div class="group">
+				<input type="radio" name="html_mode" value="ice" onchange="html_onchange('reset');"checked>氷上
+				<input type="radio" name="html_mode" value="horizonal" onchange="html_onchange('reset');"checked>水平
+				<input type="radio" name="html_mode" value="vertical" onchange="html_onchange('reset');">鉛直
+			</div>
+
+-->
+
+			
+			<br>
+
+	<br>～概要 2021/09/21～<br>
+		区分求積法による積分<br>
+		フレーム単位(Δt)で加速度を累積して速度、速度を累積して位置を算出している<br>
+		開始位置θ=45°くらいまでなら、加速度、速度、位置がほぼサイン波になる。<br>
+		90°あたりを超えると奥歯型のような形状になる。<br>
+		Δtを粗くしてやると、プロットが荒くなり精度が落ちる。<br>
+
+	</body>
+</html>
