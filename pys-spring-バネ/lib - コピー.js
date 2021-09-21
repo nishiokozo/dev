@@ -1,4 +1,5 @@
-// 2021/08/06 gra.drawbane2d drawarrow2d追加
+// 2021/08/08 gra.drawmesure_line追加 strfloat追加
+// 2021/08/06 gra.drawbane2d drawarrow2d drawarrow2d_line追加
 // 2021/08/05 gra.fill の修正
 // 2021/08/03 vrot2 二次元回転関数 追加
 // 2021/07/30 gra.drawpictgrambone ピクトグラム風、円が二つ連なった図形の描画
@@ -28,6 +29,21 @@
 //
 // OpenGL® Programming Guide: The Official Guide 
 // https://www.cs.utexas.edu/users/fussell/courses/cs354/handouts/Addison.Wesley.OpenGL.Programming.Guide.8th.Edition.Mar.2013.ISBN.0321773039.pdf
+
+//-----------------------------------------------------------------------------
+function strfloat( v, r=4, f=2 ) // r指数部桁、f小数部桁
+//-----------------------------------------------------------------------------
+{
+	let a = Math.pow(10,f);
+	let b = Math.floor( v );
+	let c = parseInt( v, 10 );	// 小数点以下切り捨て
+	let d = Math.abs(v-c);
+	let e = Math.round( d*a );	// 四捨五入
+	let g = ('0'.repeat(f)+e).substr(-f);
+	let h = (g+'0'.repeat(f)).substr(0,f);
+	let i = (' '.repeat(r)+c).substr(-r);
+	return i+"."+ h;
+}
 
 //-----------------------------------------------------------------------------
 function se_create()	// 2021/07/26 効果音ライブラリ
@@ -913,7 +929,7 @@ function gra_create( cv )	//2021/06/01
 	gra.drawarrow2d = function( p, v, l, sc = 1 )
 	//-----------------------------------------------------------------------------
 	{
-		if ( l == 0 ) 
+		if ( l == 0 || length2(v)==0 ) 
 		{
 			gra.circle( p.x, p.y, sc );
 			return;
@@ -950,11 +966,27 @@ function gra_create( cv )	//2021/06/01
 
 		gra.path_n( tbl2 );
 	}
+	//-----------------------------------------------------------------------------
 	gra.drawarrow_line2d = function( p, b, sc = 2 )
+	//-----------------------------------------------------------------------------
 	{
 		let v = normalize2(vsub2(b,p));
 		let l = length2(vsub2(b,p));
 		drawarrow2d( p, v, l, sc );
+	}
+
+	//-----------------------------------------------------------------------------
+	gra.drawmesure_line = function( x0, y0, x1, y1, w = 4 )
+	//-----------------------------------------------------------------------------
+	{
+		let v = vmul_scalar2( normalize2(vsub2(vec2(x1,y1),vec2(x0,y0))), w );
+		[v.x,v.y]=[v.y,v.x];				
+		let s1 = vec2( x0, y0  ); let e1=vec2( x1, y1   );
+		let s2 = vec2( x0+v.x, y0-v.y); let e2=vec2( x0-v.x, y0+v.y );
+		let s3 = vec2( x1+v.x, y1-v.y); let e3=vec2( x1-v.x, y1+v.y );
+		gra.line( s1.x,s1.y,e1.x,e1.y);
+		gra.line( s2.x,s2.y,e2.x,e2.y);
+		gra.line( s3.x,s3.y,e3.x,e3.y);
 	}
 
 	return gra;

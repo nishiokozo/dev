@@ -2,7 +2,7 @@
 <html>
 	<head>
 		<meta charset="UTF-8">
-		<title>pys</title>
+		<title>pys-spring</title>
 		<style>
 
 			.group
@@ -33,28 +33,29 @@
 		</style>
 	</head>
 	<body align="center">
-		<H1>物理シミュレーション 引力</H1>
+		<H1>物理シミュレーション ばねv2.0</H1>
 		<canvas id="html_canvas"  width="384" height="384" style="border:1px solid" ></canvas>
 		<script src="lib.js"></script>
 		<script src="main.js"></script>
 		<br>
 			<div class="group">
-			 ばね係数k=<input type="text" id="html_k" value="2" size="3" onchange="html_onchange();" >
-			 ボール質量m=<input type="text" id="html_m" value="2" size="3" onchange="html_onchange();" ><br>
+			 Δt=<input type="text" id="html_t" value="0.2" size="3" onchange="html_onchange();" >
+			 ばね係数k=<input type="text" id="html_k" value="1" size="3" onchange="html_onchange();" >
+			 ボール質量m=<input type="text" id="html_m" value="1" size="3" onchange="html_onchange();" ><br>
 			</div>
 			<br>
 			<div class="group">
-			<input type="button" value="reset" onClick="html_onchange('reset');" >
-			<input type="button" value="play/pause" onClick="html_onchange('pause');" >
-			<input type="button" value="step" onClick="html_onchange('step');" >
+			<input type="button" value="リセット" onClick="html_onchange('reset');" >
+			<input type="button" value="再生/ポーズ" onClick="html_onchange('pause');" >
+			<input type="button" value="コマ送り" onClick="html_onchange('step');" >
 			</div>
+
+<!--
 			<div class="group">
 			<input type="button" value="縮める" onClick="html_onchange('shrink');" >
 			<input type="button" value="伸ばす" onClick="html_onchange('streach');" >
 			<input type="button" value="スタート" onClick="html_onchange('release');" >
 			</div>
-
-<!--
 			<input type="checkbox" name="html_debug" onClick="html_onchange();" checked >debug
 			<div class="group">
 				<input type="radio" name="html_mode" value="ice" onchange="html_onchange('reset');"checked>氷上
@@ -67,6 +68,11 @@
 			
 			<br>
 
+	<br>～概要 2021/08/10～<br>
+		見た目問題はないけれど、E=K+Uの値がぴったりとそろってほしいのでとりあえず精度を上げる実験<br>
+		フレーム内で等速運動だったのを単振動モデルにする。<br>
+
+		
 	<br>～概要 2021/08/05～<br>
 		ばねの弾性力(F=kx)をボールへ(F=ma)伝えてボールの加速度を発生させている。<br>
 		力学的エネルギーは一定であることで物理シミュレーションとして成立している。<br>

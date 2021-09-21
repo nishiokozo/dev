@@ -13,6 +13,8 @@
 				border:1px solid #aaa;
 				text-align:center;
 				vertical-align: top;
+				font-size:16px;
+				font-family:monospace;
 			}
 			.readme
 			{
@@ -31,43 +33,48 @@
 		</style>
 	</head>
 	<body align="center">
-		<H1>物理シミュレーション v1.2</H1>
+		<H1>物理シミュレーション 引力</H1>
 		<canvas id="html_canvas"  width="384" height="384" style="border:1px solid" ></canvas>
 		<script src="lib.js"></script>
 		<script src="main.js"></script>
 		<br>
 			<div class="group">
-				<input type="radio" name="html_small" onchange="html_onchange('2balls');"checked>2balls
-				<input type="radio" name="html_small" onchange="html_onchange('3balls');">3balls
-				<input type="radio" name="html_small" onchange="html_onchange('manyballs');">many balls
+			 ばね係数k=<input type="text" id="html_k" value="10" size="3" onchange="html_onchange();" >
+			 ボール1質量m=<input type="text" id="html_m1" value="2" size="3" onchange="html_onchange();" ><br>
+			 ボール2質量m=<input type="text" id="html_m2" value="2" size="3" onchange="html_onchange();" ><br>
 			</div>
-			<input type="button" value="reset" onClick="main()" >
-			<input type="checkbox" name="html_info" checked >info
+			<br>
+			<div class="group">
+			<input type="button" value="reset" onClick="html_onchange('reset');" >
+			<input type="button" value="play/pause" onClick="html_onchange('pause');" >
+			<input type="button" value="step" onClick="html_onchange('step');" >
+			</div>
+			<div class="group">
+			<input type="button" value="縮める" onClick="html_onchange('shrink');" >
+			<input type="button" value="伸ばす" onClick="html_onchange('streach');" >
+			<input type="button" value="スタート" onClick="html_onchange('release');" >
+			</div>
 
 <!--
-		<div class="group">
-			速度計算
-			<br>
-			<input type="radio" name="html_reso" value="1" onchange="html_onchange('v^2');" checked 	>衝撃＝速度の二乗
-			<br>
-			<input type="radio" name="html_reso" value="0.5" onchange="html_onchange('v');" 	>衝撃＝速度
-		</div>
-			<input type="button" value="play/stop" onClick="html_onchange('play/stop')" >
-			<input type="button" value="info" onClick="html_onchange('info')" >
+			<input type="checkbox" name="html_debug" onClick="html_onchange();" checked >debug
+			<div class="group">
+				<input type="radio" name="html_mode" value="ice" onchange="html_onchange('reset');"checked>氷上
+				<input type="radio" name="html_mode" value="horizonal" onchange="html_onchange('reset');"checked>水平
+				<input type="radio" name="html_mode" value="vertical" onchange="html_onchange('reset');">鉛直
+			</div>
+
 -->
+
 			
 			<br>
 
-	<br>～概要 2021/07/06～<br>
-		運動量保存の法則、運動エネルギー保存の法則の動きの検証<br>
+	<br>～概要 2021/08/05～<br>
+		ばねの弾性力(F=kx)をボールへ(F=ma)伝えてボールの加速度を発生させている。<br>
+		力学的エネルギーは一定であることで物理シミュレーションとして成立している。<br>
+		<br>
+		時間積分された『シミュレーション』なので、単振動、正投影、などの概念は使われていない<br>
+		最小～最大の範囲が広がっていないのでモデルとしては収束している<br>
 
-	<br>～メモ～<br>
-		反発係数:e=1<br>
-		質量:m 速度:v 質量:m <br>
-		運動量:p=mv<br>
-		運動エネルギー:k=1/2mv^2<br>
-		運動量保存則:m1v1 + m2v2 = m1v1' + m2v2'<br>
-		反発係数の式:e=-(va'-vb')/(va-vb)<br>
-	<br>
+
 	</body>
 </html>

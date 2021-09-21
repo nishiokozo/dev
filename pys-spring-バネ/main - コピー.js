@@ -71,7 +71,7 @@ function create_lab()
 	//
 	lab.th = 0;
 	let box;
-	let balls=[];
+	let ball;
 	lab.m = 0;
 	lab.k = 0;
 	lab.t = 0;
@@ -99,7 +99,7 @@ function create_lab()
 			return Math.round(v*100)/100;
 		}
 		let a = {"Δt":lab.t,"自然長":bane_naturallength,"ばね長":round(bane_length),"伸縮":round(bane_x), "-kx":round(bane_F)};
-		let b = {v:round(balls[0].v.x), p:round(balls[0].p.x)};
+		let b = {v:round(ball.v.x), p:round(ball.p.x)};
 		console.log(count,a,b );
 	}
 
@@ -124,7 +124,7 @@ function create_lab()
 			let w = 15;
 			let r = 11;
 			box		= {p:vec2(-bane_naturallength-r-w-50,0) ,w:w,h:r+1}
-			balls.push({p:vec2(0,0)  ,v:vec2(0,0) ,r:r});
+			ball	= {p:vec2(0,0)  ,v:vec2(0,0) ,r:r}
 		}
 		min_E = 999999;
 		max_E = 0;
@@ -187,7 +187,7 @@ function create_lab()
 		// 静的なパラメータを計算
 		
 		p_box = vec2(box.p.x+box.w,box.p.y);
-		p_ball = vec2(balls[0].p.x-balls[0].r,balls[0].p.y);
+		p_ball = vec2(ball.p.x-ball.r,ball.p.y);
 
 		bane_length = length2( vsub2(p_ball,p_box) );
 		bane_x = bane_length-bane_naturallength;
@@ -222,16 +222,16 @@ function create_lab()
 			let a=bane_a;
 			if(1)
 			{
-				let v0=balls[0].v.x;			
-				balls[0].v.x += a*t;
+				let v0=ball.v.x;			
+				ball.v.x += a*t;
 				lab.s = 1/2*a*t*t + v0*t;	//1/2at^2
-				balls[0].p.x += lab.s;
+				ball.p.x += lab.s;
 			}
 			else
 			if(1)
 			{
 				// 単振動を移動量に取り入れた物
-				balls[0].v.x += a*t;
+				ball.v.x += a*t;
 				let A = 50;//振幅
 				let th = Math.acos(bane_x/A);
 lab.th = th;				
@@ -248,16 +248,16 @@ if ( count < 20 )
 	console.log(count,bane_x,w, a, b, Math.cos(a), Math.cos(b) );
 }
 				lab.s = x;
-				balls[0].p.x += lab.s;
+				ball.p.x += lab.s;
 			}
 			else
 			{
 				// フレーム内の等速運動
-				balls[0].v.x += a*t;
-				lab.s = balls[0].v.x * t ;
-				balls[0].p.x += lab.s;
+				ball.v.x += a*t;
+				lab.s = ball.v.x * t ;
+				ball.p.x += lab.s;
 			} 
-			ball_K = 1/2*lab.m*balls[0].v.x*balls[0].v.x;
+			ball_K = 1/2*lab.m*ball.v.x*ball.v.x;
 
 
 			let E = bane_U+ball_K;
@@ -337,7 +337,7 @@ if ( count < 20 )
 		}
 
 		// draw ball
-		gra.circle( balls[0].p.x, balls[0].p.y, balls[0].r );
+		gra.circle( ball.p.x, ball.p.y, ball.r );
 
 		// draw bane
 		{
@@ -351,7 +351,7 @@ if ( count < 20 )
 
 			// 補助線:質量
 			{
-				gra.symbol( "m="+lab.m,balls[0].p.x,balls[0].p.y-5, fs );
+				gra.symbol( "m="+lab.m,ball.p.x,ball.p.y-5, fs );
 			}
 			
 			// 補助線:自然長
@@ -364,8 +364,8 @@ if ( count < 20 )
 
 			// 補助線:力
 			{
-				let x = balls[0].p.x-balls[0].r;
-				let y = balls[0].p.y-20;
+				let x = ball.p.x-ball.r;
+				let y = ball.p.y-20;
 				let p = vec2(x,y);
 				let d = bane_F>0?1:-1;
 

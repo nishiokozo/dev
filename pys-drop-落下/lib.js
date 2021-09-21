@@ -1,17 +1,20 @@
-// 2021/08/15 アスペクト周りバグ取り
-// 2021/08/13 追加	gra.pset() / gra.setAspect()追加
+// 2021/08/16 ene 追加 oscillo 削除
+// 2021/08/15 oscillo timemax 追加
+// 2021/08/15 oscillo_create オシロスコープのように波形を描画
+// 2021/08/15 gra アスペクト周りバグ取り
+// 2021/08/13 gra.pset() 追加/ gra.setAspect()追加
 // 2021/08/08 gra.drawmesure_line追加 strfloat追加
 // 2021/08/06 gra.drawbane2d drawarrow2d drawarrow2d_line追加
 // 2021/08/05 gra.fill の修正
-// 2021/08/03 vrot2 二次元回転関数 追加
+// 2021/08/03 vec2 vrot2 二次元回転関数 追加
 // 2021/07/30 gra.drawpictgrambone ピクトグラム風、円が二つ連なった図形の描画
 // 2021/07/29 gra.bezier_n 追加
 // 2021/07/29 gra windowとcanvasのアスペクト比を反映
-// 2021/07/26 効果音ライブラリ
+// 2021/07/26 se 効果音ライブラリ
 // 2021/07/24 KEY追加
 // 2021/07/23 半直線と点との距離,	線分と点との距離,直線と直線の距離,半直線と線分の距離,線分と線分の距離 関数追加
 // 2021/07/23 pad_create ゲームパッド入力ライブラリ追加
-// 2021/07/22 フルスクリーン用にアスペクト機能を追加
+// 2021/07/22 gra フルスクリーン用にアスペクト機能を追加
 // 2021/07/19 ver1.12 gra backcolor()追加
 // 2021/07/10 ver1.11 フォント送りサイズ変更
 // 2021/07/10 ver1.10 gra.alpha追加
@@ -31,6 +34,7 @@
 //
 // OpenGL® Programming Guide: The Official Guide 
 // https://www.cs.utexas.edu/users/fussell/courses/cs354/handouts/Addison.Wesley.OpenGL.Programming.Guide.8th.Edition.Mar.2013.ISBN.0321773039.pdf
+
 
 //-----------------------------------------------------------------------------
 function strfloat( v, r=4, f=2 ) // r指数部桁、f小数部桁
@@ -464,8 +468,6 @@ function gra_create( cv )	//2021/06/01
 	gra.sy = 0; 
 	gra.ex = gra.ctx.canvas.width; 
 	gra.ey = gra.ctx.canvas.height; 
-//	let ox = 0;
-//	let oy = 0;
 
 	gra.backcol = "#FFFFFF";
 //	gra.ctx.font = "12px monospace";	// iOSだとCourierになる	読める限界の小ささ
@@ -476,17 +478,6 @@ function gra_create( cv )	//2021/06/01
 	gra.fontw = gra.ctx.measureText("_").width;
 
 	gra.lineWidth = 1;
-//	gra.win_aspect = val;
-
-/*
-	if ( mode=='as-window' )
-	{
-		//gra.windowの仮想画面に追従するモード。
-		gra.asp = 1;
-		gra.adj = 0;
-	}
-	else
-*/
 	{
 		//2021/07/22 フルスクリーン用にアスペクト機能を追加	※フルスクリーン画面の解像度はソフトウェアは把握できない。
 		gra.asp = 1/(gra.ctx.canvas.width/gra.ctx.canvas.height);
@@ -501,12 +492,6 @@ function gra_create( cv )	//2021/06/01
 		gra.sy = _sy;
 		gra.ex = _ex;
 		gra.ey = _ey;
-//		ox = -_sx;
-//		oy = -_sy;
-
-//		gra.ctx.lineWidth = gra.ctx.canvas.height/(gra.ey-gra.sy) *gra.lineWidth;
-
-//		gra.ctx.lineWidth = gra.lineWidth;
 	}
 	//-------------------------------------------------------------------------
 	gra.adjust_win = function() // 2021/08/03 window scale に合わせる
@@ -521,7 +506,6 @@ function gra_create( cv )	//2021/06/01
 	{
 		gra.asp = as;
 		gra.adj = ab;
-//		gra.win_aspect = val;
 	}
 
 
@@ -535,11 +519,30 @@ function gra_create( cv )	//2021/06/01
 	}
 	gra.win_range = function( x, y )
 	{
-		let w = Math.abs(gra.ex-gra.sx);
-		let h = Math.abs(gra.ey-gra.sy);
-		x = (x)/w * gra.ctx.canvas.width;
-		y = (y)/h * gra.ctx.canvas.height;
-		return [x*gra.asp,y];
+		if ( gra.mode == 'no-range' )
+		{
+			return [x,y];
+		}
+		else
+		if ( gra.mode == '' )
+		{
+			let w = Math.abs(gra.ex-gra.sx);
+			let h = Math.abs(gra.ey-gra.sy);
+			x = (x)/w * gra.ctx.canvas.width;
+			y = (y)/h * gra.ctx.canvas.height;
+			return [x*gra.asp,y];
+		}
+		else
+		{
+			alert("gra mode 異常 gra.win_range()");
+		}
+	}
+	gra.mode = ''; 
+	//-----------------------------------------------------------------------------
+	gra.setMode = function( mode )	// ドットbyドット
+	//-----------------------------------------------------------------------------
+	{
+		gra.mode = mode;
 	}
 	
 	//-----------------------------------------------------------------------------
@@ -877,7 +880,6 @@ function gra_create( cv )	//2021/06/01
 			gra.ctx.fill();
 		};
 	}
-
 	//-----------------------------------------------------------------------------
 	gra.drawpictgrambone = function( p1, r1, p2, r2 )	// 2021/07/30 ピクトグラム風、円が二つ連なった図形の描画
 	//-----------------------------------------------------------------------------
@@ -1098,6 +1100,13 @@ function vmul_scalar2( a, s )
 	);
 }
 //------------------------------------------------------------------------------
+function vmuls2( a, s ) // 2021/08/15
+//------------------------------------------------------------------------------
+{
+	return vmul_scalar2( a,s )
+}
+
+//------------------------------------------------------------------------------
 function vdiv_scalar2( a, s ) // 2021/07/26 追加
 //------------------------------------------------------------------------------
 {
@@ -1106,6 +1115,13 @@ function vdiv_scalar2( a, s ) // 2021/07/26 追加
 		a.y / s 
 	);
 }
+//------------------------------------------------------------------------------
+function vdivs2( a, s ) // 2021/08/16
+//------------------------------------------------------------------------------
+{
+	return vdiv_scalar2( a,s )
+}
+
 //------------------------------------------------------------------------------
 function vneg2( a )
 //------------------------------------------------------------------------------
@@ -1789,3 +1805,216 @@ const	KEY_LEFT	= 37;
 const	KEY_UP		= 38;
 const	KEY_RIGHT	= 39;
 const	KEY_DOWN	= 40;
+/*
+//-----------------------------------------------------------------------------
+function oscillo_create( cv, time_max = 5 )	// 2021/08/15 オシロスコープのように波形を描画
+//-----------------------------------------------------------------------------
+{
+	let oscillo={};
+	let gra = gra_create( cv );
+
+	oscillo.valmax = 0;
+	oscillo.prot_x = 0;
+	oscillo.time_max = time_max;
+
+	const	MAX_PLUG = 8;
+
+	let plugs = 
+	[
+		{p0:vec2(0,0), p1:vec2(0,0), cr:0,cg:0,cb:0, flgActive:false } ,	// 0黒
+		{p0:vec2(0,0), p1:vec2(0,0), cr:0,cg:0,cb:1, flgActive:false } ,	// 1青
+		{p0:vec2(0,0), p1:vec2(0,0), cr:1,cg:0,cb:0, flgActive:false } ,	// 2赤
+		{p0:vec2(0,0), p1:vec2(0,0), cr:1,cg:0,cb:1, flgActive:false } ,	// 3紫
+		{p0:vec2(0,0), p1:vec2(0,0), cr:0,cg:1,cb:0, flgActive:false } ,	// 4緑
+		{p0:vec2(0,0), p1:vec2(0,0), cr:0,cg:1,cb:1, flgActive:false } ,	// 5シアン
+		{p0:vec2(0,0), p1:vec2(0,0), cr:1,cg:1,cb:0, flgActive:false } ,	// 6黄
+		{p0:vec2(0,0), p1:vec2(0,0), cr:1,cg:1,cb:1, flgActive:false } ,	// 7白	背景
+	];
+	
+	let reqReset = true;
+
+
+	//-----------------------------------------------------------------------------
+	oscillo.reset = function( valmax )
+	//-----------------------------------------------------------------------------
+	{
+		oscillo.valmax = valmax;
+		reqReset = true;
+	}
+	
+	//-----------------------------------------------------------------------------
+	oscillo.prot = function( num, val )
+	//-----------------------------------------------------------------------------
+	{
+		num = num % MAX_PLUG;
+
+		plugs[num].p1 = vec2( oscillo.prot_x, val );
+		plugs[num].flgActive = true;
+	}
+	//-----------------------------------------------------------------------------
+	oscillo.update = function( dt )
+	//-----------------------------------------------------------------------------
+	{
+		if ( reqReset ) 
+		{
+			reqReset = false;
+			gra.window( 0, oscillo.valmax*1.1 , oscillo.time_max/dt, -oscillo.valmax*0.1 );
+
+			gra.setAspect(1,0);
+			gra.cls();
+
+
+			oscillo.prot_x = gra.sx;
+
+			for ( let pl of plugs )
+			{
+				pl.p0.x = oscillo.prot_x;
+				pl.p0.y = pl.p1.y;
+				pl.p1.x = oscillo.prot_x;
+			}
+		}
+		
+		for ( let pl of plugs )
+		{
+			gra.color( pl.cr, pl.cg, pl.cb );
+			gra.line( pl.p0.x, pl.p0.y, pl.p1.x, pl.p1.y );
+			pl.p0 = pl.p1;
+			pl.flgActive = false;
+		}
+		
+		if ( ++oscillo.prot_x > gra.ex ) 
+		{
+			reqReset = true;
+		}
+
+	}
+	
+
+	return oscillo;
+}
+*/
+
+//-----------------------------------------------------------------------------
+function ene_create( cv, cntItem, time_max = 5 )	// 2021/08/15 U K Eのエネルギーを算出して波形を描画
+//-----------------------------------------------------------------------------
+{
+	let ene={};
+	let gra = gra_create( cv );
+
+	let count = 0;
+	
+	ene.valmax = 0;
+	ene.prot_x = 0;
+	ene.time_max = time_max;
+	ene.cntItem = cntItem;
+	const	MAX_PLUG = 8;
+
+	let plugs = 
+	[
+		{p0:vec2(0,0), p1:vec2(0,0), cr:0,cg:0,cb:1, flgActive:false ,p:vec2(0,0),m:0 } ,	// 1青	U
+		{p0:vec2(0,0), p1:vec2(0,0), cr:1,cg:0,cb:0, flgActive:false ,p:vec2(0,0),m:0 } ,	// 2赤	K
+		{p0:vec2(0,0), p1:vec2(0,0), cr:1,cg:0,cb:1, flgActive:false ,p:vec2(0,0),m:0 } ,	// 3紫	E
+	];
+	
+	let items = [];
+	for ( let i = 0 ; i < ene.cntItem ; i++ )
+	{
+		items[i] = {p:vec2(0,0),v:vec2(0,0),m:0};
+	} 
+
+	let reqReset = true;
+
+
+	//-----------------------------------------------------------------------------
+	ene.reset = function( valmax )
+	//-----------------------------------------------------------------------------
+	{
+		ene.valmax = valmax;
+		reqReset = true;
+	}
+
+	//-----------------------------------------------------------------------------
+	ene.prot_pos2 = function( num, p, v, m )
+	//-----------------------------------------------------------------------------
+	{
+		// 衝突が発生したときに正しく検出できないので速度を必要とする
+		if ( ene.cntItem <= num ) 
+		{
+			alert("プロット数不足inene.prot_pos2()");
+			return ;
+		}
+		items[num].p = vcopy2(p);
+		items[num].v = vcopy2(v);
+		items[num].m = m;
+	 	items[num].flgActive = true;
+	
+	}
+	
+	//-----------------------------------------------------------------------------
+	ene.update = function( dt, g  )
+	//-----------------------------------------------------------------------------
+	{
+		if ( reqReset ) 
+		{
+			reqReset = false;
+			gra.window( 0, ene.valmax*1.1 , ene.time_max/dt, -ene.valmax*0.1 );
+
+			gra.setAspect(1,0);
+			gra.cls();
+
+			count = 0;
+
+			ene.prot_x = gra.sx;
+
+			for ( let pl of plugs )
+			{
+				pl.p0.x = ene.prot_x;
+				pl.p0.y = pl.p1.y;
+				pl.p1.x = ene.prot_x;
+			}
+		}
+
+		{		
+			ene.U = 0;
+			ene.K = 0;
+			for ( let it of items )
+			{
+				if ( it.flgActive )
+				{
+					// 位置エネルギーの積算
+					ene.U += (it.m * Math.abs(g) * it.p.y);
+
+					// 運動エネルギーの積算
+					{
+						let v = it.v;	// 移動量の差を一階時間微分して速度を求める。→前回位置から求める方法も試したが
+						ene.K += 1/2*it.m*dot2(v,v);
+					}
+
+				}
+			}
+			plugs[0].p1 = vec2( ene.prot_x, ene.U );
+			plugs[1].p1 = vec2( ene.prot_x, ene.K );
+			plugs[2].p1 = vec2( ene.prot_x, ene.U+ene.K );
+		}
+
+		for ( let pl of plugs )
+		{
+			if ( count > 0 )
+			{
+				gra.color( pl.cr, pl.cg, pl.cb );
+				gra.line( pl.p0.x, pl.p0.y, pl.p1.x, pl.p1.y );
+			}
+			pl.p0 = vcopy2(pl.p1);
+		}
+		
+		if ( ++ene.prot_x > gra.ex ) 
+		{
+			reqReset = true;
+		}
+
+		count++
+	}
+	
+
+	return ene;
+}

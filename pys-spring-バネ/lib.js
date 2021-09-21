@@ -1,4 +1,7 @@
-// 2021/08/06 gra.drawbane2d drawarrow2d追加
+// 2021/08/15 アスペクト周りバグ取り
+// 2021/08/13 追加	gra.pset() / gra.setAspect()追加
+// 2021/08/08 gra.drawmesure_line追加 strfloat追加
+// 2021/08/06 gra.drawbane2d drawarrow2d drawarrow2d_line追加
 // 2021/08/05 gra.fill の修正
 // 2021/08/03 vrot2 二次元回転関数 追加
 // 2021/07/30 gra.drawpictgrambone ピクトグラム風、円が二つ連なった図形の描画
@@ -28,6 +31,21 @@
 //
 // OpenGL® Programming Guide: The Official Guide 
 // https://www.cs.utexas.edu/users/fussell/courses/cs354/handouts/Addison.Wesley.OpenGL.Programming.Guide.8th.Edition.Mar.2013.ISBN.0321773039.pdf
+
+//-----------------------------------------------------------------------------
+function strfloat( v, r=4, f=2 ) // r指数部桁、f小数部桁
+//-----------------------------------------------------------------------------
+{
+	let a = Math.pow(10,f);
+	let b = Math.floor( v );
+	let c = parseInt( v, 10 );	// 小数点以下切り捨て
+	let d = Math.abs(v-c);
+	let e = Math.round( d*a );	// 四捨五入
+	let g = ('0'.repeat(f)+e).substr(-f);
+	let h = (g+'0'.repeat(f)).substr(0,f);
+	let i = (' '.repeat(r)+c).substr(-r);
+	return i+"."+ h;
+}
 
 //-----------------------------------------------------------------------------
 function se_create()	// 2021/07/26 効果音ライブラリ
@@ -446,8 +464,8 @@ function gra_create( cv )	//2021/06/01
 	gra.sy = 0; 
 	gra.ex = gra.ctx.canvas.width; 
 	gra.ey = gra.ctx.canvas.height; 
-	let ox = 0;
-	let oy = 0;
+//	let ox = 0;
+//	let oy = 0;
 
 	gra.backcol = "#FFFFFF";
 //	gra.ctx.font = "12px monospace";	// iOSだとCourierになる	読める限界の小ささ
@@ -458,6 +476,22 @@ function gra_create( cv )	//2021/06/01
 	gra.fontw = gra.ctx.measureText("_").width;
 
 	gra.lineWidth = 1;
+//	gra.win_aspect = val;
+
+/*
+	if ( mode=='as-window' )
+	{
+		//gra.windowの仮想画面に追従するモード。
+		gra.asp = 1;
+		gra.adj = 0;
+	}
+	else
+*/
+	{
+		//2021/07/22 フルスクリーン用にアスペクト機能を追加	※フルスクリーン画面の解像度はソフトウェアは把握できない。
+		gra.asp = 1/(gra.ctx.canvas.width/gra.ctx.canvas.height);
+		gra.adj = (gra.ctx.canvas.width-gra.ctx.canvas.height)/2;
+	}
 
 	//-------------------------------------------------------------------------
 	gra.window = function( _sx, _sy, _ex, _ey )
@@ -467,8 +501,8 @@ function gra_create( cv )	//2021/06/01
 		gra.sy = _sy;
 		gra.ex = _ex;
 		gra.ey = _ey;
-		ox = -_sx;
-		oy = -_sy;
+//		ox = -_sx;
+//		oy = -_sy;
 
 //		gra.ctx.lineWidth = gra.ctx.canvas.height/(gra.ey-gra.sy) *gra.lineWidth;
 
@@ -480,17 +514,24 @@ function gra_create( cv )	//2021/06/01
 	{
 		gra.ctx.lineWidth = gra.ctx.canvas.height/(gra.ey-gra.sy) *gra.lineWidth;
 	}	
-	//2021/07/22 フルスクリーン用にアスペクト機能を追加
-	gra.as = 1/(gra.ctx.canvas.width/gra.ctx.canvas.height);
-	gra.ab = (gra.ctx.canvas.width-gra.ctx.canvas.height)/2;
+	
+	//-------------------------------------------------------------------------
+	gra.setAspect = function( as,ab )	// 2021/08/13追加
+	//-------------------------------------------------------------------------
+	{
+		gra.asp = as;
+		gra.adj = ab;
+//		gra.win_aspect = val;
+	}
+
 
 	gra.win_abs = function( x, y )
 	{
 		let w = gra.ex-gra.sx;
 		let h = gra.ey-gra.sy;
-		x = (x+ox)/w * gra.ctx.canvas.width;
-		y = (y+oy)/h * gra.ctx.canvas.height;
-		return [x*gra.as+gra.ab,y];
+		x = (x-gra.sx)/w * gra.ctx.canvas.width;
+		y = (y-gra.sy)/h * gra.ctx.canvas.height;
+		return [x*gra.asp+gra.adj,y];
 	}
 	gra.win_range = function( x, y )
 	{
@@ -498,8 +539,9 @@ function gra_create( cv )	//2021/06/01
 		let h = Math.abs(gra.ey-gra.sy);
 		x = (x)/w * gra.ctx.canvas.width;
 		y = (y)/h * gra.ctx.canvas.height;
-		return [x*gra.as,y];
+		return [x*gra.asp,y];
 	}
+	
 	//-----------------------------------------------------------------------------
 	gra.box = function( x1, y1, x2, y2 )
 	//-----------------------------------------------------------------------------
@@ -535,6 +577,7 @@ function gra_create( cv )	//2021/06/01
 		func( x1, y1, x2, y2 );
 	}
 	
+	
 	//-------------------------------------------------------------------------
 	gra.pattern = function( type = 'normal' )
 	//-------------------------------------------------------------------------
@@ -548,7 +591,7 @@ function gra_create( cv )	//2021/06/01
 		}
 	}
 	//-------------------------------------------------------------------------
-	gra.line = function( x1, y1, x2, y2, mode="" )
+	gra.line = function( x1, y1, x2, y2 )
 	//-------------------------------------------------------------------------
 	{
 		function func( sx,sy, ex,ey )
@@ -564,6 +607,12 @@ function gra_create( cv )	//2021/06/01
 		[x2,y2]=gra.win_abs(x2,y2);
 
 		func( x1, y1, x2, y2 );
+	}
+	//-------------------------------------------------------------------------
+	gra.line2 = function( v0, v1 ) // 2021/08/10 追加
+	//-------------------------------------------------------------------------
+	{
+		gra.line( v0.x, v0.y, v1.x, v1.y );
 	}
 
 	//-------------------------------------------------------------------------
@@ -608,7 +657,7 @@ function gra_create( cv )	//2021/06/01
 	gra.locate = function( x1, y1 )
 	//-------------------------------------------------------------------------
 	{
-		gra.x=x1*gra.fontw/gra.as;
+		gra.x=x1*gra.fontw/gra.asp;
 		gra.y=y1*16;
 	}
 	//-------------------------------------------------------------------------
@@ -628,6 +677,8 @@ function gra_create( cv )	//2021/06/01
 	gra.symbol = function( str, x1,y1, size = 16, aligh="center" )
 	//-------------------------------------------------------------------------
 	{
+		// 画面解像度に合わせて大きさが変わるフォントサイズ	※描画サイズに関係がないので機種依存しない
+
 		[x1,y1]=gra.win_abs(x1,y1);
 		let [sw,sh] = gra.win_range(size,size);
 
@@ -636,10 +687,13 @@ function gra_create( cv )	//2021/06/01
 		gra.ctx.textBaseline = "top";
 		gra.ctx.fillText( str, x1, y1 );
 	}
+
 	//-------------------------------------------------------------------------
 	gra.symbol_row = function( str, x1,y1, size = 16, aligh="center" )
 	//-------------------------------------------------------------------------
 	{
+		// 画面解像度に依存しないフォントサイズ				※文字の大きさが変わらないので情報表示用
+	
 		[x1,y1]=gra.win_abs(x1,y1);
 //		let [sw,sh] = gra.win_range(size,size);
 
@@ -769,10 +823,7 @@ function gra_create( cv )	//2021/06/01
 	//-----------------------------------------------------------------------------
 	{
 		[x1,y1]=gra.win_abs(x1,y1);
-//		let [rw,rh] = gra.win_range(r*gra.as,r); // 2021/07/29 windowとcanvasのアスペクト比を反映
 		let [rw,rh] = gra.win_range(r,r); // 2021/07/29 windowとcanvasのアスペクト比を反映
-	
-//		func( x1, y1,rw,rh );
 		{
 			gra.ctx.beginPath();
 
@@ -800,12 +851,29 @@ function gra_create( cv )	//2021/06/01
 	//-----------------------------------------------------------------------------
 	{
 		[x1,y1]=gra.win_abs(x1,y1);
-//		let [rw,rh] = gra.win_range(r*gra.as,r); // 2021/07/29 windowとcanvasのアスペクト比を反映
+//		let [rw,rh] = gra.win_range(r*gra.asp,r); // 2021/07/29 windowとcanvasのアスペクト比を反映
 		let [rw,rh] = gra.win_range(r,r); // 2021/07/29 windowとcanvasのアスペクト比を反映
 		{
 			gra.ctx.beginPath();
 			let rotation = 0;
 			gra.ctx.ellipse( x1, y1, rw, rh, rotation, st, en );
+			gra.ctx.fill();
+		};
+	}
+
+	//-----------------------------------------------------------------------------
+	gra.pset = function( x1,y1,r=1 ) // 2021/08/13 追加
+	//-----------------------------------------------------------------------------
+	{
+		[x1,y1]=gra.win_abs(x1,y1);
+////		let [rw,rh] = gra.win_range(r*gra.asp,r); // 2021/07/29 windowとcanvasのアスペクト比を反映
+//		let [rw,rh] = gra.win_range(r,r); // 2021/07/29 windowとcanvasのアスペクト比を反映
+		let st=0;
+		let en=Math.PI*2;
+		{
+			gra.ctx.beginPath();
+			let rotation = 0;
+			gra.ctx.ellipse( x1, y1, r, r, rotation, st, en );
 			gra.ctx.fill();
 		};
 	}
@@ -913,7 +981,7 @@ function gra_create( cv )	//2021/06/01
 	gra.drawarrow2d = function( p, v, l, sc = 1 )
 	//-----------------------------------------------------------------------------
 	{
-		if ( l == 0 ) 
+		if ( l == 0 || length2(v)==0 ) 
 		{
 			gra.circle( p.x, p.y, sc );
 			return;
@@ -950,11 +1018,27 @@ function gra_create( cv )	//2021/06/01
 
 		gra.path_n( tbl2 );
 	}
+	//-----------------------------------------------------------------------------
 	gra.drawarrow_line2d = function( p, b, sc = 2 )
+	//-----------------------------------------------------------------------------
 	{
 		let v = normalize2(vsub2(b,p));
 		let l = length2(vsub2(b,p));
 		drawarrow2d( p, v, l, sc );
+	}
+
+	//-----------------------------------------------------------------------------
+	gra.drawmesure_line = function( x0, y0, x1, y1, w = 4 )
+	//-----------------------------------------------------------------------------
+	{
+		let v = vmul_scalar2( normalize2(vsub2(vec2(x1,y1),vec2(x0,y0))), w );
+		[v.x,v.y]=[v.y,v.x];				
+		let s1 = vec2( x0, y0  ); let e1=vec2( x1, y1   );
+		let s2 = vec2( x0+v.x, y0-v.y); let e2=vec2( x0-v.x, y0+v.y );
+		let s3 = vec2( x1+v.x, y1-v.y); let e3=vec2( x1-v.x, y1+v.y );
+		gra.line( s1.x,s1.y,e1.x,e1.y);
+		gra.line( s2.x,s2.y,e2.x,e2.y);
+		gra.line( s3.x,s3.y,e3.x,e3.y);
 	}
 
 	return gra;
