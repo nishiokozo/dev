@@ -890,8 +890,8 @@ function gra_create( cv )	//2021/06/01
 	{
 		[x1,y1]=gra.win_abs(x1,y1);
 		let [rw,rh] = gra.win_range(r,r); // 2021/07/29 windowとcanvasのアスペクト比を反映
-rw = r;
-rh = r;
+		rw = r;
+		rh = r;
 		{
 			gra.ctx.beginPath();
 
@@ -922,6 +922,22 @@ rh = r;
 		[x1,y1]=gra.win_abs(x1,y1);
 //		let [rw,rh] = gra.win_range(r*gra.asp,r); // 2021/07/29 windowとcanvasのアスペクト比を反映
 		let [rw,rh] = gra.win_range(r,r); // 2021/07/29 windowとcanvasのアスペクト比を反映
+		{
+			gra.ctx.beginPath();
+			let rotation = 0;
+			gra.ctx.ellipse( x1, y1, rw, rh, rotation, st, en );
+			gra.ctx.fill();
+		};
+	}
+	//-----------------------------------------------------------------------------
+	gra.dot = function( x1,y1,r, st=0, en=Math.PI*2 ) // 2021/07/21　circle にst en を追加 )
+	//-----------------------------------------------------------------------------
+	{
+		[x1,y1]=gra.win_abs(x1,y1);
+//		let [rw,rh] = gra.win_range(r*gra.asp,r); // 2021/07/29 windowとcanvasのアスペクト比を反映
+		let [rw,rh] = gra.win_range(r,r); // 2021/07/29 windowとcanvasのアスペクト比を反映
+		rw = r;
+		rh = r;
 		{
 			gra.ctx.beginPath();
 			let rotation = 0;
