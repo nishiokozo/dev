@@ -44,8 +44,9 @@
 		</style>
 	</head>
 	<body align="center">
-		<H1>振り子運動の区分求積法による積分v1.0</H1>
+		<H1>振り子運動の区分求積法による積分v1.1</H1>
 		<canvas id="html_canvas3"  width="512" height="384" style="border:0px solid" ></canvas>
+		<canvas id="html_canvasE"  width="512" height="256" style="border:1px solid" ></canvas>
 		<br>
 		<canvas id="html_canvas4"  width="512" height="256" style="border:1px solid" ></canvas>
 		<canvas id="html_canvas5"  width="512" height="256" style="border:1px solid" ></canvas>
@@ -54,11 +55,12 @@
 		<script src="main.js"></script>
 		<br>
 			<div class="group-left">
-			 Δt　　　　　<input type="text" id="html_dt" value="0.04" size="3" onchange="html_onchange('reset');" > sec<br>
+			 Δt　　　　　<input type="text" id="html_dt" value="0.1" size="3" onchange="html_onchange('reset');" > sec<br>
 			 重力加速度g　<input type="text" id="html_g" value="9.8" size="3" onchange="html_onchange('reset');" > m/s/s<br>
-			 開始位置θ　 <input type="text" id="html_th" value="-170" size="3" onchange="html_onchange('reset');" > deg<br>
+			 開始位置θ　 <input type="text" id="html_o" value="-170" size="3" onchange="html_onchange('reset');" > deg<br>
 			 半径r 　 　　<input type="text" id="html_r" value="1.2" size="3" onchange="html_onchange('reset');" > m<br>
-			 計測時間time <input type="text" id="html_time" value="5.4" size="3" onchange="html_onchange('reset');" > sec<br>
+			 計測時間time <input type="text" id="html_time" value="5.3" size="3" onchange="html_onchange('reset');" > sec<br>
+			 計算ループlp <input type="text" id="html_lp" value="1" size="3" onchange="html_onchange('reset');" > times<br>
 			</div>
 			<div class="group">
 			<input type="button" value="リセット" onClick="html_onchange('reset');" >
@@ -89,10 +91,15 @@
 			
 			<br>
 
-	<br>～概要 2021/09/21～<br>
+
+	<br>～概要 2021/09/22～v1.0<br>
 		区分求積法による積分<br>
 		フレーム単位(Δt)で加速度を累積して速度、速度を累積して位置を算出している<br>
 		Δt時間内では等速運動になるので、値を大きくすると精度が落ちる。<br>
+		計算ループlpを増やしてやると区分求積法と同等の積分がおこなわれ精度を上げられる。<br>
+
+		エネルギー測定グラフを追加(2021/10/01)<br>
+		計算ループlpを増やすと、力学的エネルギーEが平坦になる（精度が上がる）<br>
 
 	</body>
 </html>

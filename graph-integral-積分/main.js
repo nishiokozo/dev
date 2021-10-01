@@ -46,48 +46,49 @@ function lab_create()
 	let gra4 = gra_create( html_canvas4 );
 	let gra5 = gra_create( html_canvas5 );
 //	let ene = ene_create( html_canvas2, 3 );
+	let ene = ene_create( html_canvasE, 3 );
 
+/*
 	function calc_r( m, r0 = 10, m0 = 1 ) // 質量1の時半径10
 	{
 		let range = r0*r0*Math.PI / m0;	// 質量比率
 		return Math.sqrt(range * m/Math.PI);
 	}
 
-/*
 
 	gra2.color(1,1,1);
 
-	function drawdir2( x, y, r, th )
+	function drawdir2( x, y, r, o )
 	{
 		gra2.circle( x, y, r);
-		let x1=x+r*Math.cos(th);
-		let y1=y+r*Math.sin(th);
+		let x1=x+r*Math.cos(o);
+		let y1=y+r*Math.sin(o);
 		gra2.line( x,y,x1,y1);
 	}
 	function drawvec2( x, y, r, v )
 	{
 		let V = normalize2(v);
-		let th = Math.atan2( V.y, V.x );
+		let o = Math.atan2( V.y, V.x );
 		gra2.circle( x, y, r);
-		let x1=x+r*Math.cos(th);
-		let y1=y+r*Math.sin(th);
+		let x1=x+r*Math.cos(o);
+		let y1=y+r*Math.sin(o);
 		gra2.line( x,y,x1,y1);
 	}
 
-	function drawdirv2( p, r, th )
+	function drawdirv2( p, r, o )
 	{
 		gra2.circle( p.x, p.y, r);
-		let x1=p.x+r*Math.cos(th);
-		let y1=p.y+r*Math.sin(th);
+		let x1=p.x+r*Math.cos(o);
+		let y1=p.y+r*Math.sin(o);
 		gra2.line( p.x,p.y,x1,y1);
 	}
 	function drawvecv2( p, r, v )
 	{
 		let V = normalize2(v);
-		let th = Math.atan2( V.y, V.x );
+		let o = Math.atan2( V.y, V.x );
 		gra2.circle( p.x, p.y, r);
-		let x1=p.x+r*Math.cos(th);
-		let y1=p.y+r*Math.sin(th);
+		let x1=p.x+r*Math.cos(o);
+		let y1=p.y+r*Math.sin(o);
 		gra2.line( p.x,p.y,x1,y1);
 	}
 */
@@ -101,8 +102,7 @@ function lab_create()
 	let flgPause = false;
 	let flgStep;
 	//
-	lab.th = 0;
-//	let hook;
+	lab.o = 0;
 	let balls=[];
 	lab.m = 0;
 	lab.h = 0;
@@ -111,35 +111,27 @@ function lab_create()
 	lab.k = 0;
 	lab.dt = 0;
 	lab.s = 0;
-//	lab.fs = 0;
+	lab.fs = 14;
+	lab.lp = 1;
 
 	//-------------------------------------------------------------------------
 	function reset()
 	//-------------------------------------------------------------------------
 	{
 		console.log('reset:',lab.mode);
-		flgStep = false;
+		flgStep = true;
 		balls=[];
 		//
-		let fs = 16;
-		let ball_r = 0.1;
+		let fs = lab.fs;
 		let r = lab.r;
 		let g = lab.g;
 		let time = lab.time;//5.0/2;	// 計測時間
 		let dt = lab.dt;
 	
 		{
-//			let h	= lab.h;
-//			let m	= lab.m;
-//			let l	= lab.r;
-//			let r	= calc_r(m)/60;
-//			let p0	= vec2(0, h);
-//			let p1	= vec2(l ,h);
-//			let K	= 0;
-//			let U	= lab.g * m * p1.y;
-			let th  = lab.th;
-//			hook	= {p:p0 ,v:0.1,h:0.2}
-			balls.push( {th:th, v:radians(0), t:0, tbl:[]} );
+			let o  = lab.o;
+			balls.push( {next_t:0,next_o:o, o:o, a:radians(0), w:radians(0), t:0, tbl:[], r:0.18} );
+//			balls.push( {next_t:0,next_o:o, o:o, a:radians(0), v:radians(0), t:0, tbl:[], r:0.18} );
 		}
 
 		// 円グラフ3 描画 初期化
@@ -177,13 +169,7 @@ function lab_create()
 				gra4.color(0,0,0)
 				gra4.symbol_row( "θ↑",0,gra4.sy,fs,"RT");
 				gra4.symbol_row( "t→",gra4.ex,0,fs,"RT");
-/*
-				let peek = 3.14;
-				gra4.symbol_row( "π",0,peek,fs,"RM");
-				gra4.symbol_row( "-π",0,-peek,fs,"RM");
-				gra4.symbol_row( "2π",0,peek*2,fs,"RM");
-				gra4.symbol_row( "-2π",0,-peek*2,fs,"RM");
-*/
+
 				{
 					let pi = Math.PI;
 					let x =0;
@@ -202,21 +188,14 @@ function lab_create()
 				let h = 0.2;;
 				let cnt  = 0;
 				gra4.line( x,y, x,y-h);gra4.symbol_row( "0", x,y-h,fs,"CT");
-/*
-				for ( let x = 0 ; x < gra4.ex ; x+=dt )
-				{
-					if ( (cnt % 10) == 0 ) gra4.line( x,y+h, x,y-h);
-					cnt++;
-				}
-*/
+
 
 			}
-//			gra4.color(0,0,0);gra4.locate(75,10);gra4.print( time+"秒間");
 			gra4.color(0,0,0);gra4.locate(72,0);gra4.print( "θ,ω,α-t");
 
 			gra4.locate(6,0);
-			gra4.color(0,0,1);gra4.print( "青:角速度ω=v/r");
-			gra4.color(1,0,0);gra4.print( "赤:角加速度α=a/r");
+			gra4.color(0,0,1);gra4.print( "角速度ω=v/r");
+			gra4.color(1,0,0);gra4.print( "角加速度α=a/r");
 			gra4.locate(70,22);gra4.color(0,0,0);gra4.print( "fps:"+1/lab.dt);
 
 			gra4.color(0,0,0);
@@ -238,7 +217,6 @@ function lab_create()
 	
 			// 原点 cross
 			{
-//				let fs = 16;
 				gra5.color(0.8,0.8,0.8)
 				gra5.line(gra5.sx,0,gra5.ex,0);
 				gra5.line(0,gra5.sy,0,gra5.ey);
@@ -268,13 +246,16 @@ function lab_create()
 			}
 			gra5.color(0,0,0);gra5.locate(72,0);gra5.print( "ω,α-θ");
 			gra5.locate(0,0);
-			gra5.color(0,0,1);gra5.print( "青:角速度ω=v/r");
-			gra5.color(1,0,0);gra5.print( "赤:角加速度α=a/r");
+			gra5.color(0,0,1);gra5.print( "角速度ω=v/r");
+			gra5.color(1,0,0);gra5.print( "角加速度α=a/r");
 
 			gra5.color(0,0,0);
 		}
 		
-
+		{
+			let emax	= Math.abs(lab.g) * 1 * lab.r*2.5;
+			ene.reset( emax, -emax, lab.time );
+		}
 
 	}
 	//-------------------------------------------------------------------------
@@ -290,6 +271,8 @@ function lab_create()
 		}
 
 		update_Laboratory4( lab.dt );
+
+		ene.draw();
 		lab.hdlTimeout = setTimeout( lab.update, lab.dt*1000 );
 
 	}
@@ -313,18 +296,19 @@ function lab_create()
 	function update_Laboratory4( dt )
 	//-------------------------------------------------------------------------
 	{
+		gra3.cls();
 
-		let fs = 16;
-		let ball_r = 0.1;
+		let ba = balls[0];
+		let fs = lab.fs;
 		let r = lab.r;
 		let g = lab.g;
 		let time = lab.time;//5.0/2;	// 計測時間
 
-		function gra_drawball( gra, th, v,a, g, flgAll )
+		function gra_drawball( gra, ball_r, o, v,a, g, flgAll )
 		{
 
-			let x = r*Math.cos(th+radians(-90));
-			let y = r*Math.sin(th+radians(-90));
+			let x = r*Math.cos(o+radians(-90));
+			let y = r*Math.sin(o+radians(-90));
 			gra.circle( x, y, ball_r );
 
 			let arrow_r = 0.013;
@@ -339,7 +323,7 @@ function lab_create()
 
 				if ( flgAll ) 
 				{//速度ベクトル
-					let vh = th+radians(-90); 	// 接線角度
+					let vh = o+radians(-90); 	// 接線角度
 					let x2 = x-v*Math.cos(vh+radians(-90));
 					let y2 = y-v*Math.sin(vh+radians(-90));
 					gra.setLineWidth_row(3);
@@ -350,13 +334,11 @@ function lab_create()
 				}
 				if ( flgAll ) 
 				{//加速ベクトル
-					let vh = th+radians(-90); 	// 接線角度
+					let vh = o+radians(-90); 	// 接線角度
 					let x3 = x-a*Math.cos(vh+radians(-90));
 					let y3 = y-a*Math.sin(vh+radians(-90));
 					gra.color(1,0,0);gra.line(x,y,x3,y3 );gra.circle(x3,y3, arrow_r );	// 簡易矢印
 					gra.setLineWidth_row(2);
-					//if ( a < 0 )	{gra.color(1,0,0);gra.symbol_row( "-a" 	, x3,y3,fs,"CT");}
-					//else						
 					{gra.color(1,0,0);gra.symbol_row( "a" 	, x3,y3,fs,"CT");}
 					gra.setLineWidth_row(1);
 
@@ -370,8 +352,8 @@ function lab_create()
 			if ( flgAll ) 
 			{//角度
 				let st = radians(-90)+radians(0);
-				let en = radians(-90)+th;
-				if ( th < 0 ) [st,en]=[en,st];
+				let en = radians(-90)+o;
+				if ( o < 0 ) [st,en]=[en,st];
 				gra.color(0,0,0);gra.circle( 0, 0, r/4,st,en );
 
 
@@ -386,34 +368,57 @@ function lab_create()
 		}
 
 		////	計算
+		if ( ba.next_t <= time ) if ( !flgPause || flgStep  )
 		{
-			let ba = balls[0];
-
-			if ( ba.t+dt <= time ) if ( !flgPause || flgStep  )
+			ba.t = ba.next_t;
+			//--
 			{
-				ba.t += dt;
-				let a = -g*Math.sin(ba.th);		// 接線加速度
-				ba.v +=a*dt;	// 角速度
-			
-				ba.tbl.push({v:ba.v,th:ba.th,t:ba.t,a:a});
-				ba.th+=(ba.v/r)*dt;
+				let n = lab.lp;
+				let ddt = dt/n;
+				for ( let i = 0 ; i < n ; i++ )
+				{
+					ba.o		 = ba.next_o;
+					ba.a		 =-(g/r)*Math.sin(ba.o);	// 接線加速度	a = -(g/r)sinθ
+					ba.w		+= ba.a*ddt;				// 速度			w = at +v0
+					ba.next_o	+= ba.w*ddt;				// 位置			θ= vt +θ0
+				}
 			}
+
+			ba.tbl.push({t:ba.t, o:ba.o, w:ba.w, a:ba.a});	// 時間t 位置θ 角速度w 角加速度a
+
+			{// 次の時間を求める
+				ba.next_t += dt;
+				let m = 10000000000;//百億
+				ba.next_t = Math.round(ba.next_t*m)/m;
+			}
+
+			{// エネルギー計算
+				let p = vec2(0,0);
+				let v = vec2(0,0);
+				let m = 1;
+				p.x = r*Math.cos(ba.o+radians(-90));
+				p.y = r*Math.sin(ba.o+radians(-90));
+				v.x = ba.w*r;
+				v.y = 0;
+				ene.prot_pos2( 0, p,v,m );
+				ene.calc( dt, lab.g );
+			}
+
+
 		}
-
-
+		
 		////	描画
+		if ( ba.tbl.length > 0 )
 		{
-			let ba = balls[0];
 			let now = ba.tbl[ba.tbl.length-1];
 			let t = now.t;
-			let v = now.v;
+			let w = now.w;
 			let a = now.a;
-			let th = now.th;
+			let o = now.o;
 			let dot_r = 1.8;
 
 			// 円グラフ3 リアルタイム描画 
 			{
-				gra3.cls();
 
 				// 原点 cross
 				{
@@ -424,31 +429,33 @@ function lab_create()
 				// 値
 				{
 					gra3.color(0,0,0)
-					gra3.symbol_row( "π/2" 	, (r+ball_r*4),0,fs);
-					gra3.symbol_row( "-π/2"	,-(r+ball_r*4),0,fs);
-					gra3.symbol_row( "π" 	,0,(r+ball_r*2),fs);
-					gra3.symbol_row( "0"	,0,-(r+ball_r*2),fs);
+					gra3.symbol_row( "π/2" 	, (r+ba.r*2),0,fs,"CM");
+					gra3.symbol_row( "-π/2"	,-(r+ba.r*2),0,fs,"CM");
+					gra3.symbol_row( "π" 		,0,(r+ba.r*2),fs,"CM");
+					gra3.symbol_row( "0"		,0,-(r+ba.r*2),fs,"CM");
 
 	 				gra3.locate(0,20);
-					gra3.color(0,0,0);gra3.print( "黒:角度θ");
-					gra3.color(0,0,1);gra3.print( "青:接線速度v");
-					gra3.color(1,0,0);gra3.print( "赤:接線加速度a=-gsinθ");
-					gra3.locate(70,22);gra3.color(0,0,0);gra3.print( "fps:"+1/dt);
+					gra3.color(0,0,0);gra3.print( "角度θ");
+					gra3.color(0,0,1);gra3.print( "接線速度v");
+					gra3.color(1,0,0);gra3.print( "接線加速度a=-gsinθ");
+					gra3.locate(70,20);gra3.color(0,0,0);gra3.print( "fps:"+1/dt);
+					gra3.color(0,0,0);gra3.print( "Δt:"+dt);
+					gra3.color(0,0,0);gra3.print( "time:"+now.t);
 				}
 				gra3.color(0,0,0);
 
 				// 軌道描画
 				for ( let d of ba.tbl )
 				{
-					gra3.color(0.8,0.8,0.8);gra_drawball( gra3, d.th, d.v*dt, d.a*dt, g*dt, false ); // ボールの残像
+					gra3.color(0.8,0.8,0.8);gra_drawball( gra3, ba.r, d.o, (d.w*r)*dt, (d.a*r)*dt, g*dt, false ); // ボールの残像
 				}
 
 				// 振り子描画
 				{
-					gra3.color(0,0,0);gra_drawball( gra3, th,v*dt,a*dt,g*dt, true );
+					gra3.color(0,0,0);gra_drawball( gra3, ba.r, o, (w*r)*dt, (a*r)*dt,g*dt, true );
 				}
 			
-				gra3.color(0,0,0);gra3.circle(0,0,r+ball_r); // 円の外枠。最後に描画
+				gra3.color(0,0,0);gra3.circle(0,0,r+ba.r); // 円の外枠。最後に描画
 
 			}
 
@@ -460,41 +467,40 @@ function lab_create()
 				gra4.setMode('no-range');
 
 				// ドット
-				gra4.color(0,0,0);gra4.dot( t,th, dot_r );
-				gra4.color(1,0,0);gra4.dot( t,a/r, dot_r );
-				gra4.color(0,0,1);gra4.dot( t,v/r, dot_r );
+				gra4.color(0,0,0);gra4.dot( t,o, dot_r );
+				gra4.color(1,0,0);gra4.dot( t,a, dot_r );
+				gra4.color(0,0,1);gra4.dot( t,w, dot_r );
 
 				// ライン
 				if ( ba.tbl.length > 1 )
 				{
 					let d = ba.tbl[ba.tbl.length-2];
 					let t0 = t-dt;
-					gra4.color(0,0,0);gra4.line( t0, d.th, t, th );
-					gra4.color(0,0,1);gra4.line( t0, d.v/r, t, v/r );
-					gra4.color(1,0,0);gra4.line( t0, d.a/r, t, a/r );
+					gra4.color(0,0,0);gra4.line( t0, d.o, t, o );
+					gra4.color(0,0,1);gra4.line( t0, d.w, t, w );
+					gra4.color(1,0,0);gra4.line( t0, d.a, t, a );
 				}
 
 				gra4.setMode('');
 
-				
 			}
 			
 			// ω,α-θグラフ5 描画 プロット
 			{
-				gra5.color(0,0,1);gra5.dot(th,v/r,2);
-				gra5.color(1,0,0);gra5.dot(th,a/r,2);
+				gra5.color(0,0,1);gra5.dot(o,w,2);
+				gra5.color(1,0,0);gra5.dot(o,a,2);
 
 				// ライン
 				if ( ba.tbl.length > 1 )
 				{
 					let d = ba.tbl[ba.tbl.length-2];
-					gra5.color(0,0,1);gra5.line( d.th, d.v/r, th, v/r );
-					gra5.color(1,0,0);gra5.line( d.th, d.a/r, th, a/r );
+					gra5.color(0,0,1);gra5.line( d.o, d.w, o, w );
+					gra5.color(1,0,0);gra5.line( d.o, d.a, o, a );
+
 				}
 			}
 		
 		}
-
 
 
 		gra3.color(0,0,0);gra3.setLineWidth(1);gra3.setMode('');
@@ -574,10 +580,10 @@ function html_onchange( cmd )
 	{
 		lab.g = document.getElementById( "html_g" ).value*1;
 	}
-	if ( document.getElementById( "html_th" ) )
+	if ( document.getElementById( "html_o" ) )
 	{
-		lab.th = document.getElementById( "html_th" ).value*1;
-		lab.th = radians(lab.th);
+		lab.o = document.getElementById( "html_o" ).value*1;
+		lab.o = radians(lab.o);
 	}
 	if ( document.getElementById( "html_r" ) )
 	{
@@ -586,6 +592,10 @@ function html_onchange( cmd )
 	if ( document.getElementById( "html_time" ) )
 	{
 		lab.time = document.getElementById( "html_time" ).value*1;
+	}
+	if ( document.getElementById( "html_lp" ) )
+	{
+		lab.lp = document.getElementById( "html_lp" ).value*1;
 	}
 }
 // キー入力
