@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>gra</title>
+		<style>
+
+			.group
+			{
+				display:inline-block; 
+				padding: 6px; 
+				border-radius: 7px; 
+				border:1px solid #aaa;
+				text-align:right;
+			}
+			.readme
+			{
+				display:inline-block; 
+				text-align:center;
+				font-size:12px;
+				font-family:monospace;
+			}
+					
+			table,td,thead,tfoot 
+			{
+				border: 1px solid;
+			}
+
+		</style>
+	</head>
+	<body align="center"  style="font-family:monospace">
+		<h2>数式グラフ化ツール</h2>
+	<div class="group">
+		w <input type="text" id="html_size_w" value="640" size="3" onchange="html_onclick()">
+		h <input type="text" id="html_size_h" value="360" size="3" onchange="html_onclick()">
+	</div>
+	<div class="group">
+	 	x:
+		<input type="text" id="html_xmin" value="0" size="3" onchange="html_onclick()">
+		～
+		<input type="text" id="html_xmax" value="2*PI" size="3" onchange="html_onclick()">
+	</div>
+	<div class="group">
+	 	y:
+		<input type="text" id="html_ymin" value="-1.0" size="3" onchange="html_onclick()">
+		～
+		<input type="text" id="html_ymax" value="1.0" size="3" onchange="html_onclick()">
+	</div>
+		<br>
+		<canvas id="html_canvas"  width="640" height="360" style="border:1px solid" ></canvas>
+
+
+		<br>
+<!--
+			    <a id="html_error" ></a>
+
+		y=<textarea id="html_func" cols="80" rows="1" onchange="html_onclick()">sin(x)</textarea>
+		<input type="button" value="描画" onClick="html_onclick()" >
+		y=<input type="text" id="html_func" value="sin(x)+sin(x*2)" size="40" onchange="html_onclick()" >
+
+		y=<input type="text" id="html_func" value="cos(3.14)+1" size="40" onchange="html_onclick()" >
+		y=<input type="text" id="html_func" value="2*(3+4)+1" size="40" onchange="html_onclick()" >
+		y=<input type="text" id="html_func" value="-2+2*2" size="40" onchange="html_onclick()" >
+		y=<input type="text" id="html_func" value="-cos(x-cos(x))+cos(x*2)*cos(x*cos(x))*-1*cos(x)" size="40" onchange="html_onclick()" >
+		y=<input type="text" id="html_func" value="cos(x/cos(x))*x/8" size="40" onchange="html_onclick()" >
+-->
+		<br>
+
+		y=<input type="text" id="html_func" value="cos(x/cos(x))*x/8" size="40" onchange="html_onclick()" >
+		<br>
+
+		<br>
+
+
+		<p>～概要～</p>
+		<p>数式の構文解析とグラフ化</p>
+		<p>欲しい特性カーブの疑似関数を作りやすいように設計したもの</p>
+		<br>
+
+		<p>トゲトゲ）x/cos(x/cos(x))/200</p>
+		<p>バネバネ）cos(x/cos(x))*x/8</p>
+		<p>ヤマヤマ）-cos(x-cos(x))+cos(x*2)*cos(x*cos(x))*-1*cos(x)</p>
+		<p>ぬるいsin波）sin(sin(sin(sin(x))))</p>
+		<p></p>
+
+		<table align="center">
+		    <thead>
+		        <tr>
+		            <th colspan="2">変数・定数・関数一覧</th>
+		        </tr>
+		    </thead>
+		    <tbody>
+		        <tr><td>x </td> 			    	<td>変数</td> 		    	</tr>
+		        <tr><td>PI </td> 			    	<td>π</td> 		    	</tr>
+		        <tr><td>+ - * / ^ ()</td> 			<td>四則演算/累乗/括弧</td> </tr>
+		        <tr><td>cos() sin() tan() </td> 			<td>三角関数</td> 		    </tr>
+		    	<tr><td>acos() asin() atan() </td> 		<td>逆三角関数</td> 		</tr>
+		    	<tr><td>cosh() sinh() tanh() </td> 		<td>双曲線関数</td> 		</tr>
+		    	<tr><td>acosh() asinh() atanh() </td> 	<td>逆双曲線関数</td> 		</tr>
+		    	<tr><td>sqrt() cbrt() </td> 			<td>平方根/立方根</td> 		</tr>
+		    	<tr><td>log() exp()</td> 				<td>対数/自然対数</td> 	    </tr>
+		    	<tr><td>abs() rad() </td> 				<td>絶対値/弧度</td> 	    </tr>
+		    </tbody>
+		</table>
+
+		<script src="lib.js"></script>
+		<script src="main.js"></script>
+	</body>
+</html>

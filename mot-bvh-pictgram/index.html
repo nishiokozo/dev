@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>TOKYO 2020 Perfume</title>
+		<style>
+
+			.group
+			{
+				display:inline-block; 
+				padding: 6px; 
+				border-radius: 7px; 
+				border:1px solid #aaa;
+				text-align:center;
+				vertical-align: top;
+			}
+			.readme
+			{
+				display:inline-block; 
+				text-align:center;
+				font-size:12px;
+				font-family:monospace;
+			}
+			.readme-left
+			{
+				display:inline-block; 
+				text-align:left;
+				font-size:12px;
+				font-family:monospace;
+			}
+		</style>
+	</head>
+	<body align="center" style="font-family:monospace">
+		<H2 style="font-family:sans-serif">TOKYO 2020 Perfume</H2>
+
+
+		<canvas id="html_canvas2" width="640" height="640"  style="border: 0px solid" ></canvas>
+
+		<br>
+
+<!--
+		<canvas id="html_canvas" width="360" height="360"  style="border: 1px solid" ></canvas>
+			<input type="checkbox" name="html_noblur">ブラーを使わない
+
+			<div class="group">
+				縮小バッファ
+				<input type="radio" name="html_small" value="nosmall" onchange="html_onchange();">使わない
+				<input type="radio" name="html_small" value="small4"  onchange="html_onchange();"checked>1/4
+				<input type="radio" name="html_small" value="small16" onchange="html_onchange();">1/16
+				<input type="radio" name="html_small" value="small64" onchange="html_onchange();">1/64
+			</div>
+				<input type="text" id="html_sigma" value="9" size="3" onchange="html_onchange();" >sigma
+				<input type="text" id="html_rate" value="0.3" size="3" onchange="html_onchange();">rate
+			<input type="checkbox" name="html_paint" onchange="html_onchange();" checked>paint
+			<input type="checkbox" name="html_line" onchange="html_onchange();" checked>line
+			<input type="checkbox" name="html_undome"  onchange="html_onchange();">非ドーム
+			 画角 <input type="text" id="html_fovy" value="28.0" size="8" onchange="html_onchange();">
+			<div class="group">
+				url:<input type="text" id="html_func" value="http://cynus.net/dev/wgl-bvh/" size="75" onchange="html_onclick()" ><br>
+
+				<div class="group">
+				YZ軸<br>
+					<input type="radio" name="html_reso" value="1" onchange="html_onchange();" checked	>Y:上下 Z:前後<br>
+					<input type="radio" name="html_reso" value="1" onchange="html_onchange();" 		>Y:前後 Z:上下<br>
+				</div>
+				<div class="group">
+				+-軸<br>
+					<input type="radio" name="html_reso2" value="1" onchange="html_onchange();" checked>上+ 奥-<br>
+					<input type="radio" name="html_reso2" value="1" onchange="html_onchange();" 		>上+ 奥+<br>
+					<input type="radio" name="html_reso2" value="1" onchange="html_onchange();" 		>上- 奥-<br>
+					<input type="radio" name="html_reso2" value="1" onchange="html_onchange();" 		>上- 奥+<br>
+				</div>
+				<div class="group">
+				回転方向<br>
+					<input type="radio" name="html_reso2x" value="1" onchange="html_onchange();" checked >右ねじ<br>
+					<input type="radio" name="html_reso2x" value="0.5" onchange="html_onchange();" 	>左ねじ<br>
+				</div>
+				<div class="group">
+				単位<br>
+					<input type="radio" name="html_rot" value="1" onchange="html_onchange();" checked >degrees<br>
+					<input type="radio" name="html_rot" value="0.5" onchange="html_onchange();" 	>radians<br>
+				</div>
+				<input type="button" value="submit" onClick="html_onchange()" >
+			</div>
+
+					<input type="radio" name="html_color" value="Yello" onchange="html_onchange();" 		>黄
+					<input type="radio" name="html_color" value="Purple" onchange="html_onchange();" 		>紫
+					<input type="radio" name="html_color" value="Gray" onchange="html_onchange();" >灰
+					<input type="radio" name="html_color" value="Red" 	onchange="html_onchange();" >赤
+					<input type="radio" name="html_color" value="Black" onchange="html_onchange();" >黒
+				    frame:<a id="html_frame" >ssss</a>
+					<input type="button" value="最大解像度" onClick="html_onchange('最大解像度')" >
+
+
+
+				<div class="group">
+					<input type="radio" name="html_color" value="Pictgram" onchange="html_onchange();" checked>Pictgram
+					<input type="radio" name="html_color" value="White" onchange="html_onchange();" >白
+					<input type="radio" name="html_color" value="Green" onchange="html_onchange();" 		>緑
+					<input type="radio" name="html_color" value="Orenge" 	onchange="html_onchange();" >橙
+					<input type="radio" name="html_color" value="Blue" 	onchange="html_onchange();" >青
+				</div>
+
+					<input type="radio" name="html_cam" value="cam3" 	onchange="html_onchange('abs');" >cam3
+-->
+
+
+				<div class="group">
+					<input type="radio" name="html_cam" value="cam1" onchange="html_onchange('abs');" >cam1
+					<input type="radio" name="html_cam" value="cam2"	 onchange="html_onchange('abs');"checked 		>cam2
+					rot<input type="text" id="html_rot" value="0" size="4" onchange="html_onchange();">
+				</div>
+				<div class="group">
+					<input type="button" value="play/stop" onClick="html_onchange('play/stop')" >
+					<input type="button" value="<" onClick="html_onchange('prev')" >
+					<input type="button" value=">" onClick="html_onchange('next')" >
+					frame<input type="text" id="html_frameval" value="1" size="4" onchange="html_onchange();">
+				    ~<a id="html_framemax" >----</a>
+
+				</div>
+				<br>
+<!--
+					 画角 <input type="text" id="html_fovy" value="45" size="3" onchange="html_onchange();">
+					 LOOK <input type="text" id="html_look" value="0.8" size="3" onchange="html_onchange();">
+					 HIGH <input type="text" id="html_high" value="0.8" size="3" onchange="html_onchange();">
+					 ZOOM <input type="text" id="html_zoom" value="4.0" size="3" onchange="html_onchange();">
+				<div class="group">
+					<input type="checkbox" name="html_normal"  onchange="html_onchange();">平行奥行
+					<input type="checkbox" name="html_raph"  onchange="html_onchange();" >ラフ線
+					<input type="button" value="フルスクリーン" onClick="html_onchange('fullscreen')" >
+				</div>
+-->
+<!--
+				<br><a id="html_debug1" ></a>
+				<br><a id="html_debug2" ></a>
+-->
+<br>
+		<script src="lib.js"></script>
+		<script src="util.js"></script>
+		<script src="main.js"></script>
+		<br>
+
+		<div class="readme">
+				<p>～概要 2021/07/29～</p>
+アニメーション計算は３Ｄ。関節座標を２Ｄに変換し、２Ｄデータとしてピクトグラムのパーツを生成して２Ｄとしてレンダリング。<br>
+<br>
+よくあるポストプロセスで３Ｄ→２Ｄに変換するのではなく２Ｄの座標から２Ｄ画像を作る。これも前からやってみたかった実験の一環。<br>
+<br>
+<br>
+				<p>2012年に頒布されたPerfumeのモーションキャプチャデータ</p>
+				<p>aachan.bvh / kashiyuka.bvh / nocchi.bvh </p>
+				<p>を使わせてもらっています。</p>
+
+
+
+		<div class="readme">
+
+		</div>
+	</body>
+</html>

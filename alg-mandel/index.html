@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>alg</title>
+		<style>
+			.group
+			{
+				display:inline-block; 
+				padding: 6px; 
+				border-radius: 7px; 
+				border:1px solid #aaa;
+				text-align:right;
+			}
+			.readme
+			{
+				display:inline-block; 
+				text-align:center;
+				font-size:12px;
+				font-family:monospace;
+			}
+			.button
+			{
+				display:inline-block; 
+				text-align:center;
+				font-size:14px;
+				font-family:monospace;
+			}
+
+			body
+			{
+				overflow: hidden ;
+				font-family:monospace;
+			}
+
+		</style>
+	</head>
+	<body align="center"  >
+		<H2 style="font-family:sans-serif">マンデルブロ集合</H2>
+
+<!--
+
+		<br>
+			<input type="button" value="A→Bコピー" onClick="html_updateCopy()" class="button" >
+		<br>
+
+
+		<div class="group">
+	
+			<select id="html_reso" class="button" >
+				<option value="32" >32x32</option>
+				<option value="48" selected>48x48</option>
+				<option value="64" >64x64</option>
+				<option value="128" >128x128</option>
+				<option value="256" >256x256</option>
+				<option value="512" >512x512</option>
+			</select>
+			<input type="text" id="html_landval" value="0.0" size="3" class="button" >
+			<input type="button" value="地形変更" onClick="html_updateSize()" class="button" >
+		</div>
+		<div class="group">
+			Life
+			<input type="button" value="クリア" onClick="html_updateClear()" class="button" >
+			<div class="group">
+				<input type="text" id="html_randval" value="0.5" size="3" class="button" >
+				<input type="button" value="ランダム" onClick="html_updateSeed()" class="button" >
+			</div>
+			<input type="button" value="編集保存" onClick="html_updateStore()" class="button" >
+				<input type="checkbox" name="html_bold" >太pen
+				<input type="checkbox" name="html_black" >黒pen
+				<input type="checkbox" name="html_symmetry" >対称pen
+		</div>
+		<div class="group">
+
+			<div class="group">
+
+				<input type="text" id="html_speed" value="200" size="3" class="button" >ms
+
+				<input type="checkbox" name="html_auto" onClick="html_updateAuto()">auto
+
+			</div>
+
+			<input type="button" value="reset" onClick="html_updateReset()" class="button" >
+
+			<input type="button" value="next" onClick="html_updateNext()" class="button" >
+
+			世代<input type="text" id="html_gen" value="0" size="3" class="button" >
+
+		</div>
+
+			<div class="group">
+				ペン
+				<input name="html_radio" type="radio" value="0" onchange="html_updatePen(1)" checked>day
+				<input name="html_radio" type="radio" value="1" onchange="html_updatePen(2)" >night
+			</div>
+
+			<input type="button" value="フルスクリーン" onClick="html_updateFullscreen()" class="button" >
+		<canvas id="html_canvas_land"  width="256" height="256" style="border:1px solid" ></canvas>
+		<canvas id="html_canvas_v2"  width="256" height="256" style="border:1px solid" ></canvas>
+		<canvas id="html_canvasB"  width="384" height="384" style="border:1px solid" ></canvas>
+		<canvas id="html_canvas"  width="384" height="384" style="border:1px solid" ></canvas>
+		<canvas id="html_canvasA"  width="384" height="384" style="border:1px solid" ></canvas>
+		<canvas id="html_canvasB"  width="384" height="384" style="border:1px solid" ></canvas>
+
+		<div class="group">
+	
+
+		w <input type="text" id="html_size_w" value="512" size="3" onchange="html_onclick()">
+		h <input type="text" id="html_size_h" value="512" size="3" onchange="html_onclick()">
+			<input type="button" value="フルスクリーン" onClick="html_updateFullscreen()" class="button" >
+-->
+
+	<div class="group">
+
+		reso
+			<select id="html_reso" class="button" >
+				<option value="240" >240x240</option>
+				<option value="480" selected>480x480</option>
+				<option value="960" >960x960</option>
+				<option value="1240" >1240x1240</option>
+			</select>
+			<input type="button" value="サイズ変更" onClick="html_updateSize()" class="button" >
+		</div>
+	</div>
+		
+
+		<br>
+		<canvas id="html_canvas"  width="768" height="768" style="border:0px solid" ></canvas>
+		<br>
+			計算解像度<input type="text" id="html_num" value="200" size="3" onchange="html_updateSize()" class="button" >
+		<br>
+
+		<script src="main.js"></script>
+		<br>
+
+		<div class="readme">
+			<p>～概要～</p>
+			<p>昔流行ったマンデルブロ集合をjavascriptで描いたもの</p>
+			<p>少年時代に理解できなかったことの続きであり、ノスタルジックに浸る癒しの時間</p>
+			<br>
+			<p>～操作～</p>
+			<p>マウスドラッグで移動</p>
+			<p>ホイール操作で拡大縮小</p>
+			<br>
+			<p>～アルゴリズム～</p>
+			<p>マンデルブロ集合とは、半径2の複素平面において、</p?
+			<p>Zn+1 = Zn^2 + c / Z0=0 であらわされ</p>
+			<p>n→∞に変化させたとき発散しない点cの集合のこと</p>
+			<p>複素数を使わず、Znを(Xn,Yn)に、点cを(a,b)で置き換えると</p>
+			<p>Xn+1 = Xn^2 - Yn^2 + a , Yn+1= 2*XnYn + b</p>
+			<br>
+			<p>～プログラム～</p>
+			<p>x = X*X - Y*Y + a; y = 2*X*Y + b; X = x; Y = y;</p>
+			<p></p>
+			<p>この式を、-2~+2までのxy平面上の各座標(a,b)について、
+			<p>初期値X=a,Y=b、∞回（計算解像度回）ループさせ、</p>
+			<p>入力座標の最大値-2または2を超えるものは発散とみなし、残りを適当に色付け描画。</p>
+			
+		</div>
+
+	</body>
+</html>

@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>pys-drop</title>
+		<style>
+
+			.group
+			{
+				display:inline-block; 
+				padding: 6px; 
+				border-radius: 7px; 
+				border:1px solid #aaa;
+				text-align:center;
+				vertical-align: top;
+				font-size:16px;
+				font-family:monospace;
+			}
+			.group-left
+			{
+				display:inline-block; 
+				padding: 6px; 
+				border-radius: 7px; 
+				border:1px solid #aaa;
+				text-align:left;
+				vertical-align: top;
+				font-size:16px;
+				font-family:monospace;
+			}
+			.readme
+			{
+				display:inline-block; 
+				text-align:center;
+				font-size:12px;
+				font-family:monospace;
+			}
+			.readme-left
+			{
+				display:inline-block; 
+				text-align:left;
+				font-size:16px;
+				font-family:monospace;
+			}
+		</style>
+	</head>
+	<body align="center">
+		<H1>物理シミュレーション 落下 v1.0</H1>
+		<canvas id="html_canvas"  width="512" height="384" style="border:1px solid" ></canvas>
+		<canvas id="html_canvas3"  width="256" height="192" style="border:1px solid" ></canvas>
+		<script src="lib.js"></script>
+		<script src="main.js"></script>
+		<br>
+
+
+			<div class="group-left">
+			 時間Δt　　　 <input type="text" id="html_dt" value="0.016" size="3" onchange="html_onchange('reset');" > 秒<br>
+			 重力加速度g　 <input type="text" id="html_g" value="-9.8" size="3" onchange="html_onchange('reset');" > m/s/s<br>
+			 ボール数　　　<input type="text" id="html_n" value="3" size="3" onchange="html_onchange('reset');" > 個<br>
+			 ボール１高さh <input type="text" id="html_h" value="10" size="3" onchange="html_onchange('reset');" > m<br>
+			 ボール１質量m <input type="text" id="html_m" value="1" size="3" onchange="html_onchange('reset');" > Kg<br>
+			</div>
+
+
+			<div class="group">
+			<input type="button" value="リセット" onClick="html_onchange('reset');" >
+			<input type="button" value="再生/ポーズ" onClick="html_onchange('pause');" >
+			<input type="button" value="コマ送り" onClick="html_onchange('step');" >
+			</div>
+			<br>
+
+
+
+<!--
+			<div class="group">
+				<input type="radio" name="html_mode" value="1ball" onchange="html_onchange('reset');"checked>ボール1個<br>
+				<input type="radio" name="html_mode" value="2ball" onchange="html_onchange('reset');">ボール2個<br>
+				<input type="radio" name="html_mode" value="3ball" onchange="html_onchange('reset');">ボール3個<br>
+			</div>
+
+			 紐長さl=<input type="text" id="html_l" value="80" size="3" onchange="html_onchange('reset');" >
+
+			<div class="group">
+			<input type="button" value="縮める" onClick="html_onchange('shrink');" >
+			<input type="button" value="伸ばす" onClick="html_onchange('streach');" >
+			<input type="button" value="スタート" onClick="html_onchange('release');" >
+			</div>
+			<input type="checkbox" name="html_debug" onClick="html_onchange();" checked >debug
+			<div class="group">
+				<input type="radio" name="html_mode" value="ice" onchange="html_onchange('reset');"checked>氷上
+				<input type="radio" name="html_mode" value="horizonal" onchange="html_onchange('reset');"checked>水平
+				<input type="radio" name="html_mode" value="vertical" onchange="html_onchange('reset');">鉛直
+			</div>
+
+-->
+
+			
+			<br>
+
+	<br>～概要 2021/08/13～<br>
+	<div class="group-left">
+		落下するだけの物理シミュレーション実験<br>
+		
+		シミュレータ内で『物理モデル』を作り
+		シミュレータとは別にオシロスコープで観測するような設計<br>
+		・位置エネルギーU=mgh<br>
+		・運動エネルギーK=1/2mv^2<br>
+		・力学的エネルギーE=U+K<br>
+		『物理モデル』がエネルギーの損失が無いか（正確と言えるか）を検証、する実験<br>
+	</div ">
+		
+
+	</body>
+</html>

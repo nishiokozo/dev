@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>pys-spring</title>
+		<style>
+
+			.group
+			{
+				display:inline-block; 
+				padding: 6px; 
+				border-radius: 7px; 
+				border:1px solid #aaa;
+				text-align:center;
+				vertical-align: top;
+				font-size:16px;
+				font-family:monospace;
+			}
+			.readme
+			{
+				display:inline-block; 
+				text-align:center;
+				font-size:12px;
+				font-family:monospace;
+			}
+			.readme-left
+			{
+				display:inline-block; 
+				text-align:left;
+				font-size:12px;
+				font-family:monospace;
+			}
+		</style>
+	</head>
+	<body align="center">
+		<H1>物理シミュレーション ばねv2.0</H1>
+		<canvas id="html_canvas"  width="384" height="384" style="border:1px solid" ></canvas>
+		<script src="lib.js"></script>
+		<script src="main.js"></script>
+		<br>
+			<div class="group">
+			 Δt=<input type="text" id="html_t" value="0.2" size="3" onchange="html_onchange();" >
+			 ばね係数k=<input type="text" id="html_k" value="1" size="3" onchange="html_onchange();" >
+			 ボール質量m=<input type="text" id="html_m" value="1" size="3" onchange="html_onchange();" ><br>
+			</div>
+			<br>
+			<div class="group">
+			<input type="button" value="リセット" onClick="html_onchange('reset');" >
+			<input type="button" value="再生/ポーズ" onClick="html_onchange('pause');" >
+			<input type="button" value="コマ送り" onClick="html_onchange('step');" >
+			</div>
+
+<!--
+			<div class="group">
+			<input type="button" value="縮める" onClick="html_onchange('shrink');" >
+			<input type="button" value="伸ばす" onClick="html_onchange('streach');" >
+			<input type="button" value="スタート" onClick="html_onchange('release');" >
+			</div>
+			<input type="checkbox" name="html_debug" onClick="html_onchange();" checked >debug
+			<div class="group">
+				<input type="radio" name="html_mode" value="ice" onchange="html_onchange('reset');"checked>氷上
+				<input type="radio" name="html_mode" value="horizonal" onchange="html_onchange('reset');"checked>水平
+				<input type="radio" name="html_mode" value="vertical" onchange="html_onchange('reset');">鉛直
+			</div>
+
+-->
+
+			
+			<br>
+
+	<br>～概要 2021/08/10～<br>
+		見た目問題はないけれど、E=K+Uの値がぴったりとそろってほしいのでとりあえず精度を上げる実験<br>
+		フレーム内で等速運動だったのを単振動モデルにする。<br>
+
+		
+	<br>～概要 2021/08/05～<br>
+		ばねの弾性力(F=kx)をボールへ(F=ma)伝えてボールの加速度を発生させている。<br>
+		力学的エネルギーは一定であることで物理シミュレーションとして成立している。<br>
+		<br>
+		時間積分された『シミュレーション』なので、単振動、正投影、などの概念は使われていない<br>
+		最小～最大の範囲が広がっていないのでモデルとしては収束している<br>
+
+
+	</body>
+</html>

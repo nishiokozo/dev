@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>pys</title>
+		<style>
+
+			.group
+			{
+				display:inline-block; 
+				padding: 6px; 
+				border-radius: 7px; 
+				border:1px solid #aaa;
+				text-align:center;
+				vertical-align: top;
+			}
+			.readme
+			{
+				display:inline-block; 
+				text-align:center;
+				font-size:12px;
+				font-family:monospace;
+			}
+			.readme-left
+			{
+				display:inline-block; 
+				text-align:left;
+				font-size:12px;
+				font-family:monospace;
+			}
+		</style>
+	</head>
+	<body align="center">
+		<H1>物理シミュレーション v1.2</H1>
+		<canvas id="html_canvas"  width="384" height="384" style="border:1px solid" ></canvas>
+		<script src="lib.js"></script>
+		<script src="main.js"></script>
+		<br>
+			<div class="group">
+				<input type="radio" name="html_small" onchange="html_onchange('2balls');"checked>2balls
+				<input type="radio" name="html_small" onchange="html_onchange('3balls');">3balls
+				<input type="radio" name="html_small" onchange="html_onchange('manyballs');">many balls
+			</div>
+			<input type="button" value="reset" onClick="main()" >
+			<input type="checkbox" name="html_info" checked >info
+
+<!--
+		<div class="group">
+			速度計算
+			<br>
+			<input type="radio" name="html_reso" value="1" onchange="html_onchange('v^2');" checked 	>衝撃＝速度の二乗
+			<br>
+			<input type="radio" name="html_reso" value="0.5" onchange="html_onchange('v');" 	>衝撃＝速度
+		</div>
+			<input type="button" value="play/stop" onClick="html_onchange('play/stop')" >
+			<input type="button" value="info" onClick="html_onchange('info')" >
+-->
+			
+			<br>
+
+	<br>～概要 2021/07/06～<br>
+		運動量保存の法則、運動エネルギー保存の法則の動きの検証<br>
+
+	<br>～メモ～<br>
+		反発係数:e=1<br>
+		質量:m 速度:v 質量:m <br>
+		運動量:p=mv<br>
+		運動エネルギー:k=1/2mv^2<br>
+		運動量保存則:m1v1 + m2v2 = m1v1' + m2v2'<br>
+		反発係数の式:e=-(va'-vb')/(va-vb)<br>
+	<br>
+	</body>
+</html>
