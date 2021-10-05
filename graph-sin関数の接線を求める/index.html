@@ -44,26 +44,35 @@
 		</style>
 	</head>
 	<body align="center">
-		<H1>物理シミュレーション 振り子v1.1</H1>
-		<canvas id="html_canvas"  width="512" height="512" style="border:1px solid" ></canvas>
-		<canvas id="html_canvas2"  width="256" height="192" style="border:1px solid" ></canvas>
+		<H1>sin関数の接線を求めるv1.0</H1>
+		<canvas id="html_canvas4"  width="768" height="384" style="border:1px solid" ></canvas>
+		<br>
 		<script src="lib.js"></script>
 		<script src="main.js"></script>
 		<br>
 			<div class="group-left">
-			 Δt　　　　　<input type="text" id="html_dt" value="0.03" size="3" onchange="html_onchange('reset');" > 秒<br>
-			 重力加速度g　<input type="text" id="html_g" value="9.8" size="3" onchange="html_onchange('reset');" > m/s/s<br>
-			 紐長さl　　　<input type="text" id="html_l" value="1.2" size="3" onchange="html_onchange('reset');" > m<br>
-			 ボール質量m　<input type="text" id="html_m" value="1" size="3" onchange="html_onchange('reset');" > Kg<br>
-			 開始高さh　　<input type="text" id="html_h" value="2.5" size="3" onchange="html_onchange('reset');" > m<br>
+			 Δθ<input type="text" id="html_dth" value="15" size="3" onchange="html_onchange('reset');" > deg ,
+			 周波数<input type="text" id="html_Hz" value="1" size="3" onchange="html_onchange('reset');" > Hz<br>
 			</div>
+
+<!--
 			<div class="group">
 			<input type="button" value="リセット" onClick="html_onchange('reset');" >
 			<input type="button" value="再生/ポーズ" onClick="html_onchange('pause');" >
 			<input type="button" value="コマ送り" onClick="html_onchange('step');" >
 			</div>
+			<br>
 
-<!--
+			 開始位置θ　 <input type="text" id="html_th" value="0" size="3" onchange="html_onchange('reset');" > deg<br>
+			 半径r 　 　　<input type="text" id="html_r" value="1" size="3" onchange="html_onchange('reset');" > m<br>
+
+			 計測時間time <input type="text" id="html_time" value="2.0" size="3" onchange="html_onchange('reset');" > sec<br>
+			 Δt　　　　　<input type="text" id="html_dt" value="0.1" size="3" onchange="html_onchange('reset');" > sec<br>
+			 重力加速度g　<input type="text" id="html_g" value="9.8" size="3" onchange="html_onchange('reset');" > m/s/s<br>
+
+			 ボール質量m　<input type="text" id="html_m" value="1" size="3" onchange="html_onchange('reset');" > Kg<br>
+			 開始高さh　　<input type="text" id="html_h" value="2.5" size="3" onchange="html_onchange('reset');" > m<br>
+
 
 			<div class="group">
 			<input type="button" value="縮める" onClick="html_onchange('shrink');" >
@@ -82,12 +91,18 @@
 			
 			<br>
 
-	<br>～概要 2021/09/16～<br>
-
-		角加速度→角速度→角度と累積して座標を求める方法<br>
-		線形近似ではなく回転で移動<br>
-		右下に、エネルギーの状態グラフ<br>
-		軌道は正確だが、単位時間(Δt)内では等速円運動になっているので、Δtが大きいと波打つ<br>
+	<br>～概要 2021/09/23～<br>
+		sinθを微分したらcosθ<br>
+		微分すると接線が求まる<br>
+		その前提が本当かなと、実感するためにプログラムで検証してみた物<br>
+		<br>
+		x=θ<br>
+		y=sinθ<br>
+		(x,y)でサイン波を描いて<br>
+		u=1/Hz<br>
+		v=cosθ<br>
+		(x+u,y+v)で接線を緑色で描いたもの<br>
+		
 
 	</body>
 </html>

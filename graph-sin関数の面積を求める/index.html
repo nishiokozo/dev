@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>pys-pendulum</title>
+		<style>
+
+			.group
+			{
+				display:inline-block; 
+				padding: 6px; 
+				border-radius: 7px; 
+				border:1px solid #aaa;
+				text-align:center;
+				vertical-align: top;
+				font-size:16px;
+				font-family:monospace;
+			}
+			.group-left
+			{
+				display:inline-block; 
+				padding: 6px; 
+				border-radius: 7px; 
+				border:1px solid #aaa;
+				text-align:left;
+				vertical-align: top;
+				font-size:16px;
+				font-family:monospace;
+			}
+			.readme
+			{
+				display:inline-block; 
+				text-align:center;
+				font-size:12px;
+				font-family:monospace;
+			}
+			.readme-left
+			{
+				display:inline-block; 
+				text-align:left;
+				font-size:12px;
+				font-family:monospace;
+			}
+		</style>
+	</head>
+	<body align="center">
+		<H1>sin関数の面積を求めるv1.0</H1>
+		<canvas id="html_canvas4"  width="768" height="384" style="border:1px solid" ></canvas>
+		<br>
+		<script src="lib.js"></script>
+		<script src="main.js"></script>
+		<br>
+			<div class="group-left">
+			 開始st <input type="text" id="html_st" value="34" size="3" onchange="html_onchange('reset');" > deg <br>
+			 終了en <input type="text" id="html_en" value="233" size="3" onchange="html_onchange('reset');" > deg <br>
+			 Δθ　 <input type="text" id="html_dth" value="15" size="3" onchange="html_onchange('reset');" > deg <br>
+			</div>
+
+<!--
+			 位相pz　<input type="text" id="html_pz" value="0" size="3" onchange="html_onchange('reset');" > deg <br>
+			 周波数hz<input type="text" id="html_hz" value="1" size="3" onchange="html_onchange('reset');" > Hz<br>
+			<div class="group">
+			<input type="button" value="リセット" onClick="html_onchange('reset');" >
+			<input type="button" value="再生/ポーズ" onClick="html_onchange('pause');" >
+			<input type="button" value="コマ送り" onClick="html_onchange('step');" >
+			</div>
+			<br>
+
+			 開始位置θ　 <input type="text" id="html_th" value="0" size="3" onchange="html_onchange('reset');" > deg<br>
+			 半径r 　 　　<input type="text" id="html_r" value="1" size="3" onchange="html_onchange('reset');" > m<br>
+
+			 計測時間time <input type="text" id="html_time" value="2.0" size="3" onchange="html_onchange('reset');" > sec<br>
+			 Δt　　　　　<input type="text" id="html_dt" value="0.1" size="3" onchange="html_onchange('reset');" > sec<br>
+			 重力加速度g　<input type="text" id="html_g" value="9.8" size="3" onchange="html_onchange('reset');" > m/s/s<br>
+
+			 ボール質量m　<input type="text" id="html_m" value="1" size="3" onchange="html_onchange('reset');" > Kg<br>
+			 開始高さh　　<input type="text" id="html_h" value="2.5" size="3" onchange="html_onchange('reset');" > m<br>
+
+
+			<div class="group">
+			<input type="button" value="縮める" onClick="html_onchange('shrink');" >
+			<input type="button" value="伸ばす" onClick="html_onchange('streach');" >
+			<input type="button" value="スタート" onClick="html_onchange('release');" >
+			</div>
+			<input type="checkbox" name="html_debug" onClick="html_onchange();" checked >debug
+			<div class="group">
+				<input type="radio" name="html_mode" value="ice" onchange="html_onchange('reset');"checked>氷上
+				<input type="radio" name="html_mode" value="horizonal" onchange="html_onchange('reset');"checked>水平
+				<input type="radio" name="html_mode" value="vertical" onchange="html_onchange('reset');">鉛直
+			</div>
+
+-->
+
+			
+			<br>
+
+	<br>～概要 2021/09/23～<br>
+		積分すると面積が求まる<br>
+		sinθを積分したら-cosθとなる<br>
+		その前提が本当かなと、実感するためにプログラムで検証してみた物<br>
+
+		直感的に解りやすい区分求積法で、定積分の値を検証する<br>
+		<br>
+		～区分求積法～<br>
+		棒グラフで短冊切りにして面積を求める方法<br>
+		Δθを小さくすると細かくなりより正確な値に近づく<br>
+		<br>
+		～定積分の式～<br>
+		f(θ)=sinθ<br>
+		F(θ)=-cosθ<br>
+		面積S=∫(st～en)f(θ)dθ<br>
+		=[F(θ)](st～en)<br>
+		=F(en)-F(st)<br>
+		=(-cos(en)-(-cos(st))<br>
+		
+
+	</body>
+</html>

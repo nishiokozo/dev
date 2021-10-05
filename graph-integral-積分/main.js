@@ -372,15 +372,14 @@ function lab_create()
 		{
 			ba.t = ba.next_t;
 			//--
-			{
+			{// 区分求積法
 				let n = lab.lp;
-				let ddt = dt/n;
+				let t = dt/n;
 				for ( let i = 0 ; i < n ; i++ )
 				{
-					ba.o		 = ba.next_o;
-					ba.a		 =-(g/r)*Math.sin(ba.o);	// 接線加速度	a = -(g/r)sinθ
-					ba.w		+= ba.a*ddt;				// 速度			w = at +v0
-					ba.next_o	+= ba.w*ddt;				// 位置			θ= vt +θ0
+					ba.o	+= ba.w*t;					// 角置		θ= vt +θ0
+					ba.a	 =-(g/r)*Math.sin(ba.o);	// 角加速度	a = -(g/r)sinθ
+					ba.w	+= ba.a*t;					// 角速度	w = at +v0
 				}
 			}
 

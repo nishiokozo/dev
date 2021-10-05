@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>pys-pendulum</title>
+		<style>
+
+			.group
+			{
+				display:inline-block; 
+				padding: 6px; 
+				border-radius: 7px; 
+				border:1px solid #aaa;
+				text-align:center;
+				vertical-align: top;
+				font-size:16px;
+				font-family:monospace;
+			}
+			.group-left
+			{
+				display:inline-block; 
+				padding: 6px; 
+				border-radius: 7px; 
+				border:1px solid #aaa;
+				text-align:left;
+				vertical-align: top;
+				font-size:16px;
+				font-family:monospace;
+			}
+			.readme
+			{
+				display:inline-block; 
+				text-align:center;
+				font-size:16px;
+//				font-family:monospace;
+			}
+			.readme-left
+			{
+				display:inline-block; 
+				text-align:left;
+				font-size:12px;
+//				font-family:monospace;
+			}
+		</style>
+		<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+<script>
+/*
+MathJax = {
+  tex: {
+    inlineMath: [              // start/end delimiter pairs for in-line math
+      ['\\(', '\\)']
+    ],
+    displayMath: [             // start/end delimiter pairs for display math
+      ['$$', '$$'],
+      ['\\[', '\\]']
+    ],
+    processEscapes: true,      // use \$ to produce a literal dollar sign
+    processEnvironments: true, // process \begin{xxx}...\end{xxx} outside math mode
+    processRefs: true,         // process \ref{...} outside of math mode
+    digits: /^(?:[0-9]+(?:\{,\}[0-9]{3})*(?:\.[0-9]*)?|\.[0-9]+)/,
+                               // pattern for recognizing numbers
+    tags: 'none',              // or 'ams' or 'all'
+    tagSide: 'right',          // side for \tag macros
+    tagIndent: '0.8em',        // amount to indent tags
+    useLabelIds: true,         // use label name rather than tag for ids
+    multlineWidth: '85%',      // width of multline environment
+    maxMacros: 1000,           // maximum number of macro substitutions per expression
+    maxBuffer: 5 * 1024,       // maximum size for the internal TeX string (5K)
+    baseURL:                   // URL for use with links to tags (when there is a <base> tag in effect)
+       (document.getElementsByTagName('base').length === 0) ?
+        '' : String(document.location).replace(/#.*$/, ''))
+  }
+};
+*/
+</script>
+	</head>
+	<body align="center">
+		<H1>関数の微積</H1>
+		<canvas id="html_canvas4"  width="768" height="384" style="border:1px solid" ></canvas>
+		<br>
+
+
+		<script src="lib.js"></script>
+		<script src="main.js"></script>
+		<div class="group-left">
+			<input type="radio" name="html_mode" value="mode_x2" onchange="html_onchange('reset');;" 	>\(y=x^2\)<br>
+			<input type="radio" name="html_mode" value="mode_sin" onchange="html_onchange('reset');" 	checked>\(y=\sin x\)<br>
+			<input type="radio" name="html_mode" value="mode_tan" onchange="html_onchange('reset');" 	>\(y=\tan x\)<br>
+		</div>
+		<div class="group-left">
+			 cx <input type="text" id="html_cx" value="0" size="3" onchange="html_onchange('reset');" > <br>
+			 cy <input type="text" id="html_cy" value="0" size="3" onchange="html_onchange('reset');" > <br>
+			 sc <input type="text" id="html_sc" value="2" size="3" onchange="html_onchange('reset');" ><br>
+		</div>
+		<div class="group-left">
+			 開始st <input type="text" id="html_st" value="-0.5" size="3" onchange="html_onchange('reset');" >  <br>
+			 終了en <input type="text" id="html_en" value="1" size="3" onchange="html_onchange('reset');" >  <br>
+			 \(\Delta x\)　　<input type="text" id="html_dx" value="0.25" size="3" onchange="html_onchange('reset');" >  <br>
+		</div>
+			接線表示<input type="checkbox" name="html_line"  onchange="html_onchange('reset');" checked>
+			    <a id="html_fps" ></a>
+
+<!--
+
+			 sw <input type="text" id="html_sw" value="2" size="3" onchange="html_onchange('reset');" ><br>
+			 sh <input type="text" id="html_sh" value="2" size="3" onchange="html_onchange('reset');" ><br>
+
+
+MathJax
+http://www.eng.niigata-u.ac.jp/~nomoto/download/mathjax.pdf
+
+
+$x^2=2$<br>
+$x$  <br>
+$\sqrt{2}$<br>
+$x=\pm\sqrt{2}$<br>
+$\sqrt{2}$<br>
+$\[\sqrt{2} \approx 1.41421356237\]$<br>
+
+2次方程式 $ax^2 + bx + c =0$ の根の公式は<br>
+\[
+x=\frac{-b\pm\sqrt{b^2-4ac}}{2a}
+\]<br>
+
+Σ
+\begin{align}
+\sum_k c^*_k
+\end{align}
+
+∫
+\begin{align}
+\int_{-\infty}^\infty 
+\end{align}
+
+
+
+			 位相pz　<input type="text" id="html_pz" value="0" size="3" onchange="html_onchange('reset');" > deg <br>
+			 周波数hz<input type="text" id="html_hz" value="1" size="3" onchange="html_onchange('reset');" > Hz<br>
+			<div class="group">
+			<input type="button" value="リセット" onClick="html_onchange('reset');" >
+			<input type="button" value="再生/ポーズ" onClick="html_onchange('pause');" >
+			<input type="button" value="コマ送り" onClick="html_onchange('step');" >
+			</div>
+			<br>
+
+			 開始位置θ　 <input type="text" id="html_th" value="0" size="3" onchange="html_onchange('reset');" > deg<br>
+			 半径r 　 　　<input type="text" id="html_r" value="1" size="3" onchange="html_onchange('reset');" > m<br>
+
+			 計測時間time <input type="text" id="html_time" value="2.0" size="3" onchange="html_onchange('reset');" > sec<br>
+			 Δt　　　　　<input type="text" id="html_dt" value="0.1" size="3" onchange="html_onchange('reset');" > sec<br>
+			 重力加速度g　<input type="text" id="html_g" value="9.8" size="3" onchange="html_onchange('reset');" > m/s/s<br>
+
+			 ボール質量m　<input type="text" id="html_m" value="1" size="3" onchange="html_onchange('reset');" > Kg<br>
+			 開始高さh　　<input type="text" id="html_h" value="2.5" size="3" onchange="html_onchange('reset');" > m<br>
+
+
+			<div class="group">
+			<input type="button" value="縮める" onClick="html_onchange('shrink');" >
+			<input type="button" value="伸ばす" onClick="html_onchange('streach');" >
+			<input type="button" value="スタート" onClick="html_onchange('release');" >
+			</div>
+			<input type="checkbox" name="html_debug" onClick="html_onchange();" checked >debug
+			<div class="group">
+				<input type="radio" name="html_mode" value="ice" onchange="html_onchange('reset');"checked>氷上
+				<input type="radio" name="html_mode" value="horizonal" onchange="html_onchange('reset');"checked>水平
+				<input type="radio" name="html_mode" value="vertical" onchange="html_onchange('reset');">鉛直
+			</div>
+
+ガウス積分
+\[
+\int_{-\infty}^{\infty} e^{-x^{2}} \, dx = \sqrt{\pi}
+\]
+		\(\small f(x)=x^2 \)<br>
+		\(\small F(x)=\frac{1}{3}x^3 \)<br>
+		面積\(\small S=\int_{st}^{en}f(x)dx\)<br>
+		\(\small =F(en)-F(st) \)<br>
+<br>
+
+		\begin{array}{}
+		\small f(x)=x^2 \\
+		\small F(x)=\frac{1}{3}x^3 \\
+		\small 面積 S=\int_{st}^{en}f(x)dx\\
+		\small =F(en)-F(st) \\
+		\end{array}
+		
+
+
+-->
+
+			
+			<br>
+
+			
+			<br>
+	<br>～概要 2021/09/27～<br>
+		関数の微分(接線)積分(面積)
+		関数f(x)を微分すると接線＝導関数d(x)が求まる<br>
+		関数f(x)を積分すると面積＝原始関数F(x)が求まる<br>
+		<br>
+		定積分の結果は、区分求積法による積分と比較して検証<br>
+		数学の微積分をプログラムで扱うのに慣れるための練習的なもの<br>
+
+		<br>
+		～区分求積法～<br>
+		棒グラフで短冊切りにして面積を求める方法<br>
+		Δxを小さくすると細かくなりより正確な値に近づく<br>
+
+		<br>
+		
+$$ \small ex. y=x^2$$
+		～定積分（面積）～
+\begin{eqnarray}
+ 		\small f(x)&=&x^2   \\
+		\small F(x)&=&\frac{1}{3}x^3 \\
+		\small 面積 S&=&\int_{st}^{en}f(x)dx\\
+		\small &=&F(en)-F(st)\\
+		\small &=&\frac{1}{3}en^3 - \frac{1}{3}st^3\\
+\end{eqnarray}
+
+		<br>
+		～微分（接線）～
+\begin{eqnarray}
+ 		\small f(x)&=&\small x^2   \\
+ 		\small d(x)&=&\small \frac{d}{dx} f(x)&=2x  \\
+\end{eqnarray}
+
+		$$\small 接線:(u,v)=(1,d(x)) =(1,2x)$$
+		$$\small 座標:(x,y)=(x,f(x)) =(x,x^2) $$
+		$$\small 描画:(x-u,y-v)t～(x+u,y+v)$$
+
+
+</body>
+</html> 

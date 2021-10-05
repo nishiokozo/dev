@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>pys-pendulum</title>
+		<style>
+
+			.group
+			{
+				display:inline-block; 
+				padding: 6px; 
+				border-radius: 7px; 
+				border:1px solid #aaa;
+				text-align:center;
+				vertical-align: top;
+				font-size:16px;
+				font-family:monospace;
+			}
+			.group-left
+			{
+				display:inline-block; 
+				padding: 6px; 
+				border-radius: 7px; 
+				border:1px solid #aaa;
+				text-align:left;
+				vertical-align: top;
+				font-size:16px;
+				font-family:monospace;
+			}
+			.readme
+			{
+				display:inline-block; 
+				text-align:center;
+				font-size:12px;
+				font-family:monospace;
+			}
+			.readme-left
+			{
+				display:inline-block; 
+				text-align:left;
+				font-size:12px;
+				font-family:monospace;
+			}
+		</style>
+	</head>
+	<body align="center">
+		<H1>物理シミュレーション 振り子v1.2</H1>
+		<canvas id="html_canvas"  width="400" height="400" style="border:1px solid" ></canvas>
+		<canvas id="html_canvas2"  width="256" height="192" style="border:1px solid" ></canvas>
+		<script src="lib.js"></script>
+		<script src="main.js"></script>
+		<br>
+			<div class="group-left">
+			 Δt　　　　　<input type="text" id="html_dt" value="0.03" size="3" onchange="html_onchange('reset');" > 秒<br>
+			 重力加速度g　<input type="text" id="html_g" value="9.8" size="3" onchange="html_onchange('reset');" > m/s/s<br>
+			 紐長さl　　　<input type="text" id="html_l" value="1.2" size="3" onchange="html_onchange('reset');" > m<br>
+			 ボール質量m　<input type="text" id="html_m" value="1" size="3" onchange="html_onchange('reset');" > Kg<br>
+			 計算ループlp <input type="text" id="html_lp" value="10" size="3" onchange="html_onchange('reset');" > times<br>
+			</div>
+			<div class="group">
+			<input type="button" value="リセット" onClick="html_onchange('reset');" >
+			<input type="button" value="再生/ポーズ" onClick="html_onchange('pause');" >
+			<input type="button" value="コマ送り" onClick="html_onchange('step');" >
+			</div>
+
+<!--
+			 開始高さh　　<input type="text" id="html_h" value="2.0" size="3" onchange="html_onchange('reset');" > m<br>
+
+			<div class="group">
+			<input type="button" value="縮める" onClick="html_onchange('shrink');" >
+			<input type="button" value="伸ばす" onClick="html_onchange('streach');" >
+			<input type="button" value="スタート" onClick="html_onchange('release');" >
+			</div>
+			<input type="checkbox" name="html_debug" onClick="html_onchange();" checked >debug
+			<div class="group">
+				<input type="radio" name="html_mode" value="ice" onchange="html_onchange('reset');"checked>氷上
+				<input type="radio" name="html_mode" value="horizonal" onchange="html_onchange('reset');"checked>水平
+				<input type="radio" name="html_mode" value="vertical" onchange="html_onchange('reset');">鉛直
+			</div>
+
+-->
+
+			
+			<br>
+
+	<br>～概要 2021/10/01～<br>
+		ベクトルで計算<br>
+	
+	</body>
+</html>
